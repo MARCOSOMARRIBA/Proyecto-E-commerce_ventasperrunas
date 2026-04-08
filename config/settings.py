@@ -43,17 +43,20 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
+
 
 ROOT_URLCONF = 'config.urls'
 
@@ -83,9 +86,9 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "pagina_mascotas",
         "USER": "postgres",
-        "PASSWORD": "Morgado90",
+        "PASSWORD": "12345",
         "HOST": "localhost",
-        "PORT": "5432",
+        "PORT": "5434",
         'OPTIONS': {
             'options': '-csearch_path=tienda_mascotas',
         },
