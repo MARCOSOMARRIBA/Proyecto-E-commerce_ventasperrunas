@@ -10,6 +10,7 @@ from .views import (
     ProveedorViewSet,
     SeccionExtranetViewSet,
     UsuarioViewSet,
+    login_usuario  # <--- 1. AGREGAR ESTA IMPORTACIÓN AQUÍ
 )
 
 router = DefaultRouter()
@@ -25,4 +26,5 @@ router.register(r'cobros', CobroViewSet, basename='cobro')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('login/', login_usuario, name='login_api'), # <--- 2. AGREGAR ESTA RUTA AQUÍ
 ]
