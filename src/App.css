@@ -745,3 +745,94 @@ h2.section-title {
 .btn-pagar:hover {
   background-color: #7695a6;
 }
+
+/* =========================================
+   ANIMACIONES DEL DASHBOARD
+   ========================================= */
+
+/* 1. Efecto de entrada hacia arriba */
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 2. Efecto de levitación al pasar el mouse (Hover) */
+.hover-elevate {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-elevate:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+  cursor: pointer;
+}
+
+/* 3. Retrasos en escalera (para que entren una por una) */
+.delay-0 { animation-delay: 0.1s; }
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.3s; }
+.delay-3 { animation-delay: 0.4s; }
+
+/* =========================================
+   NAVBAR PREMIUM Y MENÚ TIPO FACEBOOK
+   ========================================= */
+.navbar-custom {
+  background-color: #0f4c5c; /* Color principal de tu tienda */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  padding: 15px 0;
+}
+
+/* Quita la flechita fea por defecto de Bootstrap */
+.user-dropdown .dropdown-toggle::after {
+  display: none; 
+}
+
+/* El menú flotante */
+.dropdown-menu-custom {
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+  padding: 10px 0 !important;
+  min-width: 260px !important;
+  margin-top: 15px !important;
+}
+
+/* Elementos de la lista */
+.dropdown-item-custom {
+  padding: 12px 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  font-weight: 500 !important;
+  color: #4b5563 !important;
+  transition: all 0.2s ease !important;
+}
+
+.dropdown-item-custom:hover {
+  background-color: #f3f4f6 !important;
+  color: #0f4c5c !important;
+  transform: translateX(5px);
+}
+
+.dropdown-divider-custom {
+  margin: 10px 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Ícono del carrito con notificación pulsante */
+.cart-badge {
+  position: absolute;
+  top: -5px;
+  right: -10px;
+  font-size: 0.65rem;
+  padding: 4px 6px;
+  border-radius: 50px;
+}

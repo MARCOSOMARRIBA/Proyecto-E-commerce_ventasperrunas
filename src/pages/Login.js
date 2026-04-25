@@ -2,43 +2,41 @@ import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import { FaFacebook, FaApple } from 'react-icons/fa';
-import { AuthContext } from '../context/AuthContext'; // Importamos el contexto
+import { AuthContext } from '../context/AuthContext';
 
 function Login() {
-  const { login } = useContext(AuthContext);
+  // 1. AHORA TRAEMOS loginReal (la función que conecta con Django)
+  const { loginReal } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Estados para capturar lo que el usuario escribe
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Función que se dispara al enviar el formulario
-  const handleLogin = (e) => {
-    e.preventDefault(); // Evita que la página recargue
+  // 2. HACEMOS LA FUNCIÓN ASÍNCRONA (async) PORQUE VAMOS A ESPERAR A DJANGO
+ const handleLogin = async (e) => {
+    e.preventDefault(); 
+    const exito = await loginReal({ email, password });
 
-    // Simulamos el inicio de sesión exitoso
-    const usuarioSimulado = {
-      nombre: email.split('@')[0] || "Usuario", // Usa el texto antes del @ como nombre
-      email: email,
-      telefono: "555-123-4567",
-      direccion: "Calle Falsa 123"
-    };
-
-    login(usuarioSimulado); // Guardamos en la memoria global
-    navigate('/'); // Redirigimos al inicio
+    if (exito) {
+      // 1. Obtenemos el usuario que acabamos de guardar en el contexto
+      // Nota: Necesitas importar el 'user' del AuthContext si no lo tienes
+      
+      // 2. Redireccionamos según el rol de la base de datos 
+      // Usamos el resultado de la función para decidir a dónde ir
+      // (Asumiendo que loginReal devuelve los datos del usuario o los guarda)
+      navigate('/'); 
+    }
   };
 
   return (
     <div className="login-container">
       
-      {/* Lado Izquierdo (Azul) */}
       <div className="login-left d-none d-md-flex">
         <h1>Inicia sesion en</h1>
         <h3>Ventas Perrunas es simple</h3>
         <p>Negocio dedicado a darle lo mejor a esas pequeñas mascotitas que siempre nos alegran nuestros malos días y siempre nos sacan una sonrisa.</p>
       </div>
 
-      {/* Lado Derecho (Formulario) */}
       <div className="login-right">
         <div className="login-card">
           
@@ -52,7 +50,6 @@ function Login() {
 
           <h2>Inicia Sesión</h2>
 
-          {/* Botones Sociales */}
           <div className="social-buttons">
             <button className="btn-google">
               <FcGoogle size={24} /> Inicia sesión con Google
@@ -65,7 +62,6 @@ function Login() {
             </button>
           </div>
 
-          {/* Formulario (Conectado a la función handleLogin) */}
           <form onSubmit={handleLogin}>
             <div className="form-group">
               <label>Ingresa tu usuario o correo electronico</label>
