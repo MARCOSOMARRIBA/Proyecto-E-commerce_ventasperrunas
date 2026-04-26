@@ -2,12 +2,12 @@ import React, { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { FiGrid, FiImage, FiBox, FiShoppingCart, FiSettings, FiHelpCircle } from 'react-icons/fi';
-import SeccionServicios from '../components/SeccionServicios';
 
 // Importamos las vistas separadas
 import DashboardOverview from './DashboardOverview';
 import BannersExtranet from './BannersExtranet';
 import ProductosExtranet from './ProductosExtranet';
+import OrdenesExtranet from './OrdenesExtranet';
 
 function AdminExtranet() {
   const { user } = useContext(AuthContext);
@@ -15,8 +15,6 @@ function AdminExtranet() {
 
   // Seguridad estricta: Solo permite entrar a Proveedores (Rol 4)
   if (!user || user.rol !== '4') return <Navigate to="/" />;
-
-  // ... (el resto de tu código se queda igual)
 
   return (
     <div className="container-fluid p-0" style={{ backgroundColor: '#f8fafc', minHeight: 'calc(100vh - 70px)' }}>
@@ -34,7 +32,7 @@ function AdminExtranet() {
               { id: 'dashboard', label: 'Estadísticas', icon: <FiGrid /> },
               { id: 'banners', label: 'Banners', icon: <FiImage /> },
               { id: 'productos', label: 'Productos', icon: <FiBox /> },
-              { id: 'ordenes', label: 'Órdenes', icon: <FiShoppingCart /> }
+              { id: 'ordenes', label: 'Órdenes B2B', icon: <FiShoppingCart /> }
             ].map(item => (
               <li className="nav-item" key={item.id}>
                 <button 
@@ -63,16 +61,14 @@ function AdminExtranet() {
             {vistaActiva === 'dashboard' && <DashboardOverview />}
             {vistaActiva === 'banners' && <BannersExtranet />}
             {vistaActiva === 'productos' && <ProductosExtranet />}
-            {vistaActiva === 'ordenes' && <div className="alert alert-light border">Cargando módulo de órdenes...</div>}
+            {/* AQUÍ ESTÁ EL CAMBIO: Ya cargamos el componente real */}
+            {vistaActiva === 'ordenes' && <OrdenesExtranet />}
           </div>
         </div>
 
       </div>
     </div>
-    
   );
-
-  
 }
 
 export default AdminExtranet;

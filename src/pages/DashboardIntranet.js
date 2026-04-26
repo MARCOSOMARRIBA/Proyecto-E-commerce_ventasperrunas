@@ -2,6 +2,8 @@ import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { FiEdit, FiTrash2, FiPlus, FiPackage, FiShoppingCart, FiTruck, FiSettings, FiHelpCircle, FiSearch } from 'react-icons/fi';
+import VistaOrdenesClientes from './OrdenesClientesIntranet';
+import VistaPedidosProveedor from './PedidosProveedorIntranet';
 
 function DashboardIntranet() {
   const { user } = useContext(AuthContext);
@@ -154,8 +156,8 @@ function DashboardIntranet() {
           {/* Renderizado de Vistas */}
           <div className="p-2">
             {vistaActiva === 'inventario' && <VistaInventario />}
-            {vistaActiva === 'ordenes' && <div className="alert alert-light m-4 border fade-in-up">Módulo de Órdenes de Clientes listo para conectar a PostgreSQL...</div>}
-            {vistaActiva === 'pedidos' && <div className="alert alert-light m-4 border fade-in-up">Módulo de Pedidos a Proveedor listo para conectar a PostgreSQL...</div>}
+            {vistaActiva === 'ordenes' && <VistaOrdenesClientes />}
+            {vistaActiva === 'pedidos' && <VistaPedidosProveedor />}
           </div>
         </div>
 

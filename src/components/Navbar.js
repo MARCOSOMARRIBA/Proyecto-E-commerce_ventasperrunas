@@ -6,6 +6,7 @@ import {
 } from 'react-icons/fi';
 import { AuthContext } from '../context/AuthContext'; 
 import { CartContext } from '../context/CartContext'; 
+import NotificadorProveedor from './NotificadorProveedor';
 
 function Navbar() {
   const { user, logout } = useContext(AuthContext); 
@@ -53,7 +54,7 @@ function Navbar() {
         {/* BOTONES E ICONOS DE LA DERECHA */}
         <div className="nav-icons d-none d-lg-flex align-items-center gap-4">
           
-          {/* ICONOS FUNCIONALES (Búsqueda, Favoritos, Carrito) */}
+          {/* ICONOS FUNCIONALES (Búsqueda, Favoritos, Carrito, y CAMPANITA) */}
           <div className="d-flex align-items-center gap-3 text-white">
             <Link to="/tienda" title="Buscar productos" className="text-white text-decoration-none hover-scale">
               <FiSearch size={22} />
@@ -74,6 +75,11 @@ function Navbar() {
                 </span>
               )}
             </Link>
+
+            {/* 🔔 AQUÍ ESTÁ LA MAGIA: Solo renderizamos el notificador si hay un usuario logueado Y su rol es 4 */}
+            {user && user.rol === '4' && (
+              <NotificadorProveedor />
+            )}
           </div>
 
           <div className="nav-divider" style={{ width: '2px', height: '30px', backgroundColor: 'rgba(255,255,255,0.2)' }}></div>
@@ -112,7 +118,6 @@ function Navbar() {
                       <FiSettings size={18} /> Configuración
                     </Link>
 
-                    {/* 🛡️ RUTAS ADMINISTRATIVAS (Corregido a la lógica estándar de roles) */}
                     {/* 🛡️ SOLO PARA ADMIN (Rol 3) */}
                     {user.rol === '3' && (
                       <Link to="/intranet" className="dropdown-item d-flex align-items-center gap-3 py-2 px-4 fw-bold text-info hover-bg-light" onClick={() => setMenuAbierto(false)}>

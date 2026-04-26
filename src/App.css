@@ -836,3 +836,37 @@ h2.section-title {
   padding: 4px 6px;
   border-radius: 50px;
 }
+
+/* =========================================
+   ESTILOS PREMIUM PARA FORMULARIO B2B
+   ========================================= */
+.ticket-resumen {
+  background-color: #ffffff;
+  border: 1px dashed #ced4da;
+  border-radius: 8px;
+  position: relative;
+}
+
+/* Barra de desplazamiento elegante para la lista de productos */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1; 
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8; 
+}
+
+/* Fila de producto en el carrito */
+.producto-row {
+  transition: background-color 0.2s ease;
+}
+.producto-row:hover {
+  background-color: #f8f9fa;
+}
