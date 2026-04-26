@@ -10,7 +10,10 @@ from .views import (
     ProveedorViewSet,
     SeccionExtranetViewSet,
     UsuarioViewSet,
-    login_usuario  # <--- 1. AGREGAR ESTA IMPORTACIÓN AQUÍ
+    login_usuario,
+    # 1. AGREGAMOS LAS DOS FUNCIONES NUEVAS AQUÍ:
+    detalles_pedido,
+    movimientos_recientes
 )
 
 router = DefaultRouter()
@@ -25,6 +28,10 @@ router.register(r'ordenes', OrdenViewSet, basename='orden')
 router.register(r'cobros', CobroViewSet, basename='cobro')
 
 urlpatterns = [
+    # 2. AGREGAMOS LAS RUTAS CUSTOM ANTES DEL ROUTER
+    path('pedidos/movimientos-recientes/', movimientos_recientes, name='movimientos-recientes'),
+    path('pedidos/<int:id_pedido>/detalles/', detalles_pedido, name='detalles-pedido'),
+    
     path('', include(router.urls)),
-    path('login/', login_usuario, name='login_api'), # <--- 2. AGREGAR ESTA RUTA AQUÍ
+    path('login/', login_usuario, name='login_api'),
 ]

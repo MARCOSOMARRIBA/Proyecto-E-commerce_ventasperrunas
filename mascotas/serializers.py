@@ -9,8 +9,20 @@ from .models import (
     Proveedor,
     SeccionExtranet,
     Usuario,
+    Pedido,
+    DetallePedido,
 )
 
+
+class PedidoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pedido
+        fields = '__all__'
+
+class DetallePedidoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DetallePedido
+        fields = '__all__'
 
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:

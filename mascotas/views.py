@@ -71,6 +71,37 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Usuario # Asegúrate de que tenga importado el modelo Usuario
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Pedido, DetallePedido
+from .serializers import PedidoSerializer, DetallePedidoSerializer
+
+# 1. Endpoint: GET /api/pedidos/
+@api_view(['GET'])
+def lista_pedidos(request):
+    # Traemos todos los pedidos, ordenados por los más recientes primero
+    pedidos = Pedido.objects.all().order_by('-fecha_compra', '-id_pedido')
+    serializer = PedidoSerializer(pedidos, many=True)
+    return Response(serializer.data)
+
+# 2. Endpoint: GET /api/pedidos/<id>/detalles/
+@api_view(['GET'])
+def detalles_pedido(request, id_pedido):
+    # Buscamos solo los detalles que pertenezcan a este ID específico [cite: 26]
+    detalles = DetallePedido.objects.filter(id_pedido=id_pedido)
+    serializer = DetallePedidoSerializer(detalles, many=True)
+    return Response(serializer.data)
+
+# 3. Endpoint: GET /api/pedidos/movimientos-recientes/
+@api_view(['GET'])
+def movimientos_recientes(request):
+    # Contamos cuántos pedidos ya fueron procesados por el proveedor (Estatus 2, 3 o 4) [cite: 25]
+    # En un sistema en producción, cruzarías esto con una tabla de "notificaciones leídas"
+    conteo_movimientos = Pedido.objects.filter(estatus__in=['2', '3', '4']).count()
+    
+    return Response({
+        "nuevos_movimientos": conteo_movimientos
+    })
 
 @api_view(['POST'])
 def login_usuario(request):
