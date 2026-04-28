@@ -1,30 +1,44 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { db } from '../firebaseConfig';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { FiBell, FiPackage, FiMessageSquare } from 'react-icons/fi';
+// Dejamos una sola importación limpia de Firebase con deleteDoc incluido
+import { collection, query, where, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { FiBell, FiPackage, FiMessageSquare, FiCheckCircle } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 const NotificadorProveedor = () => {
+  const { user } = useContext(AuthContext); 
   const [pedidosNuevos, setPedidosNuevos] = useState([]);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const menuRef = useRef(null);
 
-  // ID simulado del proveedor logueado. 
-  // En producción, esto viene de tu AuthContext (ej. user.rfc)
-  const RFC_PROVEEDOR_LOGUEADO = 'PUR980101XYZ'; 
+  // =====================================================================
+  // FUNCIÓN PARA ELIMINAR NOTIFICACIÓN (Debe estar fuera del useEffect)
+  // =====================================================================
+  const eliminarNotificacion = async (id_firebase) => {
+    try {
+      await deleteDoc(doc(db, 'pedidos_b2b', id_firebase));
+      // No necesitamos actualizar el estado 'pedidosNuevos' a mano porque
+      // onSnapshot se dará cuenta del borrado y actualizará la lista solo.
+    } catch (error) {
+      console.error("Error al borrar notificación:", error);
+    }
+  };
 
   useEffect(() => {
-    // Escuchamos a Firebase en tiempo real
+    // ⚠️ RECUERDA: Este es el hack temporal para la revisión.
+    // Cuando el login de Django mande el RFC, cambia esto por: user?.rfc
+    const RFC_PRUEBA = 'DPG260401A1B'; 
+
     const q = query(
       collection(db, 'pedidos_b2b'),
-      where('id_proveedor', '==', RFC_PROVEEDOR_LOGUEADO),
-      where('estado', '==', 'SOLICITADO')
+      where('id_proveedor', '==', RFC_PRUEBA), 
+      where('estado', '==', '1') 
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const pedidos = [];
       snapshot.forEach((doc) => {
-        // Formateamos la fecha de Firebase para que se lea bonito
         const data = doc.data();
         const fecha = data.fecha ? data.fecha.toDate().toLocaleTimeString() : 'Hace un momento';
         pedidos.push({ id: doc.id, ...data, horaString: fecha });
@@ -33,7 +47,7 @@ const NotificadorProveedor = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, []); 
 
   // Cerrar el menú al hacer clic afuera
   useEffect(() => {
@@ -78,12 +92,26 @@ const NotificadorProveedor = () => {
             ) : (
               <ul className="list-group list-group-flush">
                 {pedidosNuevos.map((pedido) => (
-                  <li key={pedido.id} className="list-group-item list-group-item-action p-3 border-bottom hover-bg-light cursor-pointer">
-                    <div className="d-flex w-100 justify-content-between mb-1">
-                      <strong className="text-primary d-flex align-items-center gap-1"><FiPackage /> Nuevo Pedido ({pedido.articulos_totales} arts.)</strong>
-                      <small className="text-muted">{pedido.horaString}</small>
+                  <li key={pedido.id} className="list-group-item list-group-item-action p-3 border-bottom hover-bg-light">
+                    
+                    {/* ENCABEZADO DE LA NOTIFICACIÓN CON EL BOTÓN DE BORRAR */}
+                    <div className="d-flex w-100 justify-content-between mb-2 align-items-center">
+                      <strong className="text-primary d-flex align-items-center gap-1">
+                        <FiPackage /> Nuevo Pedido ({pedido.articulos_totales} arts.)
+                      </strong>
+                      <div className="d-flex align-items-center">
+                        <small className="text-muted me-2">{pedido.horaString}</small>
+                        <button 
+                          onClick={() => eliminarNotificacion(pedido.id)} 
+                          className="btn btn-sm text-success p-0" 
+                          title="Marcar como visto y eliminar"
+                        >
+                          <FiCheckCircle size={18} />
+                        </button>
+                      </div>
                     </div>
-                    <p className="mb-1 small text-dark">Ventas Perrunas ha solicitado un nuevo resurtido.</p>
+
+                    <p className="mb-1 small text-dark">Pet Market Local ha solicitado un nuevo resurtido.</p>
                     
                     {/* Caja del mensaje del administrador */}
                     {pedido.mensaje_admin && (
@@ -99,14 +127,14 @@ const NotificadorProveedor = () => {
           </div>
           
           <div className="p-2 border-top bg-light text-center" style={{ borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
-  <Link 
-    to="/extranet" 
-    onClick={() => setMenuAbierto(false)} 
-    className="text-decoration-none small fw-bold text-primary"
-  >
-    Ir al Panel de Gestión
-  </Link>
-</div>
+            <Link 
+              to="/extranet" 
+              onClick={() => setMenuAbierto(false)} 
+              className="text-decoration-none small fw-bold text-primary"
+            >
+              Ir al Panel de Gestión
+            </Link>
+          </div>
         </div>
       )}
     </div>

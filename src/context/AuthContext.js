@@ -37,11 +37,13 @@ export const AuthProvider = ({ children }) => {
 
         const avatarUrl = `https://ui-avatars.com/api/?name=${iniciales}&background=0D8ABC&color=fff&size=200&rounded=true&font-size=0.4`;
 
+        // AQUÍ ESTÁ EL CAMBIO CLAVE: Agregamos el rfc al objeto de sesión
         const usuarioLogueado = {
           id: datosBackend.id_usuario,
           nombre: datosBackend.nombre_usuario,
           email: datosBackend.correo,
           rol: datosBackend.rol,
+          rfc: datosBackend.rfc, // <--- ESTA ES LA PIEZA MÁGICA
           avatarUrl: avatarUrl,
           username: (datosBackend.correo || "usuario").split("@")[0],
         };
