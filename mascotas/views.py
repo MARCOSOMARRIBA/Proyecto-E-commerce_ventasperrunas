@@ -109,19 +109,36 @@ def login_usuario(request):
     contrasena = request.data.get('contrasena')
 
     try:
-        # 1. Buscamos al usuario por su correo
         usuario = Usuario.objects.get(correo=correo)
 
-        # 2. Verificamos que la contraseña coincida 
-        # (Nota para tu amigo: En el futuro, aquí se debería usar check_password() para contraseñas encriptadas)
         if usuario.contrasena == contrasena:
-            # 3. Si todo está bien, devolvemos los datos del usuario
+            
+            # ==============================================================
+            # LÓGICA DE ROLES PARA EL RFC (Sin tocar la Base de Datos)
+            # ==============================================================
+            rfc_asignado = None
+            
+            # Si es un Proveedor de la Extranet (Rol 4)
+            if usuario.rol == '4':
+                # Asignamos el RFC dependiendo de quién inicie sesión.
+                # Daniel Rosas (EXT0000000001) pertenece a Pet Premium del Golfo:
+                if usuario.id_usuario == 'EXT0000000001':
+                    rfc_asignado = 'DPG260401A1B'
+                
+                # Aquí puedes agregar más "elif" si en el futuro tienes más proveedores
+                # elif usuario.id_usuario == 'EXT0000000002':
+                #     rfc_asignado = 'OTRO_RFC...'
+
+            # Devolvemos los datos. 
+            # Los Administradores (Rol 3) recibirán "rfc": null, lo cual es correcto.
             return Response({
                 'id_usuario': usuario.id_usuario,
                 'nombre_usuario': usuario.nombre_usuario,
                 'correo': usuario.correo,
-                'rol': usuario.rol
+                'rol': usuario.rol,
+                'rfc': rfc_asignado  
             }, status=status.HTTP_200_OK)
+            
         else:
             return Response({'error': 'Contraseña incorrecta'}, status=status.HTTP_401_UNAUTHORIZED)
 

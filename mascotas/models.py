@@ -161,6 +161,7 @@ class Usuario(models.Model):
     rol = models.CharField(max_length=1)
     fecha_registro = models.DateTimeField()
 
+
     class Meta:
         managed = False
         db_table = 'usuario'
