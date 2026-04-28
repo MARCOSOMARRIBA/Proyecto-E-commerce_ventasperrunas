@@ -1,24 +1,27 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
-import { FiImage, FiPlus, FiTrash2, FiSend, FiLink } from 'react-icons/fi';
+import React, { useState, useEffect, useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+import { useMessage } from "../context/MessageContext";
+import { FiImage, FiPlus, FiTrash2, FiSend, FiLink } from "react-icons/fi";
 
 const BannersExtranet = () => {
   const { user } = useContext(AuthContext);
+  const { showMessage } = useMessage();
+
   const [banners, setBanners] = useState([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [cargando, setCargando] = useState(true);
 
-  // Estado para el nuevo banner (coincide con tu modelo SeccionExtranet)
+  const [bannerAEliminar, setBannerAEliminar] = useState(null);
+
   const [nuevoBanner, setNuevoBanner] = useState({
-    titulo_pagina: '',
-    imagen_banner: '',
-    texto_bienvenida: '',
-    url_destino: '',
-    estatus: true
+    titulo_pagina: "",
+    imagen_banner: "",
+    texto_bienvenida: "",
+    url_destino: "",
+    estatus: true,
   });
 
-  // URL de tu API (Asegúrate de que en urls.py de Django se llame así)
-const API_URL = 'http://127.0.0.1:8000/api/secciones-extranet/';
+  const API_URL = "http://127.0.0.1:8000/api/secciones-extranet/";
 
   useEffect(() => {
     cargarBanners();
@@ -26,15 +29,28 @@ const API_URL = 'http://127.0.0.1:8000/api/secciones-extranet/';
 
   const cargarBanners = async () => {
     try {
+      setCargando(true);
+
       const res = await fetch(API_URL);
+
       if (res.ok) {
         const data = await res.json();
-        // Opcional: Filtrar solo los banners creados por este usuario
-        // const misBanners = data.filter(b => b.id_usuario === user?.id);
         setBanners(data);
+      } else {
+        showMessage({
+          title: "Error al cargar banners",
+          message: "No se pudieron obtener las promociones desde el servidor.",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Error al cargar banners:", error);
+
+      showMessage({
+        title: "Error de conexión",
+        message: "No se pudo conectar con el servidor para cargar los banners.",
+        type: "error",
+      });
     } finally {
       setCargando(false);
     }
@@ -42,41 +58,120 @@ const API_URL = 'http://127.0.0.1:8000/api/secciones-extranet/';
 
   const manejarEnvio = async (e) => {
     e.preventDefault();
-    
+
+    if (!nuevoBanner.titulo_pagina.trim()) {
+      showMessage({
+        title: "Título requerido",
+        message: "Debes escribir un título para la promoción.",
+        type: "warning",
+      });
+      return;
+    }
+
+    if (!nuevoBanner.imagen_banner.trim()) {
+      showMessage({
+        title: "Imagen requerida",
+        message: "Debes agregar la URL de la imagen del banner.",
+        type: "warning",
+      });
+      return;
+    }
+
     try {
       const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           ...nuevoBanner,
-          id_usuario: user?.id || 'ADM0000000001' // Forzamos el ID si no viene en sesión
-        })
+          id_usuario: user?.id || "ADM0000000001",
+        }),
       });
 
       if (res.ok) {
         setMostrarFormulario(false);
-        setNuevoBanner({ titulo_pagina: '', imagen_banner: '', texto_bienvenida: '', url_destino: '', estatus: true });
-        cargarBanners(); // Recargamos la lista
-        alert("¡Banner promocional creado con éxito!");
+
+        setNuevoBanner({
+          titulo_pagina: "",
+          imagen_banner: "",
+          texto_bienvenida: "",
+          url_destino: "",
+          estatus: true,
+        });
+
+        cargarBanners();
+
+        showMessage({
+          title: "Promoción creada",
+          message: "El banner promocional fue creado correctamente.",
+          type: "success",
+        });
       } else {
         const errorData = await res.json();
-        alert("Error de Django:\n" + JSON.stringify(errorData, null, 2));
+
+        showMessage({
+          title: "Error de Django",
+          message: JSON.stringify(errorData, null, 2),
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Error al guardar:", error);
+
+      showMessage({
+        title: "Error de conexión",
+        message: "No se pudo guardar el banner promocional.",
+        type: "error",
+      });
     }
   };
 
-  const eliminarBanner = async (id_seccion) => {
-    if (!window.confirm("¿Estás seguro de eliminar esta promoción?")) return;
+  const pedirConfirmacionEliminar = (banner) => {
+    setBannerAEliminar(banner);
+  };
+
+  const cancelarEliminacion = () => {
+    setBannerAEliminar(null);
+  };
+
+  const confirmarEliminacion = async () => {
+    if (!bannerAEliminar) return;
 
     try {
-      const res = await fetch(`${API_URL}${id_seccion}/`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}${bannerAEliminar.id_seccion}/`, {
+        method: "DELETE",
+      });
+
       if (res.ok) {
-        setBanners(banners.filter(b => b.id_seccion !== id_seccion));
+        setBanners((prevBanners) =>
+          prevBanners.filter(
+            (b) => b.id_seccion !== bannerAEliminar.id_seccion,
+          ),
+        );
+
+        showMessage({
+          title: "Promoción eliminada",
+          message: "El banner fue eliminado correctamente.",
+          type: "success",
+        });
+
+        setBannerAEliminar(null);
+      } else {
+        showMessage({
+          title: "Error al eliminar",
+          message: "No se pudo eliminar la promoción seleccionada.",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Error al eliminar:", error);
+
+      showMessage({
+        title: "Error de conexión",
+        message: "No se pudo conectar con el servidor para eliminar el banner.",
+        type: "error",
+      });
     }
   };
 
@@ -87,44 +182,129 @@ const API_URL = 'http://127.0.0.1:8000/api/secciones-extranet/';
           <h2 className="fw-bold m-0 d-flex align-items-center gap-2 text-dark">
             <FiImage className="text-primary" /> Gestión de Promociones
           </h2>
-          <p className="text-muted small m-0">Crea y administra los banners que verán los usuarios</p>
+          <p className="text-muted small m-0">
+            Crea y administra los banners que verán los usuarios
+          </p>
         </div>
-        <button onClick={() => setMostrarFormulario(!mostrarFormulario)} className="btn btn-primary fw-bold shadow-sm">
-          {mostrarFormulario ? "Cancelar" : <><FiPlus className="me-2" /> Nuevo Banner</>}
+
+        <button
+          onClick={() => setMostrarFormulario(!mostrarFormulario)}
+          className="btn btn-primary fw-bold shadow-sm"
+        >
+          {mostrarFormulario ? (
+            "Cancelar"
+          ) : (
+            <>
+              <FiPlus className="me-2" /> Nuevo Banner
+            </>
+          )}
         </button>
       </div>
 
-      {/* FORMULARIO DE CREACIÓN */}
       {mostrarFormulario && (
         <div className="card border-0 shadow-sm rounded-4 mb-4 bg-light">
           <div className="card-body p-4">
             <h5 className="fw-bold mb-3">Crear Nueva Promoción</h5>
+
             <form onSubmit={manejarEnvio} className="row g-3">
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">TÍTULO (Ej. Promo Croquetas)</label>
-                <input type="text" className="form-control border-2" required value={nuevoBanner.titulo_pagina} onChange={e => setNuevoBanner({...nuevoBanner, titulo_pagina: e.target.value})} />
+                <label className="form-label fw-bold small text-muted">
+                  TÍTULO
+                </label>
+                <input
+                  type="text"
+                  className="form-control border-2"
+                  required
+                  placeholder="Ej. Promo Croquetas"
+                  value={nuevoBanner.titulo_pagina}
+                  onChange={(e) =>
+                    setNuevoBanner({
+                      ...nuevoBanner,
+                      titulo_pagina: e.target.value,
+                    })
+                  }
+                />
               </div>
+
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">URL DE LA IMAGEN (Link de internet)</label>
-                <input type="url" className="form-control border-2" required placeholder="https://..." value={nuevoBanner.imagen_banner} onChange={e => setNuevoBanner({...nuevoBanner, imagen_banner: e.target.value})} />
+                <label className="form-label fw-bold small text-muted">
+                  URL DE LA IMAGEN
+                </label>
+                <input
+                  type="url"
+                  className="form-control border-2"
+                  required
+                  placeholder="https://..."
+                  value={nuevoBanner.imagen_banner}
+                  onChange={(e) =>
+                    setNuevoBanner({
+                      ...nuevoBanner,
+                      imagen_banner: e.target.value,
+                    })
+                  }
+                />
               </div>
+
               <div className="col-md-12">
-                <label className="form-label fw-bold small text-muted">TEXTO PROMOCIONAL</label>
-                <textarea className="form-control border-2" rows="2" value={nuevoBanner.texto_bienvenida} onChange={e => setNuevoBanner({...nuevoBanner, texto_bienvenida: e.target.value})} />
+                <label className="form-label fw-bold small text-muted">
+                  TEXTO PROMOCIONAL
+                </label>
+                <textarea
+                  className="form-control border-2"
+                  rows="2"
+                  value={nuevoBanner.texto_bienvenida}
+                  onChange={(e) =>
+                    setNuevoBanner({
+                      ...nuevoBanner,
+                      texto_bienvenida: e.target.value,
+                    })
+                  }
+                />
               </div>
+
               <div className="col-md-8">
-                <label className="form-label fw-bold small text-muted">ENLACE DE DESTINO (Opcional)</label>
+                <label className="form-label fw-bold small text-muted">
+                  ENLACE DE DESTINO
+                </label>
                 <div className="input-group">
-                  <span className="input-group-text bg-white border-2"><FiLink /></span>
-                  <input type="text" className="form-control border-2" placeholder="/productos/ofertas" value={nuevoBanner.url_destino} onChange={e => setNuevoBanner({...nuevoBanner, url_destino: e.target.value})} />
+                  <span className="input-group-text bg-white border-2">
+                    <FiLink />
+                  </span>
+                  <input
+                    type="text"
+                    className="form-control border-2"
+                    placeholder="/productos/ofertas"
+                    value={nuevoBanner.url_destino}
+                    onChange={(e) =>
+                      setNuevoBanner({
+                        ...nuevoBanner,
+                        url_destino: e.target.value,
+                      })
+                    }
+                  />
                 </div>
               </div>
+
               <div className="col-md-4 d-flex align-items-end">
                 <div className="form-check form-switch fs-5 mb-2">
-                  <input className="form-check-input cursor-pointer" type="checkbox" role="switch" checked={nuevoBanner.estatus} onChange={e => setNuevoBanner({...nuevoBanner, estatus: e.target.checked})} />
-                  <label className="form-check-label ms-2 fs-6 mt-1">Banner Activo</label>
+                  <input
+                    className="form-check-input cursor-pointer"
+                    type="checkbox"
+                    role="switch"
+                    checked={nuevoBanner.estatus}
+                    onChange={(e) =>
+                      setNuevoBanner({
+                        ...nuevoBanner,
+                        estatus: e.target.checked,
+                      })
+                    }
+                  />
+                  <label className="form-check-label ms-2 fs-6 mt-1">
+                    Banner Activo
+                  </label>
                 </div>
               </div>
+
               <div className="col-12 text-end mt-4">
                 <button type="submit" className="btn btn-success px-4 fw-bold">
                   <FiSend className="me-2" /> Publicar Banner
@@ -135,48 +315,74 @@ const API_URL = 'http://127.0.0.1:8000/api/secciones-extranet/';
         </div>
       )}
 
-      {/* GALERÍA DE BANNERS ACTIVOS */}
       {cargando ? (
         <div className="text-center py-5 text-muted">Cargando banners...</div>
       ) : banners.length === 0 ? (
         <div className="text-center py-5 bg-white rounded-4 shadow-sm">
           <FiImage size={40} className="text-muted opacity-50 mb-3" />
           <h5 className="text-muted fw-bold">No hay banners activos</h5>
-          <p className="text-muted small">Crea uno nuevo para que aparezca en la tienda.</p>
+          <p className="text-muted small">
+            Crea uno nuevo para que aparezca en la tienda.
+          </p>
         </div>
       ) : (
         <div className="row g-4">
-          {banners.map(banner => (
+          {banners.map((banner) => (
             <div className="col-md-6 col-lg-4" key={banner.id_seccion}>
               <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
-                <div 
-                  style={{ 
-                    height: '180px', 
-                    backgroundImage: `url(${banner.imagen_banner})`, 
-                    backgroundSize: 'cover', 
-                    backgroundPosition: 'center',
-                    backgroundColor: '#e9ecef'
-                  }} 
+                <div
+                  style={{
+                    height: "180px",
+                    backgroundImage: `url(${banner.imagen_banner})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundColor: "#e9ecef",
+                  }}
                   className="w-100 position-relative"
                 >
                   {!banner.estatus && (
-                    <span className="position-absolute top-0 end-0 m-2 badge bg-danger">Inactivo</span>
+                    <span className="position-absolute top-0 end-0 m-2 badge bg-danger">
+                      Inactivo
+                    </span>
                   )}
                 </div>
+
                 <div className="card-body">
-                  <h5 className="fw-bold text-dark text-truncate">{banner.titulo_pagina}</h5>
-                  <p className="text-muted small mb-3" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <h5 className="fw-bold text-dark text-truncate">
+                    {banner.titulo_pagina}
+                  </h5>
+
+                  <p
+                    className="text-muted small mb-3"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
                     {banner.texto_bienvenida}
                   </p>
-                  
+
                   <div className="d-flex justify-content-between align-items-center mt-auto">
                     {banner.url_destino ? (
-                      <a href={banner.url_destino} target="_blank" rel="noreferrer" className="btn btn-sm btn-light border fw-bold text-primary">
+                      <a
+                        href={banner.url_destino}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-sm btn-light border fw-bold text-primary"
+                      >
                         Probar Link
                       </a>
-                    ) : <span></span>}
-                    
-                    <button onClick={() => eliminarBanner(banner.id_seccion)} className="btn btn-sm btn-outline-danger border-0" title="Eliminar banner">
+                    ) : (
+                      <span></span>
+                    )}
+
+                    <button
+                      onClick={() => pedirConfirmacionEliminar(banner)}
+                      className="btn btn-sm btn-outline-danger border-0"
+                      title="Eliminar banner"
+                    >
                       <FiTrash2 size={18} />
                     </button>
                   </div>
@@ -184,6 +390,41 @@ const API_URL = 'http://127.0.0.1:8000/api/secciones-extranet/';
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {bannerAEliminar && (
+        <div className="custom-confirm-backdrop">
+          <div className="custom-confirm-box">
+            <div className="custom-confirm-icon">
+              <FiTrash2 />
+            </div>
+
+            <h3>Eliminar promoción</h3>
+
+            <p>
+              ¿Estás seguro de eliminar{" "}
+              <strong>{bannerAEliminar.titulo_pagina}</strong>?
+            </p>
+
+            <div className="custom-confirm-actions">
+              <button
+                type="button"
+                className="custom-confirm-cancel"
+                onClick={cancelarEliminacion}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                className="custom-confirm-delete"
+                onClick={confirmarEliminacion}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

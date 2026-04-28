@@ -15,7 +15,6 @@ import {
 } from "react-icons/fa";
 import { FiStar, FiAlertCircle } from "react-icons/fi";
 import { CartContext } from "../context/CartContext";
-import { AuthContext } from "../context/AuthContext";
 
 const API_PRODUCTOS = "http://127.0.0.1:8000/api/productos/";
 const API_CATEGORIAS = "http://127.0.0.1:8000/api/categorias/";
@@ -52,7 +51,6 @@ const Catalogo = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { addToCart } = useContext(CartContext);
-  const { user } = useContext(AuthContext);
 
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -210,20 +208,12 @@ const Catalogo = () => {
   };
 
   const agregarAlCarrito = (producto) => {
-    if (!user) {
-      alert("Debes iniciar sesión para agregar productos al carrito.");
-      navigate("/login");
-      return;
-    }
-
     addToCart({
       id: producto.id_producto,
       nombre: producto.nombre,
       imagen: producto.imagen,
       precio_final: Number(producto.precio),
     });
-
-    alert(`${producto.nombre} fue agregado al carrito.`);
   };
 
   return (

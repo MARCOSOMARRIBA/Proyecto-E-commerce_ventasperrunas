@@ -16,13 +16,14 @@ import { CartContext } from "../context/CartContext";
 import NotificadorProveedor from "./NotificadorProveedor";
 import { FaSearch, FaTimes } from "react-icons/fa";
 import SearchBar from "./SearchBar";
+import { FavoritesContext } from "../context/FavoritesContext";
 
 function Navbar() {
   const { user, logout } = useContext(AuthContext);
   const { getCartCount } = useContext(CartContext);
   const navigate = useNavigate();
   const [mostrarBusqueda, setMostrarBusqueda] = useState(false);
-
+  const { getFavoritesCount } = useContext(FavoritesContext);
   // Estado para controlar si el menú de Facebook está abierto o cerrado
   const [menuAbierto, setMenuAbierto] = useState(false);
   const menuRef = useRef(null);
@@ -102,12 +103,15 @@ function Navbar() {
               className="text-white text-decoration-none hover-scale position-relative"
             >
               <FiHeart size={22} />
-              <span
-                className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                style={{ fontSize: "0.6rem" }}
-              >
-                1
-              </span>
+
+              {getFavoritesCount() > 0 && (
+                <span
+                  className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                  style={{ fontSize: "0.6rem" }}
+                >
+                  {getFavoritesCount()}
+                </span>
+              )}
             </Link>
 
             <Link
@@ -195,11 +199,10 @@ function Navbar() {
                     </Link>
 
                     <Link
-                      to="/ajustes"
-                      className="dropdown-item d-flex align-items-center gap-3 py-2 px-4 fw-medium text-secondary hover-bg-light"
-                      onClick={() => setMenuAbierto(false)}
+                      to="/configuracion"
+                      className="dropdown-item d-flex align-items-center gap-2"
                     >
-                      <FiSettings size={18} /> Configuración
+                      <FiSettings /> Configuración
                     </Link>
 
                     {/* 🛡️ SOLO PARA ADMIN (Rol 3) */}

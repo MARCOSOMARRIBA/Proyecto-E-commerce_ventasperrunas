@@ -7,7 +7,6 @@ import {
   FaTimesCircle,
 } from "react-icons/fa";
 import { CartContext } from "../context/CartContext";
-import { AuthContext } from "../context/AuthContext";
 
 const API_URL = "http://127.0.0.1:8000/api/productos/";
 
@@ -16,7 +15,6 @@ const DetalleProducto = () => {
   const navigate = useNavigate();
 
   const { addToCart } = useContext(CartContext);
-  const { user } = useContext(AuthContext);
 
   const [producto, setProducto] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -50,20 +48,12 @@ const DetalleProducto = () => {
   const agregarAlCarrito = () => {
     if (!producto) return;
 
-    if (!user) {
-      alert("Debes iniciar sesión para agregar productos al carrito.");
-      navigate("/login");
-      return;
-    }
-
     addToCart({
       id: producto.id_producto,
       nombre: producto.nombre,
       imagen: producto.imagen,
       precio_final: Number(producto.precio),
     });
-
-    alert(`${producto.nombre} fue agregado al carrito.`);
   };
 
   if (cargando) {
@@ -81,6 +71,7 @@ const DetalleProducto = () => {
       <main className="detalle-producto-page">
         <div className="detalle-producto-estado">
           <h2>{error}</h2>
+
           <button onClick={() => navigate("/")} className="detalle-btn-volver">
             <FaArrowLeft /> Volver al inicio
           </button>
@@ -125,11 +116,13 @@ const DetalleProducto = () => {
           </p>
 
           <p className="detalle-producto-precio">
-            ${Number(producto.precio).toFixed(2)}
+            ${Number(producto.precio || 0).toFixed(2)}
           </p>
 
           <div
-            className={`detalle-producto-disponibilidad ${disponible ? "disponible" : "no-disponible"}`}
+            className={`detalle-producto-disponibilidad ${
+              disponible ? "disponible" : "no-disponible"
+            }`}
           >
             {disponible ? (
               <>
@@ -146,10 +139,12 @@ const DetalleProducto = () => {
             <p>
               <strong>ID del producto:</strong> {producto.id_producto}
             </p>
+
             <p>
               <strong>Activo para venta:</strong>{" "}
               {producto.activo ? "Sí" : "No"}
             </p>
+
             <p>
               <strong>Stock:</strong>{" "}
               {producto.stock ? "Disponible" : "Sin disponibilidad"}

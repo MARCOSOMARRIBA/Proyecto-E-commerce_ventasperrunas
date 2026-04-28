@@ -1,17 +1,13 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { FaSearch, FaShoppingCart } from "react-icons/fa";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
-import { AuthContext } from "../context/AuthContext";
 
 const API_PRODUCTOS = "http://127.0.0.1:8000/api/productos/";
 
 const BusquedaProductos = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-
   const { addToCart } = useContext(CartContext);
-  const { user } = useContext(AuthContext);
 
   const [productos, setProductos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -67,20 +63,12 @@ const BusquedaProductos = () => {
   }, [productos, query]);
 
   const agregarAlCarrito = (producto) => {
-    if (!user) {
-      alert("Debes iniciar sesión para agregar productos al carrito.");
-      navigate("/login");
-      return;
-    }
-
     addToCart({
       id: producto.id_producto,
       nombre: producto.nombre,
       imagen: producto.imagen,
       precio_final: Number(producto.precio),
     });
-
-    alert(`${producto.nombre} fue agregado al carrito.`);
   };
 
   return (
@@ -125,60 +113,64 @@ const BusquedaProductos = () => {
           </p>
 
           <section className="search-products-grid">
-            {productosFiltrados.map((producto) => (
-              <article
-                className="search-product-card"
-                key={producto.id_producto}
-              >
-                <Link
-                  to={`/producto/${producto.id_producto}`}
-                  className="producto-link-detalle"
-                >
-                  <div className="search-product-img-box">
-                    <img
-                      src={producto.imagen || "https://via.placeholder.com/300"}
-                      alt={producto.nombre}
-                      className="search-product-img"
-                    />
-                  </div>
-                </Link>
+            {productosFiltrados.map((producto) => {
+              const disponible = producto.activo && producto.stock;
 
-                <div className="search-product-info">
+              return (
+                <article
+                  className="search-product-card"
+                  key={producto.id_producto}
+                >
                   <Link
                     to={`/producto/${producto.id_producto}`}
                     className="producto-link-detalle"
                   >
-                    <h3>{producto.nombre}</h3>
+                    <div className="search-product-img-box">
+                      <img
+                        src={
+                          producto.imagen || "https://via.placeholder.com/300"
+                        }
+                        alt={producto.nombre}
+                        className="search-product-img"
+                      />
+                    </div>
                   </Link>
 
-                  <p className="search-product-description">
-                    {producto.descripcion || "Producto para mascotas."}
-                  </p>
+                  <div className="search-product-info">
+                    <Link
+                      to={`/producto/${producto.id_producto}`}
+                      className="producto-link-detalle"
+                    >
+                      <h3>{producto.nombre}</h3>
+                    </Link>
 
-                  <p className="search-product-price">
-                    ${Number(producto.precio).toFixed(2)}
-                  </p>
+                    <p className="search-product-description">
+                      {producto.descripcion || "Producto para mascotas."}
+                    </p>
 
-                  <button
-                    className="search-add-cart-btn"
-                    onClick={() => agregarAlCarrito(producto)}
-                    disabled={!producto.activo || !producto.stock}
-                  >
-                    <FaShoppingCart />{" "}
-                    {producto.activo && producto.stock
-                      ? "Agregar al carrito"
-                      : "No disponible"}
-                  </button>
+                    <p className="search-product-price">
+                      ${Number(producto.precio || 0).toFixed(2)}
+                    </p>
 
-                  <Link
-                    to={`/producto/${producto.id_producto}`}
-                    className="btn-ver-detalle-producto mt-2"
-                  >
-                    Ver información
-                  </Link>
-                </div>
-              </article>
-            ))}
+                    <button
+                      className="search-add-cart-btn"
+                      onClick={() => agregarAlCarrito(producto)}
+                      disabled={!disponible}
+                    >
+                      <FaShoppingCart />{" "}
+                      {disponible ? "Agregar al carrito" : "No disponible"}
+                    </button>
+
+                    <Link
+                      to={`/producto/${producto.id_producto}`}
+                      className="btn-ver-detalle-producto mt-2"
+                    >
+                      Ver información
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
           </section>
         </>
       )}

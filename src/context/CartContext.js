@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { AuthContext } from "./AuthContext";
+import { useMessage } from "./MessageContext";
 
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const { user } = useContext(AuthContext);
+  const { showMessage } = useMessage();
 
   const [cart, setCart] = useState([]);
   const [cartReady, setCartReady] = useState(false);
@@ -43,23 +45,52 @@ export const CartProvider = ({ children }) => {
   }, [cart, user, cartReady]);
 
   const addToCart = (product) => {
-    setCart((prevCart) => {
-      const existeProducto = prevCart.find((item) => item.id === product.id);
+    if (!user) {
+      showMessage({
+        title: "Inicia sesión",
+        message: "Debes iniciar sesión para agregar productos al carrito.",
+        type: "warning",
+      });
+      return;
+    }
 
-      if (existeProducto) {
-        return prevCart.map((item) =>
+    const existeProducto = cart.find((item) => item.id === product.id);
+
+    if (existeProducto) {
+      setCart((prevCart) =>
+        prevCart.map((item) =>
           item.id === product.id
             ? { ...item, cantidad: item.cantidad + 1 }
             : item,
-        );
-      }
+        ),
+      );
 
-      return [...prevCart, { ...product, cantidad: 1 }];
+      showMessage({
+        title: "Cantidad actualizada",
+        message: `Se agregó otra unidad de ${product.nombre} al carrito.`,
+        type: "success",
+      });
+
+      return;
+    }
+
+    setCart((prevCart) => [...prevCart, { ...product, cantidad: 1 }]);
+
+    showMessage({
+      title: "Producto agregado",
+      message: `${product.nombre} fue agregado al carrito correctamente.`,
+      type: "success",
     });
   };
 
   const removeFromCart = (productId) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
+
+    showMessage({
+      title: "Producto eliminado",
+      message: "El producto fue eliminado del carrito.",
+      type: "info",
+    });
   };
 
   const updateQuantity = (productId, newQuantity) => {
@@ -77,6 +108,12 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => {
     setCart([]);
+
+    showMessage({
+      title: "Carrito vacío",
+      message: "Se eliminaron todos los productos del carrito.",
+      type: "info",
+    });
   };
 
   const getCartTotal = () => {

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Carousel, Card, Container, Row, Col, Spinner } from "react-bootstrap";
-import { FiStar, FiAlertCircle } from "react-icons/fi";
+import { FiStar, FiAlertCircle, FiHeart } from "react-icons/fi";
 import SeccionServicios from "../components/SeccionServicios";
 import { CartContext } from "../context/CartContext";
-import { AuthContext } from "../context/AuthContext";
+import { FavoritesContext } from "../context/FavoritesContext";
 
 function Inicio() {
   const [productos, setProductos] = useState([]);
@@ -12,17 +12,17 @@ function Inicio() {
   const [error, setError] = useState(null);
 
   const { addToCart } = useContext(CartContext);
-  const { user } = useContext(AuthContext);
+  const { toggleFavorite, isFavorite } = useContext(FavoritesContext);
 
-  const navigate = useNavigate();
-
-  // EFECTO PARA TRAER PRODUCTOS REALES DE POSTGRESQL
   useEffect(() => {
     const obtenerProductos = async () => {
       try {
         const respuesta = await fetch("http://127.0.0.1:8000/api/productos/");
-        if (!respuesta.ok)
+
+        if (!respuesta.ok) {
           throw new Error("No se pudo conectar con el servidor");
+        }
+
         const datos = await respuesta.json();
         setProductos(datos);
       } catch (err) {
@@ -31,24 +31,17 @@ function Inicio() {
         setCargando(false);
       }
     };
+
     obtenerProductos();
   }, []);
 
   const agregarAlCarrito = (prod) => {
-    if (!user) {
-      alert("Debes iniciar sesión para agregar productos al carrito.");
-      navigate("/login");
-      return;
-    }
-
     addToCart({
       id: prod.id_producto,
       nombre: prod.nombre,
       imagen: prod.imagen,
       precio_final: Number(prod.precio),
     });
-
-    alert(`${prod.nombre} fue agregado al carrito.`);
   };
 
   const handleImageError = (e) => {
@@ -57,14 +50,14 @@ function Inicio() {
 
   return (
     <div>
-      {/* CAROUSEL */}
       <Carousel className="carousel-custom" interval={3000}>
         <Carousel.Item>
           <img
             className="d-block w-100"
             src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1920&q=80"
-            alt="Slide 1"
+            alt="Perro feliz"
           />
+
           <div className="carousel-caption-custom">
             <h1>¡Lo mejor para tu pequeñín!</h1>
             <Link to="/tienda" className="btn-cyan">
@@ -79,6 +72,7 @@ function Inicio() {
             src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1920&q=80"
             alt="Gato mirando"
           />
+
           <div className="carousel-caption-custom">
             <h1>Todo para consentir a tu michi</h1>
             <Link to="/tienda" className="btn-cyan">
@@ -88,7 +82,6 @@ function Inicio() {
         </Carousel.Item>
       </Carousel>
 
-      {/* SECCIÓN DE PRODUCTOS DESDE POSTGRESQL */}
       <Container className="mt-5 pb-5">
         <h2 className="text-center section-title mb-5">Nuestros Productos</h2>
 
@@ -106,6 +99,7 @@ function Inicio() {
           <Row>
             {productos.map((prod, i) => {
               const disponible = prod.activo && prod.stock;
+              const esFavorito = isFavorite(prod.id_producto);
 
               return (
                 <Col
@@ -116,8 +110,25 @@ function Inicio() {
                   className="mb-4"
                 >
                   <Card
-                    className={`product-card shadow-sm border-0 fade-in-up delay-${i % 4} hover-elevate`}
+                    className={`product-card shadow-sm border-0 fade-in-up delay-${
+                      i % 4
+                    } hover-elevate position-relative`}
                   >
+                    <button
+                      type="button"
+                      className={`producto-favorito-btn ${
+                        esFavorito ? "active" : ""
+                      }`}
+                      onClick={() => toggleFavorite(prod)}
+                      title={
+                        esFavorito
+                          ? "Quitar de favoritos"
+                          : "Guardar en favoritos"
+                      }
+                    >
+                      <FiHeart />
+                    </button>
+
                     <Link
                       to={`/producto/${prod.id_producto}`}
                       className="producto-link-detalle"
@@ -146,8 +157,8 @@ function Inicio() {
                       </h4>
 
                       <div className="estrellas mb-3">
-                        {[...Array(5)].map((_, i) => (
-                          <FiStar key={i} className="text-warning" />
+                        {[...Array(5)].map((_, index) => (
+                          <FiStar key={index} className="text-warning" />
                         ))}
                       </div>
 
@@ -184,7 +195,6 @@ function Inicio() {
         )}
       </Container>
 
-      {/* 🐾 SECCIÓN DE SERVICIOS (Solo aquí en Inicio) */}
       <div className="bg-light py-2">
         <SeccionServicios />
       </div>

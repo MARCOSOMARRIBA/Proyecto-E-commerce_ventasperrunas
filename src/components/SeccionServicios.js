@@ -1,48 +1,80 @@
-import React from 'react';
-import { Container, Row, Col, Card } from 'react-bootstrap';
+import React from "react";
+
+const WHATSAPP_NUMERO = "5212941694667";
+// Cambia este número por el real.
+// Formato recomendado para México:
+// 52 + 1 + lada + número
+// Ejemplo Veracruz: 5212291234567
+
+const servicios = [
+  {
+    titulo: "Estética Canina",
+    descripcion: "Cortes de pelo, baños y cuidado experto para tu peludo.",
+    imagen:
+      "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=900&q=80",
+    mensaje:
+      "Hola, me gustaría recibir información sobre el servicio de Estética Canina.",
+  },
+  {
+    titulo: "Servicio Médico",
+    descripcion:
+      "Consultas, vacunas y revisiones de salud con nuestros veterinarios.",
+    imagen:
+      "https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=900&q=80",
+    mensaje:
+      "Hola, me gustaría recibir información sobre el Servicio Médico para mascotas.",
+  },
+  {
+    titulo: "Servicio a Domicilio",
+    descripcion:
+      "Entregamos tus pedidos y medicamentos en la puerta de tu casa.",
+    imagen:
+      "https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=900&q=80",
+    mensaje:
+      "Hola, me gustaría recibir información sobre el Servicio a Domicilio.",
+  },
+];
 
 const SeccionServicios = () => {
-  const servicios = [
-    {
-      titulo: "Estética Canina",
-      desc: "Cortes de pelo, baños y cuidado experto para tu peludo.",
-      img: "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=800&q=80"
-    },
-    {
-      titulo: "Servicio Médico",
-      desc: "Consultas, vacunas y revisiones de salud con nuestros veterinarios.",
-      img: "https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?auto=format&fit=crop&w=800&q=80"
-    },
-    {
-      titulo: "Servicio a Domicilio",
-      desc: "Entregamos tus pedidos y medicamentos en la puerta de tu casa.",
-      img: "https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=800&q=80"
-    }
-  ];
+  const abrirWhatsApp = (mensaje) => {
+    const mensajeCodificado = encodeURIComponent(mensaje);
+    const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${mensajeCodificado}`;
+
+    window.open(url, "_blank");
+  };
 
   return (
-    <Container className="mt-5 pt-5 pb-5">
-      <h2 className="text-center section-title mb-5 fade-in-up">CONOCE NUESTROS SERVICIOS</h2>
-      <Row>
-        {servicios.map((ser, i) => (
-          <Col md={4} key={i} className="mb-4">
-            {/* Clases de animación aplicadas: fade-in-up con delay y hover-elevate */}
-            <Card className={`category-card text-center border-0 shadow-sm fade-in-up hover-elevate delay-${i}`}>
-              <Card.Img 
-                variant="top" 
-                src={ser.img} 
-                alt={ser.titulo} 
-                style={{ height: '220px', objectFit: 'cover' }}
+    <section className="servicios-section">
+      <h2 className="servicios-title">CONOCE NUESTROS SERVICIOS</h2>
+
+      <div className="servicios-grid">
+        {servicios.map((servicio, index) => (
+          <article className="servicio-card" key={index}>
+            <button
+              type="button"
+              className="servicio-img-btn"
+              onClick={() => abrirWhatsApp(servicio.mensaje)}
+              title={`Contactar por WhatsApp: ${servicio.titulo}`}
+            >
+              <img
+                src={servicio.imagen}
+                alt={servicio.titulo}
+                className="servicio-img"
               />
-              <Card.Body className="p-4">
-                <h4 className="fw-bold">{ser.titulo}</h4>
-                <p className="text-muted">{ser.desc}</p>
-              </Card.Body>
-            </Card>
-          </Col>
+
+              <span className="servicio-whatsapp-label">
+                Contactar por WhatsApp
+              </span>
+            </button>
+
+            <div className="servicio-info">
+              <h3>{servicio.titulo}</h3>
+              <p>{servicio.descripcion}</p>
+            </div>
+          </article>
         ))}
-      </Row>
-    </Container>
+      </div>
+    </section>
   );
 };
 
