@@ -54,6 +54,19 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
+    // =================================================================
+    // 🛡️ LÓGICA DE SEGURIDAD RBAC (Bloqueo para personal interno)
+    // =================================================================
+    if (user.rol !== '1') {
+      showMessage({
+        title: "Modo Auditoría",
+        message: "Las cuentas de empleados, administradores y proveedores no pueden realizar compras.",
+        type: "warning",
+      });
+      return; // Detenemos la función aquí, el producto NUNCA llega al carrito
+    }
+    // =================================================================
+
     const existeProducto = cart.find((item) => item.id === product.id);
 
     if (existeProducto) {
@@ -118,7 +131,7 @@ export const CartProvider = ({ children }) => {
 
   const getCartTotal = () => {
     return cart.reduce(
-      (total, item) => total + Number(item.precio_final) * item.cantidad,
+      (total, item) => total + Number(item.precio_final || item.precio) * item.cantidad,
       0,
     );
   };

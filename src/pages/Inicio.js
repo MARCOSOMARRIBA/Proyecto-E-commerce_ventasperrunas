@@ -5,6 +5,7 @@ import { FiStar, FiAlertCircle, FiHeart } from "react-icons/fi";
 import SeccionServicios from "../components/SeccionServicios";
 import { CartContext } from "../context/CartContext";
 import { FavoritesContext } from "../context/FavoritesContext";
+import CarruselPromociones from "../components/CarruselPromociones";
 
 function Inicio() {
   const [productos, setProductos] = useState([]);
@@ -50,37 +51,7 @@ function Inicio() {
 
   return (
     <div>
-      <Carousel className="carousel-custom" interval={3000}>
-        <Carousel.Item>
-          <img
-            className="d-block w-100"
-            src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1920&q=80"
-            alt="Perro feliz"
-          />
-
-          <div className="carousel-caption-custom">
-            <h1>¡Lo mejor para tu pequeñín!</h1>
-            <Link to="/tienda" className="btn-cyan">
-              COMPRA AHORA
-            </Link>
-          </div>
-        </Carousel.Item>
-
-        <Carousel.Item>
-          <img
-            className="d-block w-100"
-            src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1920&q=80"
-            alt="Gato mirando"
-          />
-
-          <div className="carousel-caption-custom">
-            <h1>Todo para consentir a tu michi</h1>
-            <Link to="/tienda" className="btn-cyan">
-              VER CATÁLOGO
-            </Link>
-          </div>
-        </Carousel.Item>
-      </Carousel>
+  <CarruselPromociones />
 
       <Container className="mt-5 pb-5">
         <h2 className="text-center section-title mb-5">Nuestros Productos</h2>

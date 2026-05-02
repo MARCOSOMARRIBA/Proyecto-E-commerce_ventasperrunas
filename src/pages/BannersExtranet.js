@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useMessage } from "../context/MessageContext";
-import { FiImage, FiPlus, FiTrash2, FiSend, FiLink } from "react-icons/fi";
+import { FiImage, FiPlus, FiTrash2, FiSend, FiLink, FiPower } from "react-icons/fi";
 
 const BannersExtranet = () => {
   const { user } = useContext(AuthContext);
@@ -30,7 +30,6 @@ const BannersExtranet = () => {
   const cargarBanners = async () => {
     try {
       setCargando(true);
-
       const res = await fetch(API_URL);
 
       if (res.ok) {
@@ -45,7 +44,6 @@ const BannersExtranet = () => {
       }
     } catch (error) {
       console.error("Error al cargar banners:", error);
-
       showMessage({
         title: "Error de conexión",
         message: "No se pudo conectar con el servidor para cargar los banners.",
@@ -91,7 +89,6 @@ const BannersExtranet = () => {
 
       if (res.ok) {
         setMostrarFormulario(false);
-
         setNuevoBanner({
           titulo_pagina: "",
           imagen_banner: "",
@@ -109,7 +106,6 @@ const BannersExtranet = () => {
         });
       } else {
         const errorData = await res.json();
-
         showMessage({
           title: "Error de Django",
           message: JSON.stringify(errorData, null, 2),
@@ -118,10 +114,53 @@ const BannersExtranet = () => {
       }
     } catch (error) {
       console.error("Error al guardar:", error);
-
       showMessage({
         title: "Error de conexión",
         message: "No se pudo guardar el banner promocional.",
+        type: "error",
+      });
+    }
+  };
+
+  // =================================================================
+  // NUEVA FUNCIÓN: Activar o Desactivar Banner con PATCH
+  // =================================================================
+  const toggleEstatusBanner = async (banner) => {
+    const nuevoEstatus = !banner.estatus; // Invertimos el valor actual
+
+    // Actualización optimista en la interfaz para que se sienta súper rápido
+    setBanners(banners.map(b => b.id_seccion === banner.id_seccion ? { ...b, estatus: nuevoEstatus } : b));
+
+    try {
+      const res = await fetch(`${API_URL}${banner.id_seccion}/`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ estatus: nuevoEstatus }),
+      });
+
+      if (!res.ok) {
+        // Si falla el servidor, regresamos el switch a su estado original
+        setBanners(banners.map(b => b.id_seccion === banner.id_seccion ? { ...b, estatus: banner.estatus } : b));
+        showMessage({
+          title: "Error al actualizar",
+          message: "No se pudo cambiar el estado de la promoción.",
+          type: "error",
+        });
+      } else {
+        showMessage({
+          title: nuevoEstatus ? "Banner Activado" : "Banner Desactivado",
+          message: `El banner ahora está ${nuevoEstatus ? 'visible' : 'oculto'} en la tienda principal.`,
+          type: "success",
+        });
+      }
+    } catch (error) {
+      console.error("Error al actualizar estatus:", error);
+      setBanners(banners.map(b => b.id_seccion === banner.id_seccion ? { ...b, estatus: banner.estatus } : b));
+      showMessage({
+        title: "Error de conexión",
+        message: "Hubo un problema de red al intentar actualizar el banner.",
         type: "error",
       });
     }
@@ -166,7 +205,6 @@ const BannersExtranet = () => {
       }
     } catch (error) {
       console.error("Error al eliminar:", error);
-
       showMessage({
         title: "Error de conexión",
         message: "No se pudo conectar con el servidor para eliminar el banner.",
@@ -337,18 +375,20 @@ const BannersExtranet = () => {
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundColor: "#e9ecef",
+                    opacity: banner.estatus ? 1 : 0.5, // Hacemos la imagen un poco opaca si está apagado
+                    transition: "opacity 0.3s ease"
                   }}
                   className="w-100 position-relative"
                 >
                   {!banner.estatus && (
-                    <span className="position-absolute top-0 end-0 m-2 badge bg-danger">
-                      Inactivo
+                    <span className="position-absolute top-0 end-0 m-2 badge bg-danger d-flex align-items-center gap-1">
+                      <FiPower /> Apagado
                     </span>
                   )}
                 </div>
 
-                <div className="card-body">
-                  <h5 className="fw-bold text-dark text-truncate">
+                <div className="card-body d-flex flex-column">
+                  <h5 className={`fw-bold text-truncate ${banner.estatus ? 'text-dark' : 'text-muted'}`}>
                     {banner.titulo_pagina}
                   </h5>
 
@@ -364,27 +404,43 @@ const BannersExtranet = () => {
                     {banner.texto_bienvenida}
                   </p>
 
-                  <div className="d-flex justify-content-between align-items-center mt-auto">
-                    {banner.url_destino ? (
-                      <a
-                        href={banner.url_destino}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn btn-sm btn-light border fw-bold text-primary"
-                      >
-                        Probar Link
-                      </a>
-                    ) : (
-                      <span></span>
-                    )}
+                  <div className="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
+                    {/* EL NUEVO INTERRUPTOR DE ESTADO */}
+                    <div className="form-check form-switch m-0 p-0 d-flex align-items-center gap-2" title="Encender/Apagar en la tienda">
+                      <input
+                        className="form-check-input m-0 cursor-pointer shadow-none"
+                        type="checkbox"
+                        role="switch"
+                        checked={banner.estatus}
+                        onChange={() => toggleEstatusBanner(banner)}
+                        style={{ width: '2.5em', height: '1.2em' }}
+                      />
+                      <span className={`small fw-bold ${banner.estatus ? 'text-success' : 'text-muted'}`}>
+                        {banner.estatus ? 'Visible' : 'Oculto'}
+                      </span>
+                    </div>
 
-                    <button
-                      onClick={() => pedirConfirmacionEliminar(banner)}
-                      className="btn btn-sm btn-outline-danger border-0"
-                      title="Eliminar banner"
-                    >
-                      <FiTrash2 size={18} />
-                    </button>
+                    <div className="d-flex gap-2">
+                      {banner.url_destino && (
+                        <a
+                          href={banner.url_destino}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn btn-sm btn-light border fw-bold text-primary"
+                          title="Probar enlace"
+                        >
+                          <FiLink />
+                        </a>
+                      )}
+
+                      <button
+                        onClick={() => pedirConfirmacionEliminar(banner)}
+                        className="btn btn-sm btn-outline-danger border-0"
+                        title="Eliminar banner"
+                      >
+                        <FiTrash2 size={18} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

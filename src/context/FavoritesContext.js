@@ -73,6 +73,19 @@ export const FavoritesProvider = ({ children }) => {
       return;
     }
 
+    // =================================================================
+    // 🛡️ LÓGICA DE SEGURIDAD RBAC (Bloqueo para personal interno)
+    // =================================================================
+    if (user.rol !== '1') {
+      showMessage({
+        title: "Modo Auditoría",
+        message: "Esta función es exclusiva para cuentas de clientes.",
+        type: "warning",
+      });
+      return; // Detenemos la ejecución aquí
+    }
+    // =================================================================
+
     const productoNormalizado = normalizarProducto(producto);
     const yaExiste = isFavorite(productoNormalizado.id);
 

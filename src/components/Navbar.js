@@ -30,7 +30,7 @@ function Navbar() {
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/")
   };
 
   // Efecto para cerrar el menú si haces clic afuera de él

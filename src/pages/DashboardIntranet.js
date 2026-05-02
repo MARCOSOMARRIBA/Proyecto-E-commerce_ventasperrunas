@@ -1,9 +1,10 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { FiEdit, FiTrash2, FiPlus, FiPackage, FiShoppingCart, FiTruck, FiSettings, FiHelpCircle, FiSearch } from 'react-icons/fi';
-import VistaOrdenesClientes from './OrdenesClientesIntranet';
+import { FiPackage, FiShoppingCart, FiTruck, FiSettings, FiHelpCircle, FiSearch, FiActivity } from 'react-icons/fi';import VistaOrdenesClientes from './OrdenesClientesIntranet';
 import VistaPedidosProveedor from './PedidosProveedorIntranet';
+import VistaInventario from './InventarioIntranet'; // <--- 1. IMPORTAMOS TU NUEVO ARCHIVO AQUÍ
+import AuditoriaEmpleados from './AuditoriaEmpleados';
 
 function DashboardIntranet() {
   const { user } = useContext(AuthContext);
@@ -11,88 +12,6 @@ function DashboardIntranet() {
 
   // Seguridad estricta: Solo permite entrar a Admin (Rol 3)
   if (!user || user.rol !== '3') return <Navigate to="/" />;
-
-  // ==========================================
-  // 1. VISTA: INVENTARIO (Conectado a PostgreSQL)
-  // ==========================================
-  const VistaInventario = () => {
-    const [productos, setProductos] = useState([]);
-    const [cargando, setCargando] = useState(true);
-
-    // Efecto para traer los datos reales de tu tabla 'producto'
-    useEffect(() => {
-      const fetchProductos = async () => {
-        try {
-          const res = await fetch('http://127.0.0.1:8000/api/productos/');
-          if (res.ok) {
-            const data = await res.json();
-            setProductos(data);
-          }
-        } catch (error) {
-          console.error("Error al cargar inventario:", error);
-        } finally {
-          setCargando(false);
-        }
-      };
-      fetchProductos();
-    }, []);
-
-    return (
-      <div className="animate__animated animate__fadeIn p-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h2 className="fw-bold m-0">Gestión de Inventario</h2>
-            <p className="text-muted">Control total de productos y stock.</p>
-          </div>
-          <button className="btn btn-success fw-bold d-flex align-items-center gap-2 hover-scale">
-            <FiPlus /> Nuevo Producto
-          </button>
-        </div>
-
-        <div className="card shadow-sm border-0 fade-in-up">
-          <div className="card-body p-0">
-            <table className="table table-hover align-middle mb-0">
-              <thead className="bg-light text-muted small">
-                <tr>
-                  <th className="ps-4 py-3">ID PRODUCTO</th>
-                  <th>NOMBRE</th>
-                  <th>PRECIO</th>
-                  <th>STOCK</th>
-                  <th className="text-center">ACCIONES</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cargando ? (
-                  <tr><td colSpan="5" className="text-center py-4 text-muted">Cargando base de datos...</td></tr>
-                ) : productos.length > 0 ? (
-                  productos.map((prod) => (
-                    <tr key={prod.id_producto}>
-                      <td className="ps-4 text-muted"><code>{prod.id_producto}</code></td>
-                      <td className="fw-bold">{prod.nombre}</td>
-                      <td className="text-primary fw-bold">${parseFloat(prod.precio).toFixed(2)}</td>
-                      <td>
-                        <span className="text-success fw-medium">En Stock</span>
-                      </td>
-                      <td className="text-center">
-                        <button className="btn btn-sm btn-light text-primary me-2 hover-scale"><FiEdit /></button>
-                        <button className="btn btn-sm btn-light text-danger hover-scale"><FiTrash2 /></button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="text-center py-5 text-muted">
-                      No hay productos registrados en la base de datos.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // ==========================================
   // RENDERIZADO PRINCIPAL (LAYOUT)
@@ -116,7 +35,9 @@ function DashboardIntranet() {
             {[
               { id: 'inventario', label: 'Inventario', icon: <FiPackage /> },
               { id: 'ordenes', label: 'Órdenes Clientes', icon: <FiShoppingCart /> },
-              { id: 'pedidos', label: 'Pedidos Proveedor', icon: <FiTruck /> }
+              { id: 'pedidos', label: 'Pedidos Proveedor', icon: <FiTruck /> },
+              { id: 'auditoria', label: 'Auditoría Empleados', icon: <FiActivity /> } // <-- AGREGAR ESTO
+
             ].map(item => (
               <li className="nav-item" key={item.id}>
                 <button 
@@ -155,9 +76,11 @@ function DashboardIntranet() {
 
           {/* Renderizado de Vistas */}
           <div className="p-2">
+            {/* 2. AQUÍ SE MUESTRA TU NUEVO COMPONENTE AUTOMÁTICAMENTE */}
             {vistaActiva === 'inventario' && <VistaInventario />}
             {vistaActiva === 'ordenes' && <VistaOrdenesClientes />}
             {vistaActiva === 'pedidos' && <VistaPedidosProveedor />}
+            {vistaActiva === 'auditoria' && <AuditoriaEmpleados/>}
           </div>
         </div>
 

@@ -1,12 +1,13 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+// 1. Importamos las herramientas de Firebase
+import { auth, googleProvider, facebookProvider } from '../firebaseConfig';
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup } from 'firebase/auth';
 
 function Registro() {
-  const { registroReal } = useContext(AuthContext); // Traemos la función que conecta a Django
-  const navigate = useNavigate(); // Para redirigir al Login si el registro es exitoso
+  const navigate = useNavigate();
 
-  // 1. Creamos la "memoria" del formulario
+  // Memoria del formulario
   const [formData, setFormData] = useState({
     correo: '',
     nombre: '',
@@ -14,25 +15,98 @@ function Registro() {
     password: ''
   });
 
-  // 2. Función que actualiza la memoria cada vez que el usuario teclea
+  // Estados para alertas y carga
+  const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
+  const [cargando, setCargando] = useState(false);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 3. Función que se ejecuta al darle clic a "Regístrate"
+  // =================================================================
+  // FUNCIÓN PUENTE: Guarda al usuario en tu Django (PostgreSQL)
+  // =================================================================
+  const guardarEnDjango = async (datosUsuario) => {
+    try {
+      await fetch('http://127.0.0.1:8000/api/usuarios/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosUsuario)
+      });
+    } catch (error) {
+      console.error("Error guardando en Django:", error);
+    }
+  };
+
+  // =================================================================
+  // REGISTRO CON CORREO TRADICIONAL
+  // =================================================================
   const handleRegister = async (e) => {
-    e.preventDefault(); // Evita que la página se recargue
-    
-    // Llamamos a nuestra función del AuthContext enviando los datos
-    const exito = await registroReal({
-      nombre: formData.nombre,
-      email: formData.correo,
-      password: formData.password
-    });
-    
-    // Si Django dice que OK, lo mandamos al login para que inicie sesión
-    if (exito) {
-      navigate('/login');
+    e.preventDefault();
+    setCargando(true);
+    setMensaje({ texto: '', tipo: '' });
+
+    try {
+      // 1. Firebase crea la cuenta
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.correo, formData.password);
+      const userFirebase = userCredential.user;
+
+      // 2. Firebase envía el correo de confirmación
+      await sendEmailVerification(userFirebase);
+
+      // 3. Guardamos en tu base de datos Django
+      await guardarEnDjango({
+        nombre: formData.nombre,
+        email: formData.correo,
+        telefono: formData.telefono,
+        rol: '1', // Cliente
+        firebase_uid: userFirebase.uid
+      });
+
+      setMensaje({ 
+        texto: '¡Éxito! Revisa tu bandeja de entrada o SPAM para confirmar tu correo.', 
+        tipo: 'success' 
+      });
+      
+      // Limpiamos el formulario
+      setFormData({ correo: '', nombre: '', telefono: '', password: '' });
+
+    } catch (error) {
+      console.error("Error Firebase:", error);
+      let errorMsg = "Ocurrió un error al registrarse.";
+      if (error.code === 'auth/email-already-in-use') errorMsg = "Este correo ya está registrado.";
+      if (error.code === 'auth/weak-password') errorMsg = "La contraseña debe tener al menos 6 caracteres.";
+      setMensaje({ texto: errorMsg, tipo: 'error' });
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // =================================================================
+  // REGISTRO CON GOOGLE O FACEBOOK
+  // =================================================================
+  const manejarRegistroSocial = async (proveedor) => {
+    try {
+      setMensaje({ texto: '', tipo: '' });
+      const result = await signInWithPopup(auth, proveedor);
+      const userFirebase = result.user;
+
+      // Lo registramos en Django. 
+      // Las redes sociales no siempre dan teléfono, así que lo mandamos vacío por ahora
+      await guardarEnDjango({
+        nombre: userFirebase.displayName || 'Usuario Nuevo',
+        email: userFirebase.email,
+        telefono: '', 
+        rol: '1',
+        firebase_uid: userFirebase.uid
+      });
+
+      // Como Google/Facebook ya verifican la identidad, lo mandamos directo a la tienda
+      navigate('/'); 
+      
+    } catch (error) {
+      console.error("Error Social:", error);
+      setMensaje({ texto: 'No se pudo completar el inicio de sesión con esta red social.', tipo: 'error' });
     }
   };
 
@@ -40,7 +114,7 @@ function Registro() {
     <div className="register-wrapper">
       <div className="register-container">
         
-        {/* Lado Izquierdo (Textos y Perritos) */}
+        {/* Lado Izquierdo (Textos y Perritos) INTACTO */}
         <div className="register-left d-none d-md-flex">
           <div className="register-text">
             <h1>Ventas Perrunas es fácil!!</h1>
@@ -65,7 +139,46 @@ function Registro() {
               </span>
             </div>
 
-            <h2 style={{fontSize: '3.5rem', marginBottom: '30px'}}>Regístrate</h2>
+            <h2 style={{fontSize: '3.5rem', marginBottom: '15px'}}>Regístrate</h2>
+
+            {/* CAJA DE MENSAJES (Éxito o Error) */}
+            {mensaje.texto && (
+              <div style={{
+                padding: '12px', marginBottom: '20px', borderRadius: '8px', fontSize: '0.9rem',
+                backgroundColor: mensaje.tipo === 'error' ? '#ffebee' : '#e8f5e9',
+                color: mensaje.tipo === 'error' ? '#c62828' : '#2e7d32',
+                border: `1px solid ${mensaje.tipo === 'error' ? '#ffcdd2' : '#c8e6c9'}`
+              }}>
+                {mensaje.texto}
+              </div>
+            )}
+
+            {/* BOTONES SOCIALES */}
+            <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+              <button 
+                type="button" 
+                onClick={() => manejarRegistroSocial(googleProvider)}
+                style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: '0.3s' }}
+              >
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style={{width: '18px'}}/> 
+                Google
+              </button>
+              
+              <button 
+                type="button" 
+                onClick={() => manejarRegistroSocial(facebookProvider)}
+                style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '8px', backgroundColor: '#1877F2', color: '#fff', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: '0.3s' }}
+              >
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/2021_Facebook_icon.svg/1024px-2021_Facebook_icon.svg.png" alt="Facebook" style={{width: '18px', filter: 'brightness(0) invert(1)'}}/> 
+                Facebook
+              </button>
+            </div>
+
+            <div style={{ textAlign: 'center', marginBottom: '20px', color: '#999', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#eee' }}></div>
+              <span style={{ padding: '0 10px' }}>o regístrate con tu correo</span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#eee' }}></div>
+            </div>
 
             {/* Formulario conectado a React */}
             <form onSubmit={handleRegister}>
@@ -74,7 +187,7 @@ function Registro() {
                 <input 
                   type="email" 
                   className="form-control-custom" 
-                  placeholder="Correo electronico" 
+                  placeholder="ejemplo@correo.com" 
                   name="correo"
                   value={formData.correo}
                   onChange={handleChange}
@@ -85,11 +198,11 @@ function Registro() {
               {/* Fila con dos campos divididos */}
               <div className="row-inputs">
                 <div className="form-group">
-                  <label>Usuario</label>
+                  <label>Usuario / Nombre</label>
                   <input 
                     type="text" 
                     className="form-control-custom" 
-                    placeholder="Usuario" 
+                    placeholder="Tu nombre" 
                     name="nombre"
                     value={formData.nombre}
                     onChange={handleChange}
@@ -99,9 +212,9 @@ function Registro() {
                 <div className="form-group">
                   <label>Numero de Contacto</label>
                   <input 
-                    type="text" 
+                    type="tel" 
                     className="form-control-custom" 
-                    placeholder="Numero de Contacto" 
+                    placeholder="10 dígitos" 
                     name="telefono"
                     value={formData.telefono}
                     onChange={handleChange}
@@ -114,15 +227,18 @@ function Registro() {
                 <input 
                   type="password" 
                   className="form-control-custom" 
-                  placeholder="Contraseña" 
+                  placeholder="Mínimo 6 caracteres" 
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  minLength="6"
                 />
               </div>
 
-              <button type="submit" className="btn-login-main" style={{marginTop: '30px'}}>Registrate</button>
+              <button type="submit" className="btn-login-main" style={{marginTop: '20px'}} disabled={cargando}>
+                {cargando ? 'Procesando...' : 'Regístrate'}
+              </button>
             </form>
 
           </div>

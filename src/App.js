@@ -23,6 +23,7 @@ import Servicios from "./pages/Servicios";
 import Contacto from "./pages/Contacto";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import Favoritos from "./pages/Favoritos";
+import DashboardEmpleado from "./pages/DashboardEmpleado";
 
 // 1. IMPORTAMOS EL CONTENEDOR PRINCIPAL DE LA EXTRANET
 // Ajusta la ruta si no metiste el archivo dentro de una carpeta 'extranet'
@@ -51,6 +52,8 @@ function App() {
                 <Route path="/servicios" element={<Servicios />} />
                 <Route path="/contacto" element={<Contacto />} />
                 <Route path="/favoritos" element={<Favoritos />} />
+
+                <Route path="/empleado" element={<DashboardEmpleado />} />
 
                 {/* Ruta pública para ver los banners y promociones dinámicas */}
                 <Route path="/novedades" element={<SeccionesDinamicas />} />
