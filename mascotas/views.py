@@ -95,13 +95,34 @@ def detalles_pedido(request, id_pedido):
 # 3. Endpoint: GET /api/pedidos/movimientos-recientes/
 @api_view(['GET'])
 def movimientos_recientes(request):
-    # Contamos cuántos pedidos ya fueron procesados por el proveedor (Estatus 2, 3 o 4) [cite: 25]
-    # En un sistema en producción, cruzarías esto con una tabla de "notificaciones leídas"
-    conteo_movimientos = Pedido.objects.filter(estatus__in=['2', '3', '4']).count()
+    movimientos = []
     
-    return Response({
-        "nuevos_movimientos": conteo_movimientos
-    })
+    # 1. Obtenemos los últimos 20 pedidos registrados en la base de datos
+    # Usamos '-id_pedido' para que los más nuevos salgan hasta arriba
+    ultimos_pedidos = Pedido.objects.all().order_by('-id_pedido')[:20]
+    
+    for pedido in ultimos_pedidos:
+        # Transformamos cada pedido al formato exacto que espera la tabla de React
+        
+        # Determinamos el color de la etiqueta visual basado en el estatus
+        tipo_alerta = "INFO"
+        if pedido.estatus == '1':
+            tipo_alerta = "ALERTA" # Amarillo/Rojo para pedidos recién creados
+            
+        movimientos.append({
+            "fecha_hora": str(pedido.fecha_compra),
+            # Si en tu modelo Pedido tienes la relación al usuario, puedes poner pedido.id_usuario.nombre
+            "usuario": str(pedido.id_usuario) if pedido.id_usuario else "Empleado del sistema",
+            "accion": "Solicitud de Resurtido B2B",
+            "tipo": tipo_alerta,
+            "detalle": f"Se generó la orden #{pedido.id_pedido} para el proveedor {pedido.rfc} por un total de ${pedido.total_compra}"
+        })
+        
+    # NOTA: En un futuro, aquí mismo puedes agregar consultas a la tabla de "Producto" 
+    # u "Orden" para combinar todos los movimientos en esta misma lista.
+
+    # Retornamos la lista (React la recibirá como un Array de objetos)
+    return Response(movimientos)
 
 @api_view(['POST'])
 def login_usuario(request):
