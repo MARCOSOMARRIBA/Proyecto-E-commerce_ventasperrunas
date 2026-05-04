@@ -5,18 +5,26 @@ import {
   FaShoppingCart,
   FaCheckCircle,
   FaTimesCircle,
+  FaTruck,
+  FaShieldAlt,
+  FaHeart,
 } from "react-icons/fa";
+import { api } from "../api/client";
 import { CartContext } from "../context/CartContext";
-
-const API_URL = "http://127.0.0.1:8000/api/productos/";
+import {
+  getProductImage,
+  getProductCategoryId,
+  isProductAvailable,
+  toCartProduct,
+} from "../utils/products";
 
 const DetalleProducto = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
   const { addToCart } = useContext(CartContext);
 
   const [producto, setProducto] = useState(null);
+  const [categoriaNombre, setCategoriaNombre] = useState("Producto para mascotas");
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -26,17 +34,20 @@ const DetalleProducto = () => {
         setCargando(true);
         setError("");
 
-        const respuesta = await fetch(`${API_URL}${id}/`);
-        const data = await respuesta.json();
+        const [dataProducto, dataCategorias] = await Promise.all([
+          api.productos.detail(id),
+          api.categorias.list(),
+        ]);
+        const categoriaId = getProductCategoryId(dataProducto);
+        const categoria = dataCategorias.find(
+          (item) => String(item.id_categoria) === String(categoriaId),
+        );
 
-        if (!respuesta.ok) {
-          throw new Error("No se pudo cargar el producto.");
-        }
-
-        setProducto(data);
-      } catch (error) {
-        console.error(error);
-        setError("No se encontró el producto solicitado.");
+        setProducto(dataProducto);
+        setCategoriaNombre(categoria?.nombre || "Producto para mascotas");
+      } catch (err) {
+        console.error(err);
+        setError(err.message || "No se encontró el producto solicitado.");
       } finally {
         setCargando(false);
       }
@@ -44,17 +55,6 @@ const DetalleProducto = () => {
 
     cargarProducto();
   }, [id]);
-
-  const agregarAlCarrito = () => {
-    if (!producto) return;
-
-    addToCart({
-      id: producto.id_producto,
-      nombre: producto.nombre,
-      imagen: producto.imagen,
-      precio_final: Number(producto.precio),
-    });
-  };
 
   if (cargando) {
     return (
@@ -80,7 +80,7 @@ const DetalleProducto = () => {
     );
   }
 
-  const disponible = producto.activo && producto.stock;
+  const disponible = isProductAvailable(producto);
 
   return (
     <main className="detalle-producto-page">
@@ -91,28 +91,25 @@ const DetalleProducto = () => {
       <section className="detalle-producto-card">
         <div className="detalle-producto-imagen-box">
           <img
-            src={
-              producto.imagen || "https://placehold.co/600x600?text=Sin+Imagen"
-            }
+            src={getProductImage(producto, "600x600")}
             alt={producto.nombre}
             className="detalle-producto-imagen"
             onError={(e) => {
-              e.currentTarget.src =
-                "https://placehold.co/600x600?text=Sin+Imagen";
+              e.currentTarget.src = getProductImage(null, "600x600");
             }}
           />
         </div>
 
         <div className="detalle-producto-info">
           <span className="detalle-producto-categoria">
-            Categoría #{producto.id_categoria}
+            {categoriaNombre}
           </span>
 
           <h1>{producto.nombre}</h1>
 
           <p className="detalle-producto-descripcion">
             {producto.descripcion ||
-              "Este producto no tiene descripción disponible."}
+              "Producto seleccionado para el cuidado y bienestar de tu mascota."}
           </p>
 
           <p className="detalle-producto-precio">
@@ -126,34 +123,50 @@ const DetalleProducto = () => {
           >
             {disponible ? (
               <>
-                <FaCheckCircle /> Producto disponible
+                <FaCheckCircle /> Disponible para compra
               </>
             ) : (
               <>
-                <FaTimesCircle /> Producto no disponible
+                <FaTimesCircle /> No disponible por ahora
               </>
             )}
           </div>
 
-          <div className="detalle-producto-datos">
-            <p>
-              <strong>ID del producto:</strong> {producto.id_producto}
-            </p>
+          <div className="detalle-producto-beneficios">
+            <div className="detalle-beneficio-item">
+              <span>
+                <FaTruck />
+              </span>
+              <div>
+                <strong>Entrega práctica</strong>
+                <p>Recibe tu pedido o coordina la entrega con la tienda.</p>
+              </div>
+            </div>
 
-            <p>
-              <strong>Activo para venta:</strong>{" "}
-              {producto.activo ? "Sí" : "No"}
-            </p>
+            <div className="detalle-beneficio-item">
+              <span>
+                <FaShieldAlt />
+              </span>
+              <div>
+                <strong>Compra segura</strong>
+                <p>Tu carrito se conserva en este navegador al iniciar sesión.</p>
+              </div>
+            </div>
 
-            <p>
-              <strong>Stock:</strong>{" "}
-              {producto.stock ? "Disponible" : "Sin disponibilidad"}
-            </p>
+            <div className="detalle-beneficio-item">
+              <span>
+                <FaHeart />
+              </span>
+              <div>
+                <strong>Bienestar para tu mascota</strong>
+                <p>Productos pensados para acompañar su cuidado diario.</p>
+              </div>
+            </div>
           </div>
 
           <button
             className="detalle-btn-carrito"
-            onClick={agregarAlCarrito}
+            onClick={() => addToCart(toCartProduct(producto))}
             disabled={!disponible}
           >
             <FaShoppingCart />

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import {
   FaCreditCard,
   FaMoneyBillWave,
@@ -6,10 +6,51 @@ import {
   FaTimesCircle,
   FaClock,
   FaLock,
+  FaMapMarkerAlt,
 } from "react-icons/fa";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import { useMessage } from "../context/MessageContext";
+
+function validarTarjeta(numero) {
+  const limpio = numero.replace(/\s/g, "");
+
+  if (!/^\d{16}$/.test(limpio)) return false;
+
+  let suma = 0;
+  let alternar = false;
+
+  for (let i = limpio.length - 1; i >= 0; i--) {
+    let n = parseInt(limpio[i]);
+
+    if (alternar) {
+      n *= 2;
+      if (n > 9) n -= 9;
+    }
+
+    suma += n;
+    alternar = !alternar;
+  }
+
+  return suma % 10 === 0;
+}
+
+function validarFecha(fecha) {
+  if (!/^\d{2}\/\d{2}$/.test(fecha)) return false;
+
+  const [mes, anio] = fecha.split("/").map(Number);
+  const hoy = new Date();
+
+  const mesActual = hoy.getMonth() + 1;
+  const anioActual = hoy.getFullYear() % 100;
+
+  if (mes < 1 || mes > 12) return false;
+
+  if (anio < anioActual) return false;
+  if (anio === anioActual && mes < mesActual) return false;
+
+  return true;
+}
 
 const SimuladorCobro = () => {
   const { cart, getCartTotal, clearCart } = useContext(CartContext);
@@ -22,13 +63,80 @@ const SimuladorCobro = () => {
   const [fechaVencimiento, setFechaVencimiento] = useState("");
   const [cvv, setCvv] = useState("");
   const [direccionEnvio, setDireccionEnvio] = useState("");
+  const [direccionesGuardadas, setDireccionesGuardadas] = useState([]);
+  const [direccionSeleccionadaId, setDireccionSeleccionadaId] = useState("");
   const [procesando, setProcesando] = useState(false);
   const [resultado, setResultado] = useState(null);
+
+  const [loading, setLoading] = useState(false);
 
   const subtotal = getCartTotal();
   const iva = subtotal * 0.16;
   const envio = subtotal >= 1000 ? 0 : 99;
   const total = subtotal + iva + envio;
+
+  const formatearDireccion = (direccion) => {
+    if (!direccion) return "";
+
+    return [
+      direccion.calle,
+      direccion.colonia,
+      direccion.ciudad,
+      direccion.estado,
+      direccion.codigoPostal ? `C.P. ${direccion.codigoPostal}` : "",
+      direccion.referencias ? `Referencias: ${direccion.referencias}` : "",
+    ]
+      .filter(Boolean)
+      .join(", ");
+  };
+
+  useEffect(() => {
+    if (!user) {
+      setDireccionesGuardadas([]);
+      setDireccionSeleccionadaId("");
+      return;
+    }
+
+    const storageKey = `direcciones_mascotas_${user.id}`;
+    const savedAddresses = localStorage.getItem(storageKey);
+
+    if (!savedAddresses) {
+      setDireccionesGuardadas([]);
+      setDireccionSeleccionadaId("");
+      return;
+    }
+
+    try {
+      const parsedAddresses = JSON.parse(savedAddresses);
+      const mainAddress =
+        parsedAddresses.find((direccion) => direccion.principal) ||
+        parsedAddresses[0];
+
+      setDireccionesGuardadas(parsedAddresses);
+
+      if (mainAddress) {
+        setDireccionSeleccionadaId(mainAddress.id);
+        setDireccionEnvio(formatearDireccion(mainAddress));
+      }
+    } catch (error) {
+      localStorage.removeItem(storageKey);
+      setDireccionesGuardadas([]);
+      setDireccionSeleccionadaId("");
+    }
+  }, [user]);
+
+  const direccionSeleccionada = useMemo(
+    () =>
+      direccionesGuardadas.find(
+        (direccion) => direccion.id === direccionSeleccionadaId,
+      ),
+    [direccionesGuardadas, direccionSeleccionadaId],
+  );
+
+  const seleccionarDireccion = (direccion) => {
+    setDireccionSeleccionadaId(direccion.id);
+    setDireccionEnvio(formatearDireccion(direccion));
+  };
 
   const generarReferencia = () => {
     const fecha = new Date();
@@ -38,6 +146,22 @@ const SimuladorCobro = () => {
       2,
       "0",
     )}${String(fecha.getDate()).padStart(2, "0")}-${random}`;
+  };
+
+  const generarOrden = () => {
+    return {
+      id_usuario: user.id,
+      direccion_envio: direccionEnvio,
+      total_orden: total,
+      fecha_creacion: new Date(),
+      metodo_pago: metodoPago,
+      productos: cart.map((item) => ({
+        id_producto: item.id,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio,
+        subtotal: item.precio * item.cantidad,
+      })),
+    };
   };
 
   const validarFormulario = () => {
@@ -63,40 +187,37 @@ const SimuladorCobro = () => {
     if (direccionEnvio.trim() === "") {
       showMessage({
         title: "Dirección requerida",
-        message: "Debes escribir una dirección de envío.",
+        message: "Selecciona o escribe una dirección de envío.",
         type: "warning",
       });
       return false;
     }
 
     if (metodoPago === "1" || metodoPago === "2") {
-      if (
-        nombreTitular.trim() === "" ||
-        numeroTarjeta.trim() === "" ||
-        fechaVencimiento.trim() === "" ||
-        cvv.trim() === ""
-      ) {
-        showMessage({
-          title: "Datos incompletos",
-          message: "Debes llenar todos los datos de la tarjeta.",
-          type: "warning",
-        });
-        return false;
-      }
+      const numeroLimpio = numeroTarjeta.replace(/\s/g, "");
 
-      if (numeroTarjeta.replace(/\s/g, "").length < 16) {
+      if (!validarTarjeta(numeroTarjeta)) {
         showMessage({
           title: "Tarjeta inválida",
-          message: "El número de tarjeta debe tener 16 dígitos.",
+          message: "El número de tarjeta no es válido.",
           type: "warning",
         });
         return false;
       }
 
-      if (cvv.length < 3) {
+      if (!validarFecha(fechaVencimiento)) {
+        showMessage({
+          title: "Fecha inválida",
+          message: "La fecha de vencimiento no es válida o ya expiró.",
+          type: "warning",
+        });
+        return false;
+      }
+
+      if (!/^\d{3,4}$/.test(cvv)) {
         showMessage({
           title: "CVV inválido",
-          message: "El CVV debe tener al menos 3 dígitos.",
+          message: "El CVV debe tener 3 o 4 dígitos.",
           type: "warning",
         });
         return false;
@@ -106,7 +227,7 @@ const SimuladorCobro = () => {
     return true;
   };
 
-  const simularCobro = (e) => {
+  const simularCobro = async (e) => {
     e.preventDefault();
 
     if (!validarFormulario()) return;
@@ -114,59 +235,93 @@ const SimuladorCobro = () => {
     setProcesando(true);
     setResultado(null);
 
-    setTimeout(() => {
-      let estatusCobro = "1";
-      let mensaje = "Pago aceptado correctamente.";
-      let tipo = "aceptado";
+    let estatusCobro = "1";
+    let mensaje = "Pago aceptado correctamente.";
+    let tipo = "aceptado";
 
-      if (metodoPago === "3") {
-        estatusCobro = "3";
-        mensaje = "Pago pendiente. Se generó una referencia para pago en OXXO.";
-        tipo = "pendiente";
-      } else if (numeroTarjeta.endsWith("0000")) {
-        estatusCobro = "2";
-        mensaje = "Pago rechazado por el banco emisor.";
-        tipo = "rechazado";
+    if (metodoPago === "3") {
+      estatusCobro = "3";
+      mensaje = "Pago pendiente. Se generó una referencia para pago en OXXO.";
+      tipo = "pendiente";
+    } else if (numeroTarjeta.endsWith("0000")) {
+      estatusCobro = "2";
+      mensaje = "Pago rechazado por el banco emisor.";
+      tipo = "rechazado";
+    }
+
+    const referenciaLocal = generarReferencia();
+
+    try {
+      // 🔥 SIEMPRE CREAR ORDEN (CLAVE)
+      const orden = generarOrden();
+
+      const response = await fetch("http://localhost:8000/api/checkout/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orden),
+      });
+
+      const data = await response.json();
+      console.log("✅ Respuesta backend:", data);
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al procesar la orden");
       }
 
-      const referencia = generarReferencia();
+      // 🔥 referencia real del backend
+      const referenciaBackend = data.referencia || referenciaLocal;
 
-      setResultado({
-        tipo,
-        estatusCobro,
-        referencia,
-        metodoPago,
-        monto: total,
-        mensaje,
-      });
+      // 🔥 LIMPIAR CARRITO SIEMPRE
+      clearCart();
+
+      // 🔁 UI (la tuya, intacta)
+      setTimeout(() => {
+        setResultado({
+          tipo,
+          estatusCobro,
+          referencia: referenciaBackend,
+          metodoPago,
+          monto: total,
+          direccionEnvio,
+          mensaje,
+        });
+
+        setProcesando(false);
+
+        showMessage({
+          title:
+            tipo === "aceptado"
+              ? "Pago aceptado"
+              : tipo === "rechazado"
+                ? "Pago rechazado"
+                : "Pago pendiente",
+          message:
+            tipo === "aceptado"
+              ? `Tu pago fue aceptado correctamente. Referencia: ${referenciaBackend}`
+              : tipo === "rechazado"
+                ? "El pago fue rechazado por el banco emisor."
+                : `Se generó una referencia para pago en OXXO: ${referenciaBackend}`,
+          type:
+            tipo === "aceptado"
+              ? "success"
+              : tipo === "rechazado"
+                ? "error"
+                : "info",
+        });
+      }, 1200);
+    } catch (error) {
+      console.error("Error en checkout:", error);
 
       setProcesando(false);
 
-      if (tipo === "aceptado") {
-        clearCart();
-      }
-
       showMessage({
-        title:
-          tipo === "aceptado"
-            ? "Pago aceptado"
-            : tipo === "rechazado"
-              ? "Pago rechazado"
-              : "Pago pendiente",
-        message:
-          tipo === "aceptado"
-            ? `Tu pago fue aceptado correctamente. Referencia: ${referencia}`
-            : tipo === "rechazado"
-              ? "El pago fue rechazado por el banco emisor. Intenta con otra tarjeta."
-              : `Se generó una referencia para pago en OXXO: ${referencia}`,
-        type:
-          tipo === "aceptado"
-            ? "success"
-            : tipo === "rechazado"
-              ? "error"
-              : "info",
+        title: "Error",
+        message: error.message || "No se pudo conectar con el servidor",
+        type: "error",
       });
-    }, 1800);
+    }
   };
 
   const obtenerNombreMetodo = () => {
@@ -215,9 +370,46 @@ const SimuladorCobro = () => {
 
         <div className="simulador-form-group">
           <label>Dirección de envío</label>
+
+          {direccionesGuardadas.length > 0 && (
+            <div className="checkout-address-list">
+              {direccionesGuardadas.map((direccion) => (
+                <button
+                  type="button"
+                  key={direccion.id}
+                  className={`checkout-address-option ${
+                    direccionSeleccionadaId === direccion.id ? "active" : ""
+                  }`}
+                  onClick={() => seleccionarDireccion(direccion)}
+                >
+                  <span className="checkout-address-icon">
+                    <FaMapMarkerAlt />
+                  </span>
+
+                  <span className="checkout-address-info">
+                    <strong>
+                      {direccion.alias}
+                      {direccion.principal ? " · Principal" : ""}
+                    </strong>
+                    <small>{formatearDireccion(direccion)}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {direccionSeleccionada && (
+            <small className="checkout-address-helper">
+              Puedes ajustar la dirección seleccionada antes de simular el pago.
+            </small>
+          )}
+
           <textarea
             value={direccionEnvio}
-            onChange={(e) => setDireccionEnvio(e.target.value)}
+            onChange={(e) => {
+              setDireccionSeleccionadaId("");
+              setDireccionEnvio(e.target.value);
+            }}
             placeholder="Calle, número, colonia, código postal y referencias"
             rows="3"
           />
@@ -271,7 +463,11 @@ const SimuladorCobro = () => {
                 type="text"
                 maxLength="19"
                 value={numeroTarjeta}
-                onChange={(e) => setNumeroTarjeta(e.target.value)}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/\D/g, "").slice(0, 16);
+                  value = value.replace(/(\d{4})(?=\d)/g, "$1 ");
+                  setNumeroTarjeta(value);
+                }}
                 placeholder="1234 5678 9012 3456"
               />
               <small>
@@ -287,7 +483,13 @@ const SimuladorCobro = () => {
                   type="text"
                   maxLength="5"
                   value={fechaVencimiento}
-                  onChange={(e) => setFechaVencimiento(e.target.value)}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/\D/g, "").slice(0, 4);
+                    if (value.length >= 3) {
+                      value = value.slice(0, 2) + "/" + value.slice(2);
+                    }
+                    setFechaVencimiento(value);
+                  }}
                   placeholder="MM/AA"
                 />
               </div>
@@ -298,7 +500,10 @@ const SimuladorCobro = () => {
                   type="password"
                   maxLength="4"
                   value={cvv}
-                  onChange={(e) => setCvv(e.target.value)}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/\D/g, "").slice(0, 3);
+                    setCvv(value);
+                  }}
                   placeholder="123"
                 />
               </div>
@@ -346,6 +551,9 @@ const SimuladorCobro = () => {
             </p>
             <p>
               <strong>Estatus cobro:</strong> {resultado.estatusCobro}
+            </p>
+            <p>
+              <strong>Envío:</strong> {resultado.direccionEnvio}
             </p>
           </div>
         </div>

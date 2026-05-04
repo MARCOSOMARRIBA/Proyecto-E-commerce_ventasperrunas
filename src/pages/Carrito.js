@@ -4,14 +4,19 @@ import { Link } from "react-router-dom";
 import SimuladorCobro from "../components/SimuladorCobro";
 
 function Carrito() {
-  const { cart, removeFromCart, updateQuantity, getCartTotal } =
+  const { cart, cartReady, removeFromCart, incrementQuantity, getCartTotal } =
     useContext(CartContext);
 
   const [mostrarCobro, setMostrarCobro] = useState(false);
 
+  // 🔥 Evita render antes de cargar
+  if (!cartReady) {
+    return <div className="text-center mt-5">Cargando carrito...</div>;
+  }
+
   return (
     <div className="container mt-5 mb-5 pb-5 pt-3">
-      {/* Banner superior */}
+      {/* Banner */}
       <div className="cart-banner">
         <h2>
           ¡Si a tu mascota quieres mimar, a Ventas Perrunas tienes que llegar!
@@ -22,7 +27,6 @@ function Carrito() {
         />
       </div>
 
-      {/* Contenedor principal del carrito */}
       <div className="cart-container">
         <div className="cart-header">
           <h2>Mi carrito</h2>
@@ -39,7 +43,7 @@ function Carrito() {
             </div>
           ) : (
             <>
-              {/* Etiquetas de columna */}
+              {/* Labels */}
               <div className="row cart-labels d-none d-md-flex text-center">
                 <div className="col-5 text-start">Descripción</div>
                 <div className="col-3">Cantidad</div>
@@ -47,13 +51,12 @@ function Carrito() {
                 <div className="col-2">Eliminar</div>
               </div>
 
-              {/* Lista de productos */}
+              {/* Items */}
               {cart.map((item) => (
                 <div
                   className="row cart-item text-center align-items-center"
                   key={item.id}
                 >
-                  {/* Imagen y descripción */}
                   <div className="col-12 col-md-5 d-flex align-items-center text-start mb-3 mb-md-0">
                     <img
                       src={
@@ -68,27 +71,31 @@ function Carrito() {
                     </span>
                   </div>
 
-                  {/* Controles de cantidad */}
+                  {/* Cantidad */}
                   <div className="col-4 col-md-3 cart-controls">
-                    <button onClick={() => updateQuantity(item.id, 1)}>
-                      +
+                    <button
+                      onClick={() => incrementQuantity(item.id, -1)}
+                      disabled={item.cantidad <= 1}
+                    >
+                      -
                     </button>
 
-                    <span className="mx-2" style={{ fontWeight: "600" }}>
-                      {item.cantidad}
-                    </span>
+                    <span className="mx-2 fw-bold">{item.cantidad}</span>
 
-                    <button onClick={() => updateQuantity(item.id, -1)}>
-                      -
+                    <button
+                      onClick={() => incrementQuantity(item.id, 1)}
+                      disabled={item.cantidad >= item.stock}
+                    >
+                      +
                     </button>
                   </div>
 
                   {/* Precio */}
-                  <div className="col-4 col-md-2" style={{ fontWeight: "600" }}>
-                    $ {(item.precio_final * item.cantidad).toFixed(2)}
+                  <div className="col-4 col-md-2 fw-bold">
+                    $ {(item.precio * item.cantidad).toFixed(2)}
                   </div>
 
-                  {/* Botón eliminar */}
+                  {/* Eliminar */}
                   <div className="col-4 col-md-2">
                     <button
                       className="cart-delete"
@@ -100,7 +107,7 @@ function Carrito() {
                 </div>
               ))}
 
-              {/* Footer del total */}
+              {/* Total */}
               <div className="cart-footer">
                 <h5 className="fw-bold mb-2">Total compra</h5>
 
@@ -114,7 +121,7 @@ function Carrito() {
                 </button>
               </div>
 
-              {/* Simulador de cobro */}
+              {/* Cobro */}
               {mostrarCobro && <SimuladorCobro />}
             </>
           )}

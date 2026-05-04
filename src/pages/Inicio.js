@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
-import { Carousel, Card, Container, Row, Col, Spinner } from "react-bootstrap";
+import { Card, Container, Row, Col, Spinner } from "react-bootstrap";
 import { FiStar, FiAlertCircle, FiHeart } from "react-icons/fi";
 import SeccionServicios from "../components/SeccionServicios";
 import { CartContext } from "../context/CartContext";
 import { FavoritesContext } from "../context/FavoritesContext";
 import CarruselPromociones from "../components/CarruselPromociones";
+import { api } from "../api/client";
+import {
+  getProductImage,
+  isProductAvailable,
+  toCartProduct,
+} from "../utils/products";
 
 function Inicio() {
   const [productos, setProductos] = useState([]);
@@ -18,16 +24,10 @@ function Inicio() {
   useEffect(() => {
     const obtenerProductos = async () => {
       try {
-        const respuesta = await fetch("http://127.0.0.1:8000/api/productos/");
-
-        if (!respuesta.ok) {
-          throw new Error("No se pudo conectar con el servidor");
-        }
-
-        const datos = await respuesta.json();
+        const datos = await api.productos.list();
         setProductos(datos);
       } catch (err) {
-        setError(err.message);
+        setError(err.message || "No se pudo conectar con el servidor");
       } finally {
         setCargando(false);
       }
@@ -37,21 +37,16 @@ function Inicio() {
   }, []);
 
   const agregarAlCarrito = (prod) => {
-    addToCart({
-      id: prod.id_producto,
-      nombre: prod.nombre,
-      imagen: prod.imagen,
-      precio_final: Number(prod.precio),
-    });
+    addToCart(toCartProduct(prod));
   };
 
   const handleImageError = (e) => {
-    e.target.src = "https://via.placeholder.com/500x500.png?text=Sin+Imagen";
+    e.target.src = getProductImage(null);
   };
 
   return (
     <div>
-  <CarruselPromociones />
+      <CarruselPromociones />
 
       <Container className="mt-5 pb-5">
         <h2 className="text-center section-title mb-5">Nuestros Productos</h2>
@@ -69,7 +64,7 @@ function Inicio() {
         ) : (
           <Row>
             {productos.map((prod, i) => {
-              const disponible = prod.activo && prod.stock;
+              const disponible = isProductAvailable(prod);
               const esFavorito = isFavorite(prod.id_producto);
 
               return (
@@ -106,7 +101,7 @@ function Inicio() {
                     >
                       <Card.Img
                         variant="top"
-                        src={prod.imagen || "https://via.placeholder.com/500"}
+                        src={getProductImage(prod)}
                         alt={prod.nombre}
                         onError={handleImageError}
                         style={{ height: "200px", objectFit: "cover" }}

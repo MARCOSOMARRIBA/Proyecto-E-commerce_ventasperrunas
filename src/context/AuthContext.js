@@ -1,86 +1,68 @@
 import React, { createContext, useState } from "react";
+import { api } from "../api/client";
 import { useMessage } from "./MessageContext";
 
 export const AuthContext = createContext();
 
 const USER_STORAGE_KEY = "usuarioMascotas";
 
+const buildAvatarUrl = (name = "V P") => {
+  const initials = name.substring(0, 2).toUpperCase();
+
+  return `https://ui-avatars.com/api/?name=${initials}&background=0D8ABC&color=fff&size=200&rounded=true&font-size=0.4`;
+};
+
+const mapBackendUser = (backendUser) => ({
+  id: backendUser.id_usuario,
+  nombre: backendUser.nombre_usuario,
+  email: backendUser.correo,
+  rol: backendUser.rol,
+  rfc: backendUser.rfc,
+  avatarUrl: buildAvatarUrl(backendUser.nombre_usuario),
+  username: (backendUser.correo || "usuario").split("@")[0],
+});
+
 export const AuthProvider = ({ children }) => {
   const { showMessage } = useMessage();
 
   const [user, setUser] = useState(() => {
-    const usuarioGuardado = localStorage.getItem(USER_STORAGE_KEY);
+    const savedUser = localStorage.getItem(USER_STORAGE_KEY);
 
-    if (usuarioGuardado) {
-      try {
-        return JSON.parse(usuarioGuardado);
-      } catch (error) {
-        localStorage.removeItem(USER_STORAGE_KEY);
-        return null;
-      }
+    if (!savedUser) return null;
+
+    try {
+      return JSON.parse(savedUser);
+    } catch (error) {
+      localStorage.removeItem(USER_STORAGE_KEY);
+      return null;
     }
-
-    return null;
   });
 
-  // --- CONEXIÓN REAL AL BACKEND PARA INICIO DE SESIÓN ---
   const loginReal = async (credentials) => {
     try {
-      const respuesta = await fetch("http://127.0.0.1:8000/api/login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          correo: credentials.email,
-          contrasena: credentials.password,
-        }),
+      const backendUser = await api.auth.login({
+        correo: credentials.email,
+        contrasena: credentials.password,
       });
 
-      const datosBackend = await respuesta.json();
+      const loggedUser = mapBackendUser(backendUser);
 
-      if (respuesta.ok) {
-        const nombreParaAvatar = datosBackend.nombre_usuario || "V P";
-        const iniciales = nombreParaAvatar.substring(0, 2).toUpperCase();
-
-        const avatarUrl = `https://ui-avatars.com/api/?name=${iniciales}&background=0D8ABC&color=fff&size=200&rounded=true&font-size=0.4`;
-
-        const usuarioLogueado = {
-          id: datosBackend.id_usuario,
-          nombre: datosBackend.nombre_usuario,
-          email: datosBackend.correo,
-          rol: datosBackend.rol,
-          rfc: datosBackend.rfc,
-          avatarUrl: avatarUrl,
-          username: (datosBackend.correo || "usuario").split("@")[0],
-        };
-
-        setUser(usuarioLogueado);
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(usuarioLogueado));
-
-        showMessage({
-          title: "Inicio de sesión exitoso",
-          message: `Bienvenido, ${usuarioLogueado.nombre}.`,
-          type: "success",
-        });
-
-        return true;
-      } else {
-        showMessage({
-          title: "Error de acceso",
-          message: datosBackend.error || "Credenciales incorrectas.",
-          type: "error",
-        });
-
-        return false;
-      }
-    } catch (error) {
-      console.error("Error al conectar con el servidor:", error);
+      setUser(loggedUser);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
 
       showMessage({
-        title: "Error de conexión",
-        message:
-          "No se pudo establecer conexión con el servidor de autenticación.",
+        title: "Inicio de sesión exitoso",
+        message: `Bienvenido, ${loggedUser.nombre}.`,
+        type: "success",
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error);
+
+      showMessage({
+        title: "Error de acceso",
+        message: error.message || "Credenciales incorrectas.",
         type: "error",
       });
 
@@ -100,13 +82,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateProfile = (newData) => {
-    const usuarioActualizado = {
+    const updatedUser = {
       ...user,
       ...newData,
     };
 
-    setUser(usuarioActualizado);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(usuarioActualizado));
+    setUser(updatedUser);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
 
     showMessage({
       title: "Perfil actualizado",
@@ -115,54 +97,32 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  const registroReal = async (datosUsuario) => {
+  const registroReal = async (userData) => {
     try {
-      const idGenerado = Date.now().toString();
-      const fechaActual = new Date().toISOString();
+      const generatedId = Date.now().toString();
 
-      const respuesta = await fetch("http://127.0.0.1:8000/api/usuarios/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id_usuario: idGenerado,
-          nombre_usuario: datosUsuario.nombre,
-          correo: datosUsuario.email,
-          contrasena: datosUsuario.password,
-          rol: "1",
-          fecha_registro: fechaActual,
-        }),
+      await api.auth.register({
+        id_usuario: generatedId,
+        nombre_usuario: userData.nombre,
+        correo: userData.email,
+        contrasena: userData.password,
+        rol: "1",
+        fecha_registro: new Date().toISOString(),
       });
 
-      const datosBackend = await respuesta.json();
+      showMessage({
+        title: "Cuenta creada",
+        message: "Tu cuenta fue creada con éxito. Ya puedes iniciar sesión.",
+        type: "success",
+      });
 
-      if (respuesta.ok) {
-        showMessage({
-          title: "Cuenta creada",
-          message: "Tu cuenta fue creada con éxito. Ya puedes iniciar sesión.",
-          type: "success",
-        });
-
-        return true;
-      } else {
-        showMessage({
-          title: "Error en el registro",
-          message:
-            datosBackend.error ||
-            datosBackend.detail ||
-            JSON.stringify(datosBackend),
-          type: "error",
-        });
-
-        return false;
-      }
+      return true;
     } catch (error) {
-      console.error("Error de conexión:", error);
+      console.error("Error al registrar usuario:", error);
 
       showMessage({
-        title: "Error de conexión",
-        message: "No se pudo conectar con el servidor 8000.",
+        title: "Error en el registro",
+        message: error.message || "No se pudo registrar la cuenta.",
         type: "error",
       });
 

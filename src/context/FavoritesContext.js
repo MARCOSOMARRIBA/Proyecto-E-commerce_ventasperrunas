@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { AuthContext } from "./AuthContext";
 import { useMessage } from "./MessageContext";
 
@@ -11,10 +17,10 @@ export const FavoritesProvider = ({ children }) => {
   const [favorites, setFavorites] = useState([]);
   const [favoritesReady, setFavoritesReady] = useState(false);
 
-  const getFavoritesStorageKey = () => {
+  const getFavoritesStorageKey = useCallback(() => {
     if (!user) return null;
     return `favoritos_mascotas_${user.id}`;
-  };
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -38,14 +44,14 @@ export const FavoritesProvider = ({ children }) => {
     }
 
     setFavoritesReady(true);
-  }, [user]);
+  }, [user, getFavoritesStorageKey]);
 
   useEffect(() => {
     if (!user || !favoritesReady) return;
 
     const storageKey = getFavoritesStorageKey();
     localStorage.setItem(storageKey, JSON.stringify(favorites));
-  }, [favorites, user, favoritesReady]);
+  }, [favorites, user, favoritesReady, getFavoritesStorageKey]);
 
   const normalizarProducto = (producto) => {
     return {

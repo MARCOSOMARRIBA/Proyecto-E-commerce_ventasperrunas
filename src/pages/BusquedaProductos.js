@@ -1,9 +1,14 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { FaSearch, FaShoppingCart } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
+import { api } from "../api/client";
 import { CartContext } from "../context/CartContext";
-
-const API_PRODUCTOS = "http://127.0.0.1:8000/api/productos/";
+import {
+  getProductImage,
+  isProductAvailable,
+  searchProducts,
+  toCartProduct,
+} from "../utils/products";
 
 const BusquedaProductos = () => {
   const location = useLocation();
@@ -21,17 +26,11 @@ const BusquedaProductos = () => {
         setCargando(true);
         setError("");
 
-        const respuesta = await fetch(API_PRODUCTOS);
-        const data = await respuesta.json();
-
-        if (!respuesta.ok) {
-          throw new Error("No se pudieron cargar los productos.");
-        }
-
+        const data = await api.productos.list();
         setProductos(data);
-      } catch (error) {
-        console.error(error);
-        setError("Ocurrió un error al buscar productos.");
+      } catch (err) {
+        console.error(err);
+        setError(err.message || "Ocurrió un error al buscar productos.");
       } finally {
         setCargando(false);
       }
@@ -40,36 +39,10 @@ const BusquedaProductos = () => {
     cargarProductos();
   }, []);
 
-  const productosFiltrados = useMemo(() => {
-    const texto = query.trim().toLowerCase();
-
-    if (texto === "") {
-      return [];
-    }
-
-    return productos.filter((producto) => {
-      const camposBusqueda = [
-        producto.id_producto,
-        producto.nombre,
-        producto.descripcion,
-        producto.precio,
-        producto.id_categoria,
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return camposBusqueda.includes(texto);
-    });
-  }, [productos, query]);
-
-  const agregarAlCarrito = (producto) => {
-    addToCart({
-      id: producto.id_producto,
-      nombre: producto.nombre,
-      imagen: producto.imagen,
-      precio_final: Number(producto.precio),
-    });
-  };
+  const productosFiltrados = useMemo(
+    () => searchProducts(productos, query),
+    [productos, query],
+  );
 
   return (
     <main className="search-page">
@@ -114,7 +87,7 @@ const BusquedaProductos = () => {
 
           <section className="search-products-grid">
             {productosFiltrados.map((producto) => {
-              const disponible = producto.activo && producto.stock;
+              const disponible = isProductAvailable(producto);
 
               return (
                 <article
@@ -127,11 +100,12 @@ const BusquedaProductos = () => {
                   >
                     <div className="search-product-img-box">
                       <img
-                        src={
-                          producto.imagen || "https://via.placeholder.com/300"
-                        }
+                        src={getProductImage(producto, "300x300")}
                         alt={producto.nombre}
                         className="search-product-img"
+                        onError={(e) => {
+                          e.currentTarget.src = getProductImage(null, "300x300");
+                        }}
                       />
                     </div>
                   </Link>
@@ -154,7 +128,7 @@ const BusquedaProductos = () => {
 
                     <button
                       className="search-add-cart-btn"
-                      onClick={() => agregarAlCarrito(producto)}
+                      onClick={() => addToCart(toCartProduct(producto))}
                       disabled={!disponible}
                     >
                       <FaShoppingCart />{" "}

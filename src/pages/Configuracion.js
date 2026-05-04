@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext } from "react";
 import {
   FiSettings,
   FiBell,
@@ -13,62 +13,21 @@ import {
 import { AuthContext } from "../context/AuthContext";
 import { CartContext } from "../context/CartContext";
 import { useMessage } from "../context/MessageContext";
-
-const configuracionInicial = {
-  tema: "claro",
-  notificacionesPromociones: true,
-  notificacionesPedidos: true,
-  vistaCompacta: false,
-};
+import { useAppearance } from "../context/AppearanceContext";
 
 const Configuracion = () => {
   const { user } = useContext(AuthContext);
   const { clearCart } = useContext(CartContext);
   const { showMessage } = useMessage();
-
-  const [configuracion, setConfiguracion] = useState(configuracionInicial);
-
-  const storageKey = user
-    ? `configuracion_ventas_perrunas_${user.id}`
-    : "configuracion_ventas_perrunas_invitado";
-
-  useEffect(() => {
-    const configuracionGuardada = localStorage.getItem(storageKey);
-
-    if (configuracionGuardada) {
-      try {
-        setConfiguracion(JSON.parse(configuracionGuardada));
-      } catch (error) {
-        localStorage.removeItem(storageKey);
-        setConfiguracion(configuracionInicial);
-      }
-    }
-  }, [storageKey]);
-
-  useEffect(() => {
-    document.body.classList.remove(
-      "tema-claro",
-      "tema-oscuro",
-      "tema-automatico",
-      "vista-compacta",
-    );
-
-    document.body.classList.add(`tema-${configuracion.tema}`);
-
-    if (configuracion.vistaCompacta) {
-      document.body.classList.add("vista-compacta");
-    }
-  }, [configuracion]);
-
-  const actualizarConfiguracion = (campo, valor) => {
-    setConfiguracion((prev) => ({
-      ...prev,
-      [campo]: valor,
-    }));
-  };
+  const {
+    configuracion,
+    actualizarConfiguracion,
+    guardarConfiguracion: guardarPreferencias,
+    restablecerConfiguracion: restablecerPreferencias,
+  } = useAppearance();
 
   const guardarConfiguracion = () => {
-    localStorage.setItem(storageKey, JSON.stringify(configuracion));
+    guardarPreferencias();
 
     showMessage({
       title: "Configuración guardada",
@@ -78,8 +37,7 @@ const Configuracion = () => {
   };
 
   const restablecerConfiguracion = () => {
-    setConfiguracion(configuracionInicial);
-    localStorage.setItem(storageKey, JSON.stringify(configuracionInicial));
+    restablecerPreferencias();
 
     showMessage({
       title: "Configuración restablecida",

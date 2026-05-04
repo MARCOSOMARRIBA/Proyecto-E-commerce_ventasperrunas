@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FaSearch, FaTimes } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
-
-const API_PRODUCTOS = "http://127.0.0.1:8000/api/productos/";
+import { api } from "../api/client";
+import { getProductImage, searchProducts } from "../utils/products";
 
 const SearchBar = () => {
   const navigate = useNavigate();
@@ -16,19 +16,14 @@ const SearchBar = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const queryActual = params.get("q") || "";
-    setTermino(queryActual);
+    setTermino(params.get("q") || "");
   }, [location.search]);
 
   useEffect(() => {
     const cargarProductos = async () => {
       try {
-        const respuesta = await fetch(API_PRODUCTOS);
-        const data = await respuesta.json();
-
-        if (respuesta.ok) {
-          setProductos(data);
-        }
+        const data = await api.productos.list();
+        setProductos(data);
       } catch (error) {
         console.error("Error al cargar productos para búsqueda:", error);
       }
@@ -38,28 +33,14 @@ const SearchBar = () => {
   }, []);
 
   useEffect(() => {
-    const texto = termino.trim().toLowerCase();
+    const texto = termino.trim();
 
     if (texto.length < 2) {
       setSugerencias([]);
       return;
     }
 
-    const resultados = productos
-      .filter((producto) => {
-        const nombre = producto.nombre?.toLowerCase() || "";
-        const descripcion = producto.descripcion?.toLowerCase() || "";
-        const idProducto = String(producto.id_producto || "");
-
-        return (
-          nombre.includes(texto) ||
-          descripcion.includes(texto) ||
-          idProducto.includes(texto)
-        );
-      })
-      .slice(0, 5);
-
-    setSugerencias(resultados);
+    setSugerencias(searchProducts(productos, texto).slice(0, 5));
   }, [termino, productos]);
 
   useEffect(() => {
@@ -81,9 +62,7 @@ const SearchBar = () => {
 
     const texto = termino.trim();
 
-    if (texto === "") {
-      return;
-    }
+    if (!texto) return;
 
     setMostrarSugerencias(false);
     navigate(`/buscar?q=${encodeURIComponent(texto)}`);
@@ -135,15 +114,19 @@ const SearchBar = () => {
       {mostrarSugerencias && sugerencias.length > 0 && (
         <div className="search-suggestions">
           {sugerencias.map((producto) => (
-            <div
+            <button
+              type="button"
               key={producto.id_producto}
               className="search-suggestion-item"
               onClick={() => seleccionarSugerencia(producto)}
             >
               <img
-                src={producto.imagen || "https://via.placeholder.com/50"}
+                src={getProductImage(producto, "50x50")}
                 alt={producto.nombre}
                 className="search-suggestion-img"
+                onError={(e) => {
+                  e.currentTarget.src = getProductImage(null, "50x50");
+                }}
               />
 
               <div className="search-suggestion-info">
@@ -154,7 +137,7 @@ const SearchBar = () => {
                   ${Number(producto.precio).toFixed(2)}
                 </span>
               </div>
-            </div>
+            </button>
           ))}
 
           <button className="search-view-all" onClick={buscarProductos}>
