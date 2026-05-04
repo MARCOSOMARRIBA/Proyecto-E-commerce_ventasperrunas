@@ -52,7 +52,6 @@ function Inicio() {
   return (
     <div>
   <CarruselPromociones />
-
       <Container className="mt-5 pb-5">
         <h2 className="text-center section-title mb-5">Nuestros Productos</h2>
 
