@@ -11,142 +11,135 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [cartReady, setCartReady] = useState(false);
 
-  const getCartStorageKey = () => {
-    if (!user) return null;
-    return `carrito_mascotas_${user.id}`;
+  // 🔥 CARGAR CARRITO
+  const fetchCart = async () => {
+    if (!user) return;
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/carrito/${user.id}/`);
+
+      if (!res.ok) {
+        console.error("ERROR BACKEND:", await res.text());
+        setCart([]);
+        return;
+      }
+      const data = await res.json();
+
+      console.log("CARRITO:", data);
+
+      setCart(data);
+    } catch (error) {
+      console.error("Error cargando carrito:", error);
+      setCart([]);
+    } finally {
+      setCartReady(true);
+    }
   };
 
-  // Cargar el carrito del usuario cuando inicia sesión
   useEffect(() => {
-    if (!user) {
-      setCart([]);
-      setCartReady(false);
-      return;
-    }
-
-    const storageKey = `carrito_mascotas_${user.id}`;
-    const carritoGuardado = localStorage.getItem(storageKey);
-
-    if (carritoGuardado) {
-      setCart(JSON.parse(carritoGuardado));
+    if (user) {
+      fetchCart();
     } else {
       setCart([]);
+      setCartReady(false);
     }
-
-    setCartReady(true);
   }, [user]);
 
-  // Guardar el carrito del usuario cada vez que cambie
-  useEffect(() => {
-    if (!user || !cartReady) return;
-
-    const storageKey = getCartStorageKey();
-    localStorage.setItem(storageKey, JSON.stringify(cart));
-  }, [cart, user, cartReady]);
-
-  const addToCart = (product) => {
+  // 🛒 AGREGAR
+  const addToCart = async (product) => {
     if (!user) {
       showMessage({
         title: "Inicia sesión",
-        message: "Debes iniciar sesión para agregar productos al carrito.",
+        message: "Debes iniciar sesión para comprar.",
         type: "warning",
       });
       return;
     }
 
-    // =================================================================
-    // 🛡️ LÓGICA DE SEGURIDAD RBAC (Bloqueo para personal interno)
-    // =================================================================
-    if (user.rol !== '1') {
-      showMessage({
-        title: "Modo Auditoría",
-        message: "Las cuentas de empleados, administradores y proveedores no pueden realizar compras.",
-        type: "warning",
+    try {
+      const res = await fetch("http://localhost:8000/api/carrito/agregar/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id_usuario: user.id,
+          id_producto: product.id_producto || product.id,
+          cantidad: 1,
+        }),
       });
-      return; // Detenemos la función aquí, el producto NUNCA llega al carrito
-    }
-    // =================================================================
 
-    const existeProducto = cart.find((item) => item.id === product.id);
+      const data = await res.json();
+      console.log("RESPUESTA:", data);
 
-    if (existeProducto) {
-      setCart((prevCart) =>
-        prevCart.map((item) =>
-          item.id === product.id
-            ? { ...item, cantidad: item.cantidad + 1 }
-            : item,
-        ),
-      );
+      fetchCart();
 
       showMessage({
-        title: "Cantidad actualizada",
-        message: `Se agregó otra unidad de ${product.nombre} al carrito.`,
+        title: "Producto agregado",
+        message: `${product.nombre} agregado al carrito`,
         type: "success",
       });
-
-      return;
+    } catch (error) {
+      console.error(error);
     }
-
-    setCart((prevCart) => [...prevCart, { ...product, cantidad: 1 }]);
-
-    showMessage({
-      title: "Producto agregado",
-      message: `${product.nombre} fue agregado al carrito correctamente.`,
-      type: "success",
-    });
   };
 
-  const removeFromCart = (productId) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
-
-    showMessage({
-      title: "Producto eliminado",
-      message: "El producto fue eliminado del carrito.",
-      type: "info",
-    });
-  };
-
-  const updateQuantity = (productId, newQuantity) => {
-    if (newQuantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-
-    setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === productId ? { ...item, cantidad: newQuantity } : item,
-      ),
+  // ❌ ELIMINAR
+  const removeFromCart = async (id) => {
+    await fetch(
+      `http://localhost:8000/api/carrito/eliminar/${user.id}/${id}/`,
+      { method: "DELETE" },
     );
+
+    fetchCart();
   };
 
-  const clearCart = () => {
+  // 🔄 ACTUALIZAR
+  const updateQuantity = async (id, qty) => {
+    await fetch(`http://localhost:8000/api/carrito/actualizar/`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_usuario: user.id,
+        id_producto: id,
+        cantidad: qty,
+      }),
+    });
+
+    fetchCart();
+  };
+
+  // ➕➖
+  const incrementQuantity = (id, amount) => {
+    const item = cart.find((p) => p.id === id);
+    if (!item) return;
+
+    updateQuantity(id, item.cantidad + amount);
+  };
+
+  // 🧹 LIMPIAR
+  const clearCart = async () => {
+    await fetch(`http://localhost:8000/api/carrito/limpiar/${user.id}/`, {
+      method: "DELETE",
+    });
+
     setCart([]);
-
-    showMessage({
-      title: "Carrito vacío",
-      message: "Se eliminaron todos los productos del carrito.",
-      type: "info",
-    });
   };
 
-  const getCartTotal = () => {
-    return cart.reduce(
-      (total, item) => total + Number(item.precio_final || item.precio) * item.cantidad,
-      0,
-    );
-  };
+  const getCartTotal = () =>
+    cart.reduce((t, p) => t + p.precio * p.cantidad, 0);
 
-  const getCartCount = () => {
-    return cart.reduce((total, item) => total + item.cantidad, 0);
-  };
+  const getCartCount = () => cart.reduce((t, p) => t + p.cantidad, 0);
 
   return (
     <CartContext.Provider
       value={{
         cart,
+        cartReady,
         addToCart,
         removeFromCart,
         updateQuantity,
+        incrementQuantity,
         clearCart,
         getCartTotal,
         getCartCount,

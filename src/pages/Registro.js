@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 // 1. Importamos las herramientas de Firebase
 import { auth, googleProvider, facebookProvider } from '../firebaseConfig';
 import { createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup } from 'firebase/auth';
+import { api } from '../api/client';
 
 function Registro() {
   const navigate = useNavigate();
@@ -27,15 +28,16 @@ function Registro() {
   // FUNCIÓN PUENTE: Guarda al usuario en tu Django (PostgreSQL)
   // =================================================================
   const guardarEnDjango = async (datosUsuario) => {
-    try {
-      await fetch('http://127.0.0.1:8000/api/usuarios/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosUsuario)
-      });
-    } catch (error) {
-      console.error("Error guardando en Django:", error);
-    }
+    const idGenerado = Date.now().toString();
+
+    return api.auth.register({
+      id_usuario: idGenerado,
+      nombre_usuario: datosUsuario.nombre,
+      correo: datosUsuario.email,
+      contrasena: datosUsuario.password || datosUsuario.firebase_uid,
+      rol: '1',
+      fecha_registro: new Date().toISOString()
+    });
   };
 
   // =================================================================
@@ -59,6 +61,7 @@ function Registro() {
         nombre: formData.nombre,
         email: formData.correo,
         telefono: formData.telefono,
+        password: formData.password,
         rol: '1', // Cliente
         firebase_uid: userFirebase.uid
       });

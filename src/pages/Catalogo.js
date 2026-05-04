@@ -14,50 +14,27 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { FiStar, FiAlertCircle } from "react-icons/fi";
+import { api } from "../api/client";
 import { CartContext } from "../context/CartContext";
-
-const API_PRODUCTOS = "http://127.0.0.1:8000/api/productos/";
-const API_CATEGORIAS = "http://127.0.0.1:8000/api/categorias/";
-
-const normalizarTexto = (texto = "") => {
-  return texto
-    .toString()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-};
-
-const crearSlug = (texto = "") => {
-  return normalizarTexto(texto).replace(/\s+/g, "-");
-};
-
-const obtenerCategoriaProducto = (producto) => {
-  if (!producto) return null;
-
-  if (
-    typeof producto.id_categoria === "object" &&
-    producto.id_categoria !== null
-  ) {
-    return producto.id_categoria.id_categoria;
-  }
-
-  return producto.id_categoria;
-};
+import {
+  createSlug,
+  getProductCategoryId,
+  getProductImage,
+  isProductAvailable,
+  normalizeText,
+  toCartProduct,
+} from "../utils/products";
 
 const Catalogo = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-
   const { addToCart } = useContext(CartContext);
 
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
-
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
-
   const [textoBusqueda, setTextoBusqueda] = useState("");
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("todas");
   const [soloDisponibles, setSoloDisponibles] = useState(false);
@@ -69,21 +46,10 @@ const Catalogo = () => {
         setCargando(true);
         setError("");
 
-        const [resProductos, resCategorias] = await Promise.all([
-          fetch(API_PRODUCTOS),
-          fetch(API_CATEGORIAS),
+        const [dataProductos, dataCategorias] = await Promise.all([
+          api.productos.list(),
+          api.categorias.list(),
         ]);
-
-        if (!resProductos.ok) {
-          throw new Error("No se pudieron cargar los productos.");
-        }
-
-        if (!resCategorias.ok) {
-          throw new Error("No se pudieron cargar las categorías.");
-        }
-
-        const dataProductos = await resProductos.json();
-        const dataCategorias = await resCategorias.json();
 
         setProductos(dataProductos);
         setCategorias(dataCategorias);
@@ -115,14 +81,12 @@ const Catalogo = () => {
     }
 
     const categoriaEncontrada = categorias.find(
-      (cat) => crearSlug(cat.nombre) === crearSlug(categoriaDesdeRuta),
+      (cat) => createSlug(cat.nombre) === createSlug(categoriaDesdeRuta),
     );
 
-    if (categoriaEncontrada) {
-      setCategoriaSeleccionada(String(categoriaEncontrada.id_categoria));
-    } else {
-      setCategoriaSeleccionada("todas");
-    }
+    setCategoriaSeleccionada(
+      categoriaEncontrada ? String(categoriaEncontrada.id_categoria) : "todas",
+    );
   }, [searchParams, location.pathname, categorias]);
 
   const cambiarCategoria = (idCategoria) => {
@@ -148,12 +112,11 @@ const Catalogo = () => {
 
   const productosFiltrados = useMemo(() => {
     let resultado = [...productos];
+    const busqueda = normalizeText(textoBusqueda);
 
-    const busqueda = normalizarTexto(textoBusqueda);
-
-    if (busqueda !== "") {
+    if (busqueda) {
       resultado = resultado.filter((producto) => {
-        const textoProducto = normalizarTexto(
+        const textoProducto = normalizeText(
           [
             producto.id_producto,
             producto.nombre,
@@ -169,31 +132,24 @@ const Catalogo = () => {
     if (categoriaSeleccionada !== "todas") {
       resultado = resultado.filter(
         (producto) =>
-          String(obtenerCategoriaProducto(producto)) ===
+          String(getProductCategoryId(producto)) ===
           String(categoriaSeleccionada),
       );
     }
 
     if (soloDisponibles) {
-      resultado = resultado.filter(
-        (producto) => producto.activo === true && producto.stock === true,
-      );
+      resultado = resultado.filter(isProductAvailable);
     }
 
-    if (orden === "precio-menor") {
-      resultado.sort((a, b) => Number(a.precio) - Number(b.precio));
-    }
+    const ordenadores = {
+      "precio-menor": (a, b) => Number(a.precio) - Number(b.precio),
+      "precio-mayor": (a, b) => Number(b.precio) - Number(a.precio),
+      "nombre-az": (a, b) => a.nombre.localeCompare(b.nombre),
+      "nombre-za": (a, b) => b.nombre.localeCompare(a.nombre),
+    };
 
-    if (orden === "precio-mayor") {
-      resultado.sort((a, b) => Number(b.precio) - Number(a.precio));
-    }
-
-    if (orden === "nombre-az") {
-      resultado.sort((a, b) => a.nombre.localeCompare(b.nombre));
-    }
-
-    if (orden === "nombre-za") {
-      resultado.sort((a, b) => b.nombre.localeCompare(a.nombre));
+    if (ordenadores[orden]) {
+      resultado.sort(ordenadores[orden]);
     }
 
     return resultado;
@@ -205,15 +161,6 @@ const Catalogo = () => {
     );
 
     return categoria ? categoria.nombre : "Sin categoría";
-  };
-
-  const agregarAlCarrito = (producto) => {
-    addToCart({
-      id: producto.id_producto,
-      nombre: producto.nombre,
-      imagen: producto.imagen,
-      precio_final: Number(producto.precio),
-    });
   };
 
   return (
@@ -345,7 +292,7 @@ const Catalogo = () => {
           {!cargando && !error && productosFiltrados.length > 0 && (
             <div className="catalogo-grid">
               {productosFiltrados.map((producto) => {
-                const disponible = producto.activo && producto.stock;
+                const disponible = isProductAvailable(producto);
 
                 return (
                   <article
@@ -358,14 +305,10 @@ const Catalogo = () => {
                     >
                       <div className="catalogo-producto-img-box">
                         <img
-                          src={
-                            producto.imagen ||
-                            "https://placehold.co/500x500?text=Sin+Imagen"
-                          }
+                          src={getProductImage(producto)}
                           alt={producto.nombre}
                           onError={(e) => {
-                            e.currentTarget.src =
-                              "https://placehold.co/500x500?text=Sin+Imagen";
+                            e.currentTarget.src = getProductImage(null);
                           }}
                         />
 
@@ -382,7 +325,7 @@ const Catalogo = () => {
                     <div className="catalogo-producto-info">
                       <span className="catalogo-producto-categoria">
                         {obtenerNombreCategoria(
-                          obtenerCategoriaProducto(producto),
+                          getProductCategoryId(producto),
                         )}
                       </span>
 
@@ -410,7 +353,7 @@ const Catalogo = () => {
                       <div className="catalogo-producto-actions">
                         <button
                           className="catalogo-btn-carrito"
-                          onClick={() => agregarAlCarrito(producto)}
+                          onClick={() => addToCart(toCartProduct(producto))}
                           disabled={!disponible}
                         >
                           <FaShoppingCart />

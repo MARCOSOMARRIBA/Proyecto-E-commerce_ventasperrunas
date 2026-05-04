@@ -1,7 +1,6 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  FiSearch,
   FiShoppingCart,
   FiHeart,
   FiUser,
@@ -14,7 +13,7 @@ import {
 import { AuthContext } from "../context/AuthContext";
 import { CartContext } from "../context/CartContext";
 import NotificadorProveedor from "./NotificadorProveedor";
-import { FaSearch, FaTimes } from "react-icons/fa";
+import { FaSearch, FaTimes, FaClipboardList } from "react-icons/fa";
 import SearchBar from "./SearchBar";
 import { FavoritesContext } from "../context/FavoritesContext";
 
@@ -30,7 +29,7 @@ function Navbar() {
 
   const handleLogout = () => {
     logout();
-    navigate("/")
+    navigate("/");
   };
 
   // Efecto para cerrar el menú si haces clic afuera de él
@@ -96,7 +95,13 @@ function Navbar() {
                 <SearchBar />
               </div>
             </div>
-
+            <Link
+              to="/mis-pedidos"
+              title="Mis Pedidos"
+              className="text-white text-decoration-none hover-scale position-relative"
+            >
+              <FaClipboardList size={22} />
+            </Link>
             <Link
               to="/favoritos"
               title="Mis Favoritos"
