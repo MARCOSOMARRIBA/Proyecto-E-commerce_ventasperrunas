@@ -87,9 +87,9 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "pagina_mascotas",
         "USER": "postgres",
-        "PASSWORD": "Morgado90",
+        "PASSWORD": "12345",
         "HOST": "localhost",
-        "PORT": "5432",
+        "PORT": "5434",
         'OPTIONS': {
             'options': '-csearch_path=tienda_mascotas',
         },

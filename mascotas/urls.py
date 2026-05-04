@@ -10,7 +10,15 @@ from .views import (
     ProveedorViewSet,
     SeccionExtranetViewSet,
     UsuarioViewSet,
+    pedidos_usuario,
+    crear_orden_completa,
+    detalle_orden,
     login_usuario,
+    agregar_carrito,
+    obtener_carrito,
+    eliminar_producto_carrito,
+    actualizar_cantidad_carrito,
+    limpiar_carrito,
     # 1. AGREGAMOS LAS DOS FUNCIONES NUEVAS AQUÍ:
     detalles_pedido,
     movimientos_recientes
@@ -27,6 +35,7 @@ router.register(r'pedidos', PedidoViewSet, basename='pedido')
 router.register(r'ordenes', OrdenViewSet, basename='orden')
 router.register(r'cobros', CobroViewSet, basename='cobro')
 
+
 urlpatterns = [
     # 2. AGREGAMOS LAS RUTAS CUSTOM ANTES DEL ROUTER
     path('pedidos/movimientos-recientes/', movimientos_recientes, name='movimientos-recientes'),
@@ -34,4 +43,14 @@ urlpatterns = [
     
     path('', include(router.urls)),
     path('login/', login_usuario, name='login_api'),
+    path('checkout/', crear_orden_completa),
+    path('mis-pedidos/<str:id_usuario>/', pedidos_usuario),
+    path('detalle-orden/<int:id_orden>/', detalle_orden),
+    path('carrito/agregar/', agregar_carrito),
+path('carrito/<str:id_usuario>/', obtener_carrito),
+    path('carrito/eliminar/<str:id_usuario>/<int:id_producto>/', eliminar_producto_carrito),
+    path('carrito/actualizar/', actualizar_cantidad_carrito),
+    path('carrito/limpiar/<str:id_usuario>/', limpiar_carrito),
+    
+
 ]

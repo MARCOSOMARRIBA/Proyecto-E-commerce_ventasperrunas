@@ -165,3 +165,10 @@ class Usuario(models.Model):
     class Meta:
         managed = False
         db_table = 'usuario'
+        
+class Notificacion(models.Model):
+    id_notificacion = models.BigAutoField(primary_key=True)
+    id_usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    mensaje = models.TextField()
+    leida = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)

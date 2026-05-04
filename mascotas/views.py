@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from django.utils import timezone
 from .models import (
     Carrito,
     Categoria,
@@ -9,6 +10,8 @@ from .models import (
     Proveedor,
     SeccionExtranet,
     Usuario,
+    DetalleOrden,
+    DetalleCarrito
 )
 from .serializers import (
     CarritoSerializer,
@@ -21,6 +24,13 @@ from .serializers import (
     SeccionExtranetSerializer,
     UsuarioSerializer,
 )
+from django.db import connection
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django.utils import timezone
+from django.db import transaction
+
+
 
 
 class CategoriaViewSet(viewsets.ModelViewSet):
@@ -75,6 +85,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Pedido, DetallePedido
 from .serializers import PedidoSerializer, DetallePedidoSerializer
+import random
+
 
 # 1. Endpoint: GET /api/pedidos/
 @api_view(['GET'])
@@ -165,3 +177,315 @@ def login_usuario(request):
 
     except Usuario.DoesNotExist:
         return Response({'error': 'El correo no está registrado'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+def crear_orden_completa(request):
+    try:
+        data = request.data
+
+        id_usuario = data.get('id_usuario')
+        direccion_envio = data.get('direccion_envio')
+        metodo_pago = data.get('metodo_pago')
+        productos = data.get('productos', [])
+
+        if not id_usuario or not productos:
+            return Response({"error": "Datos incompletos"}, status=400)
+
+        # 🎯 DEFINIR ESTADOS
+        if metodo_pago == "3":  # transferencia
+            estatus_orden = "1"   # creada
+            estatus_cobro = "3"   # pendiente
+            descontar_stock = False
+        else:
+            estatus_orden = "1"   # completada
+            estatus_cobro = "1"   # aprobado
+            descontar_stock = True
+
+        with transaction.atomic():
+
+            total_orden = 0
+            productos_db = []
+
+            # 🔒 VALIDAR PRODUCTOS
+            for item in productos:
+                producto = Producto.objects.select_for_update().get(
+                    id_producto=item['id_producto']
+                )
+
+                cantidad = int(item.get('cantidad', 1))
+
+                if descontar_stock and producto.stock < cantidad:
+                    return Response({
+                        "error": f"Stock insuficiente: {producto.nombre}"
+                    }, status=400)
+
+                subtotal = float(producto.precio) * cantidad
+                total_orden += subtotal
+
+                productos_db.append((producto, cantidad, subtotal))
+
+            # 🚨 VALIDACIÓN EXTRA
+            if not productos_db:
+                return Response({"error": "Carrito vacío"}, status=400)
+
+            # 🧾 CREAR ORDEN
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO orden (
+                        descripcion,
+                        estatus,
+                        fecha_creacion,
+                        total_orden,
+                        direccion_envio,
+                        id_usuario
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    RETURNING id_orden
+                """, [
+                    "Compra desde frontend",
+                    estatus_orden,
+                    timezone.now(),
+                    total_orden,
+                    direccion_envio,
+                    id_usuario
+                ])
+
+                id_orden = cursor.fetchone()[0]
+
+            # 📦 DETALLE
+            for producto, cantidad, subtotal in productos_db:
+
+                DetalleOrden.objects.create(
+                    precio_subtotal=subtotal,
+                    cantidad=cantidad,
+                    precio_unitario=producto.precio,
+                    estatus="1",
+                    id_producto=producto,
+                    id_orden_id=id_orden
+                )
+
+                # 🔻 SOLO TARJETA
+                if descontar_stock:
+                    producto.stock -= cantidad
+                    producto.save()
+
+            # 💳 COBRO
+            referencia = f"REF-{int(timezone.now().timestamp())}"
+
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO cobro (
+                        referencia_pago,
+                        estatus,
+                        fecha_cobro,
+                        metodo_pago,
+                        monto,
+                        id_orden
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, [
+                    referencia,
+                    estatus_cobro,
+                    timezone.now(),
+                    metodo_pago,
+                    total_orden,
+                    id_orden
+                ])
+
+            # 🧹 LIMPIAR CARRITO
+            carrito = Carrito.objects.filter(id_usuario_id=id_usuario).first()
+            if carrito:
+                DetalleCarrito.objects.filter(id_carrito=carrito).delete()
+
+        return Response({
+            "success": True,
+            "id_orden": id_orden,
+            "estatus": estatus_orden,
+            "referencia": referencia  # 🔥 IMPORTANTE PARA FRONTEND
+        }, status=201)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response({"error": str(e)}, status=500)
+    
+@api_view(['GET'])
+def pedidos_usuario(request, id_usuario):
+    pedidos = Orden.objects.filter(id_usuario_id=id_usuario).order_by('-fecha_creacion')
+
+    data = []
+
+    for pedido in pedidos:
+        data.append({
+            "id": pedido.id_orden,
+            "fecha": pedido.fecha_creacion,
+            "total": pedido.total_orden,
+            "direccion": pedido.direccion_envio,
+            "estatus": pedido.estatus
+        })
+
+    return Response(data)
+
+@api_view(['GET'])
+def detalle_orden(request, id_orden):
+    detalles = DetalleOrden.objects.filter(id_orden_id=id_orden)
+
+    data = []
+
+    for d in detalles:
+        data.append({
+            "producto": d.id_producto.nombre,
+            "cantidad": d.cantidad,
+            "precio": d.precio_unitario,
+            "subtotal": d.precio_subtotal
+        })
+
+    return Response(data)
+
+@api_view(['POST'])
+def agregar_carrito(request):
+    try:
+        id_usuario = request.data.get('id_usuario')
+        id_producto = request.data.get('id_producto')
+        cantidad = int(request.data.get('cantidad', 1))
+
+        # 🔒 Validar usuario
+        try:
+            usuario = Usuario.objects.get(id_usuario=id_usuario)
+        except Usuario.DoesNotExist:
+            return Response({"error": "Usuario no existe"}, status=404)
+
+        # 🔥 Crear u obtener carrito
+        carrito = Carrito.objects.filter(id_usuario=usuario).first()
+
+        if not carrito:
+            carrito = Carrito.objects.create(
+                id_usuario=usuario,
+                fecha_creacion=timezone.now()
+            )
+
+        # 🔒 Validar producto
+        try:
+            producto = Producto.objects.get(id_producto=id_producto)
+        except Producto.DoesNotExist:
+            return Response({"error": "Producto no existe"}, status=404)
+
+        # 🔥 Precio correcto
+        if hasattr(producto, "precio_final") and producto.precio_final:
+            precio = producto.precio_final or producto.precio
+        elif hasattr(producto, "precio") and producto.precio:
+            precio = producto.precio
+        else:
+            return Response({"error": "Producto sin precio válido"}, status=400)
+
+        # 🔥 Buscar detalle (PK compuesta)
+        detalle = DetalleCarrito.objects.filter(
+            id_carrito=carrito,
+            id_producto=producto
+        ).first()
+
+        if detalle:
+            detalle.cantidad += cantidad
+            detalle.save()
+        else:
+            DetalleCarrito.objects.create(
+                id_carrito=carrito,
+                id_producto=producto,
+                cantidad=cantidad,
+                precio_unitario=precio
+            )
+
+        return Response({"success": True})
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response({"error": str(e)}, status=500)
+    
+@api_view(['GET'])
+def obtener_carrito(request, id_usuario):
+    try:
+        carrito = Carrito.objects.filter(id_usuario_id=id_usuario).first()
+
+        if not carrito:
+            return Response([])
+
+        detalles = DetalleCarrito.objects.filter(id_carrito=carrito)
+
+        data = []
+
+        for d in detalles:
+            producto = d.id_producto
+
+            data.append({
+                "id": producto.id_producto,
+                "nombre": producto.nombre,
+                "precio": float(d.precio_unitario),
+                "cantidad": d.cantidad,
+                "imagen": getattr(producto, "imagen", None)
+            })
+
+        return Response(data)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response({
+            "error": str(e)
+        }, status=500)
+
+@api_view(['DELETE'])
+def eliminar_producto_carrito(request, id_usuario, id_producto):
+    try:
+        carrito = Carrito.objects.get(id_usuario_id=id_usuario)
+
+        DetalleCarrito.objects.filter(
+            id_carrito=carrito,
+            id_producto_id=id_producto
+        ).delete()
+
+        return Response({"success": True})
+    except Carrito.DoesNotExist:
+        return Response({"error": "Carrito no encontrado"}, status=404)
+    
+@api_view(['PUT'])
+def actualizar_cantidad_carrito(request):
+    try:
+        id_usuario = request.data.get('id_usuario')
+        id_producto = request.data.get('id_producto')
+        cantidad = int(request.data.get('cantidad'))
+
+        carrito = Carrito.objects.get(id_usuario_id=id_usuario)
+
+        detalle = DetalleCarrito.objects.get(
+            id_carrito=carrito,
+            id_producto_id=id_producto
+        )
+
+        if cantidad <= 0:
+            detalle.delete()
+        else:
+            detalle.cantidad = cantidad
+            detalle.save()
+
+        return Response({"success": True})
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+@api_view(['DELETE'])
+def limpiar_carrito(request, id_usuario):
+    try:
+        carrito = Carrito.objects.get(id_usuario_id=id_usuario)
+        DetalleCarrito.objects.filter(id_carrito=carrito).delete()
+        return Response({"success": True})
+    except Carrito.DoesNotExist:
+        return Response({"success": True})
+
+@api_view(['GET'])
+def mis_ordenes(request, id_usuario):
+    ordenes = Orden.objects.filter(id_usuario_id=id_usuario).order_by('-fecha_creacion')
+    serializer = OrdenSerializer(ordenes, many=True)
+    return Response(serializer.data)
+
