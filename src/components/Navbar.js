@@ -210,6 +210,17 @@ function Navbar() {
                       <FiSettings /> Configuración
                     </Link>
 
+                    {/* 💼 SOLO PARA EMPLEADO (Rol 2) */}
+                    {user.rol === "2" && (
+                      <Link
+                        to="/empleado"
+                        className="dropdown-item d-flex align-items-center gap-3 py-2 px-4 fw-bold text-success hover-bg-light"
+                        onClick={() => setMenuAbierto(false)}
+                      >
+                        <FiMonitor size={18} /> Panel Empleado
+                      </Link>
+                    )}
+
                     {/* 🛡️ SOLO PARA ADMIN (Rol 3) */}
                     {user.rol === "3" && (
                       <Link

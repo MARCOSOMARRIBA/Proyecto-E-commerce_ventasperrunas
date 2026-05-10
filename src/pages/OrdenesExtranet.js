@@ -17,7 +17,6 @@ const OrdenesExtranet = () => {
   const cargarPedidosProveedor = async () => {
     try {
       setCargando(true);
-
       const res = await fetch("http://127.0.0.1:8000/api/pedidos/");
 
       if (res.ok) {
@@ -28,7 +27,6 @@ const OrdenesExtranet = () => {
         // Después lo cambiaremos por user?.rfc cuando el backend lo mande.
         // ==============================================================
         const RFC_PRUEBA = "DPG260401A1B";
-
         const misPedidos = data.filter((p) => p.rfc === RFC_PRUEBA);
 
         setPedidos(misPedidos);
@@ -41,7 +39,6 @@ const OrdenesExtranet = () => {
       }
     } catch (error) {
       console.error("Error al cargar la bandeja:", error);
-
       showMessage({
         title: "Error de conexión",
         message: "No se pudo conectar con el servidor para cargar las órdenes.",
@@ -52,69 +49,68 @@ const OrdenesExtranet = () => {
     }
   };
 
-  const actualizarEstatus = async (id_pedido, nuevoEstatus) => {
+const actualizarEstatus = async (id_pedido, nuevoEstatus) => {
     try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/pedidos/${id_pedido}/`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            estatus: nuevoEstatus,
-          }),
-        },
-      );
+      // 1. Actualizamos el estatus del pedido
+      const res = await fetch(`http://127.0.0.1:8000/api/pedidos/${id_pedido}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estatus: nuevoEstatus }),
+      });
 
       if (res.ok) {
         setPedidos((prevPedidos) =>
-          prevPedidos.map((p) =>
-            p.id_pedido === id_pedido ? { ...p, estatus: nuevoEstatus } : p,
-          ),
+          prevPedidos.map((p) => p.id_pedido === id_pedido ? { ...p, estatus: nuevoEstatus } : p)
         );
-
+        
+        // Esta es tu alerta bonita, esa la dejamos intacta
         showMessage({
           title: "Estatus actualizado",
           message: `El pedido #${id_pedido} fue actualizado correctamente.`,
           type: "success",
         });
+
+        // 🚀 AUTOMATIZACIÓN SILENCIOSA 🚀
+        if (String(nuevoEstatus) === "4") {
+          const resDetalles = await fetch(`http://127.0.0.1:8000/api/pedidos/${id_pedido}/detalles/`);
+          
+          if (resDetalles.ok) {
+            const detalles = await resDetalles.json();
+            
+            if (detalles.length > 0) {
+              const promesasDeActivacion = detalles.map(detalle => {
+                const idProd = detalle.id_producto || detalle.producto_id || detalle.producto; 
+                return fetch(`http://127.0.0.1:8000/api/productos/${idProd}/`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ stock: true, activo: true })
+                });
+              });
+              
+              await Promise.all(promesasDeActivacion);
+              // ¡Listo! Eliminamos los alert(). Ahora la magia ocurre sin hacer ruido.
+            }
+          }
+        }
+
       } else {
         const errorData = await res.json();
-
-        showMessage({
-          title: "Error al actualizar",
-          message:
-            errorData.error ||
-            errorData.detail ||
-            JSON.stringify(errorData, null, 2),
-          type: "error",
-        });
+        showMessage({ title: "Error", message: errorData.error, type: "error" });
       }
     } catch (error) {
       console.error("Error de red:", error);
-
-      showMessage({
-        title: "Error de conexión",
-        message:
-          "No se pudo conectar con el servidor para actualizar el pedido.",
-        type: "error",
-      });
+      showMessage({ title: "Error", message: "Fallo de conexión.", type: "error" });
     }
   };
 
+  // 🎨 UNIFICAMOS LOS COLORES CON LOS DEL ADMIN/EMPLEADO
   const getEstiloEstatus = (estatus) => {
-    switch (estatus) {
-      case "1":
-        return "border-warning text-warning";
-      case "2":
-        return "border-info text-info";
-      case "3":
-        return "border-danger text-danger";
-      case "4":
-        return "border-success text-success";
-      default:
-        return "border-secondary text-secondary";
+    switch (String(estatus)) {
+      case "1": return "border-warning text-warning"; // Solicitado
+      case "2": return "border-info text-info";       // En Proceso
+      case "3": return "border-danger text-danger";   // Rechazado/Cancelado
+      case "4": return "border-success text-success"; // Entregado
+      default: return "border-secondary text-secondary";
     }
   };
 
@@ -126,8 +122,7 @@ const OrdenesExtranet = () => {
         </h2>
 
         <p className="text-muted">
-          Actualiza el estatus de las solicitudes para notificar al
-          administrador.
+          Actualiza el estatus de las solicitudes para notificar al administrador.
         </p>
       </div>
 
@@ -147,47 +142,36 @@ const OrdenesExtranet = () => {
             <tbody>
               {cargando ? (
                 <tr>
-                  <td colSpan="5" className="text-center py-4">
-                    Sincronizando con PostgreSQL...
-                  </td>
+                  <td colSpan="5" className="text-center py-4">Sincronizando con PostgreSQL...</td>
                 </tr>
               ) : pedidos.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="text-center py-5 text-muted">
-                    No hay órdenes pendientes para tu RFC.
-                  </td>
+                  <td colSpan="5" className="text-center py-5 text-muted">No hay órdenes pendientes para tu RFC.</td>
                 </tr>
               ) : (
                 pedidos.map((pedido) => (
                   <tr key={pedido.id_pedido}>
                     <td className="ps-4 fw-bold">#{pedido.id_pedido}</td>
 
-                    <td>
-                      {new Date(pedido.fecha_compra).toLocaleDateString()}
-                    </td>
+                    <td>{new Date(pedido.fecha_compra).toLocaleDateString()}</td>
 
-                    <td className="fw-bold text-dark">
-                      Pet Market Local (Central)
-                    </td>
+                    <td className="fw-bold text-dark">Pet Market Local (Central)</td>
 
                     <td className="text-success fw-bold">
                       ${parseFloat(pedido.total_compra || 0).toLocaleString()}
                     </td>
 
                     <td style={{ width: "250px" }}>
+                      {/* 🔥 OPCIONES DE ESTATUS SINCRONIZADAS */}
                       <select
-                        className={`form-select form-select-sm fw-bold border-2 ${getEstiloEstatus(
-                          pedido.estatus,
-                        )}`}
-                        value={pedido.estatus}
-                        onChange={(e) =>
-                          actualizarEstatus(pedido.id_pedido, e.target.value)
-                        }
+                        className={`form-select form-select-sm fw-bold border-2 ${getEstiloEstatus(pedido.estatus)}`}
+                        value={String(pedido.estatus)}
+                        onChange={(e) => actualizarEstatus(pedido.id_pedido, e.target.value)}
                       >
-                        <option value="1">1 - Solicitado / Pendiente</option>
-                        <option value="2">2 - Aceptado / En Preparación</option>
-                        <option value="3">3 - Rechazado / Cancelado</option>
-                        <option value="4">4 - Enviado / Finalizado</option>
+                        <option value="1">1 - Solicitado</option>
+                        <option value="2">2 - En Proceso</option>
+                        <option value="3">3 - Cancelado / Rechazado</option>
+                        <option value="4">4 - Entregado</option>
                       </select>
                     </td>
                   </tr>

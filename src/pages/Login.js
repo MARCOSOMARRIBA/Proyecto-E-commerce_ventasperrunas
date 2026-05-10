@@ -1,31 +1,37 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import { FaFacebook, FaApple } from 'react-icons/fa';
 import { AuthContext } from '../context/AuthContext';
 
 function Login() {
-  // 1. AHORA TRAEMOS loginReal (la función que conecta con Django)
-  const { loginReal } = useContext(AuthContext);
+  // 1. Traemos loginReal y también la variable 'user' del contexto
+  const { loginReal, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // 2. HACEMOS LA FUNCIÓN ASÍNCRONA (async) PORQUE VAMOS A ESPERAR A DJANGO
- const handleLogin = async (e) => {
-    e.preventDefault(); 
-    const exito = await loginReal({ email, password });
-
-    if (exito) {
-      // 1. Obtenemos el usuario que acabamos de guardar en el contexto
-      // Nota: Necesitas importar el 'user' del AuthContext si no lo tienes
-      
-      // 2. Redireccionamos según el rol de la base de datos 
-      // Usamos el resultado de la función para decidir a dónde ir
-      // (Asumiendo que loginReal devuelve los datos del usuario o los guarda)
-      navigate('/'); 
+  // 2. EFECTO VIGILANTE: En cuanto 'user' tenga datos, decidimos a dónde enviarlo
+  useEffect(() => {
+    if (user) {
+      if (user.rol === '2') {
+        navigate('/empleado');    // Va al Dashboard del Empleado
+      } else if (user.rol === '3') {
+        navigate('/intranet');    // Va al Dashboard del Admin
+      } else if (user.rol === '4') {
+        navigate('/extranet');    // Va al Dashboard del Proveedor
+      } else {
+        navigate('/');            // Cliente normal (Rol 1 u otro)
+      }
     }
+  }, [user, navigate]);
+
+  // 3. LA FUNCIÓN DEL BOTÓN AHORA ES MÁS LIMPIA
+  const handleLogin = async (e) => {
+    e.preventDefault(); 
+    // Llamamos a tu contexto. Si hay éxito, el useEffect de arriba hará la magia de la redirección
+    await loginReal({ email, password });
   };
 
   return (

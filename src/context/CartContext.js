@@ -45,7 +45,7 @@ export const CartProvider = ({ children }) => {
     }
   }, [user]);
 
-  // 🛒 AGREGAR
+  // 🛒 AGREGAR CON BLOQUEO DE AUDITORÍA
   const addToCart = async (product) => {
     if (!user) {
       showMessage({
@@ -56,6 +56,18 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
+    // 🛑 CANDADO DE SEGURIDAD: Bloquear a roles 2, 3 y 4
+    if (user.rol === '2' || user.rol === '3' || user.rol === '4') {
+      showMessage({
+        title: "Acción Denegada ⚠️",
+        message: "Modo Auditoría: Las cuentas de empleados, administradores y proveedores no tienen permitido realizar compras.",
+        type: "error", // Saldrá como un mensaje de error o advertencia
+      });
+      
+      return; // <--- ESTE RETURN DETIENE LA FUNCIÓN Y EVITA QUE SE AGREGUE AL CARRITO
+    }
+
+    // Si es un cliente normal (rol 1), el código sigue ejecutándose normalmente:
     try {
       const res = await fetch("http://localhost:8000/api/carrito/agregar/", {
         method: "POST",

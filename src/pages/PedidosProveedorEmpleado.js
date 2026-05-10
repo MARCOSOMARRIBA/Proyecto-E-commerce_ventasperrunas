@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
-// 🔥 Importamos el contexto
 import { AuthContext } from '../context/AuthContext'; 
 import { db } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { FiPlus, FiEye, FiPackage, FiCalendar, FiClock, FiCheckCircle, FiX, FiShoppingBag, FiSave } from 'react-icons/fi';
 
-const PedidosProveedorIntranet = () => {
+const PedidosProveedorEmpleado = () => {
   const { user } = useContext(AuthContext);
 
   const [pedidosBD, setPedidosBD] = useState([]);
@@ -48,6 +47,7 @@ const PedidosProveedorIntranet = () => {
     } catch (error) { console.error("Error historial:", error); }
   };
 
+  // 🚀 LÓGICA DE AGREGAR PRODUCTO (Corregida)
   const agregarProductoALista = () => {
     if (!itemActual.id_producto || itemActual.cantidad <= 0) {
       alert("Selecciona un producto y una cantidad válida.");
@@ -56,37 +56,18 @@ const PedidosProveedorIntranet = () => {
     
     const prodInfo = productosDisponibles.find(p => p.id_producto === parseInt(itemActual.id_producto));
     
-    setNuevaOrden(ordenPrevia => {
-      // 1. Buscamos si el producto ya está en la tablita
-      const indexExistente = ordenPrevia.productosSeleccionados.findIndex(p => p.id_producto === itemActual.id_producto);
-
-      if (indexExistente >= 0) {
-        // 2. Si ya existe, NO lo duplicamos. Solo le sumamos la nueva cantidad.
-        const listaActualizada = [...ordenPrevia.productosSeleccionados];
-        listaActualizada[indexExistente].cantidad += itemActual.cantidad;
-        
-        return {
-          ...ordenPrevia,
-          productosSeleccionados: listaActualizada
-        };
-      } else {
-        // 3. Si es un producto nuevo, lo agregamos normalmente
-        return {
-          ...ordenPrevia,
-          productosSeleccionados: [
-            ...ordenPrevia.productosSeleccionados, 
-            { 
-              id_producto: itemActual.id_producto,
-              nombre: prodInfo.nombre,
-              cantidad: itemActual.cantidad,
-              precio: itemActual.precio 
-            }
-          ]
-        };
-      }
+    setNuevaOrden({
+      ...nuevaOrden,
+      productosSeleccionados: [
+        ...nuevaOrden.productosSeleccionados, 
+        { 
+          id_producto: itemActual.id_producto,
+          nombre: prodInfo.nombre,
+          cantidad: itemActual.cantidad,
+          precio: itemActual.precio // Se guarda el precio auto-llenado
+        }
+      ]
     });
-
-    // Limpiamos los inputs para el siguiente producto
     setItemActual({ id_producto: '', cantidad: 1, precio: 0 });
   };
 
@@ -97,12 +78,13 @@ const PedidosProveedorIntranet = () => {
     const cantidadArticulos = nuevaOrden.productosSeleccionados.reduce((acc, p) => acc + p.cantidad, 0);
     const fechaHoy = new Date().toISOString().split('T')[0];
 
+    // 🛠️ CORRECCIÓN AQUÍ: Ajustamos los nombres de las columnas del detalle
     const detallesFormateados = nuevaOrden.productosSeleccionados.map(p => ({
-      id_producto: p.id_producto,
+      id_producto: p.id_producto,      // Debe coincidir con el campo en tu modelo DetallePedido
       cantidad: p.cantidad,
       precio_unitario: p.precio,
       precio_subtotal: (p.cantidad * p.precio),
-      estatus: '1' 
+      estatus: '1'                     // Estatus inicial del detalle
     }));
 
     const payload = {
@@ -111,8 +93,8 @@ const PedidosProveedorIntranet = () => {
       total_compra: total,
       estatus: '1', 
       fecha_compra: fechaHoy,
-      id_usuario: user?.id_usuario || user?.id,
-      detalles: detallesFormateados 
+      id_usuario: user.id,
+      detalles: detallesFormateados // 👈 Mandamos la lista ya corregida
     };
 
     try {
@@ -123,35 +105,26 @@ const PedidosProveedorIntranet = () => {
       });
 
       if (res.ok) {
-        // Auditoría en Firebase
-        await addDoc(collection(db, "auditoria_pedidos"), {
-          ...payload,
-          fecha_auditoria: serverTimestamp(),
-          tipo_movimiento: "CREACION_ADMIN" 
-        });
-
-        // Notificación B2B
+        // Guardar en Firebase para la campanita
         await addDoc(collection(db, "pedidos_b2b"), {
           id_proveedor: nuevaOrden.rfc_proveedor,
           estado: '1',
           articulos_totales: cantidadArticulos,
-          mensaje_admin: nuevaOrden.descripcion || "Nuevo resurtido solicitado",
+          mensaje_admin: nuevaOrden.descripcion || "Nuevo resurtido",
           fecha: serverTimestamp()
         });
         
-        // 🚀 MAGIA SILENCIOSA: Solo cerramos el modal, limpiamos y recargamos la tabla
         setMostrarFormulario(false);
         setNuevaOrden({ rfc_proveedor: '', descripcion: '', productosSeleccionados: [] });
         cargarHistorialPedidos();
-        
+        alert("✅ ¡Orden creada correctamente! Ahora sí tiene productos dentro.");
       } else {
         const errorData = await res.json();
-        console.error("Error del servidor:", errorData);
-        alert("Ocurrió un error al guardar. Revisa la consola.");
+        console.log("Error detallado del servidor:", errorData);
+        alert("Error al guardar: El servidor no aceptó el formato de los productos.");
       }
     } catch (error) { 
-        console.error(error);
-        alert("Error de conexión con el servidor."); 
+        alert("Error de conexión al intentar crear la orden."); 
     }
   };
 
@@ -165,11 +138,11 @@ const PedidosProveedorIntranet = () => {
     } catch (error) { console.error(error); } finally { setCargandoDetalles(false); }
   };
 
-  const getBadgeEstatus = (estatus) => {
+const getBadgeEstatus = (estatus) => {
     switch(String(estatus)) {
       case '1': return <span className="badge bg-warning text-dark rounded-pill"><FiClock/> Solicitado</span>;
       case '2': return <span className="badge bg-info text-dark rounded-pill"><FiPackage/> En Proceso</span>;
-      case '3': return <span className="badge bg-danger rounded-pill"><FiX/> Cancelado</span>;
+      case '3': return <span className="badge bg-danger rounded-pill"><FiX/> Cancelado</span>; // <--- LÍNEA NUEVA
       case '4': return <span className="badge bg-success rounded-pill"><FiCheckCircle/> Entregado</span>;
       default: return <span className="badge bg-secondary rounded-pill">Desconocido</span>;
     }
@@ -180,22 +153,22 @@ const PedidosProveedorIntranet = () => {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="fw-bold m-0 d-flex align-items-center gap-2 text-dark">
-            <FiPackage className="text-primary" /> Historial de Resurtido B2B
+            <FiPackage className="text-success" /> Solicitudes a Proveedores
           </h2>
-          <p className="text-muted small m-0">Gestiona las órdenes de resurtido a proveedores.</p>
+          <p className="text-muted small m-0">Gestiona las órdenes de resurtido para la sucursal.</p>
         </div>
-        <button onClick={() => setMostrarFormulario(true)} className="btn btn-primary fw-bold shadow-sm px-4">
+        <button onClick={() => setMostrarFormulario(true)} className="btn btn-success fw-bold shadow-sm px-4">
           <FiPlus className="me-2" /> Nueva Orden
         </button>
       </div>
 
-      {/* MODAL GENERAR ORDEN */}
+      {/* MODAL GENERAR ORDEN (Color Verde) */}
       {mostrarFormulario && (
         <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
             <div className="modal-content border-0 rounded-4 p-2">
               <div className="modal-header border-0">
-                <h5 className="fw-bold"><FiPlus className="text-primary"/> Generar Nueva Orden de Compra</h5>
+                <h5 className="fw-bold"><FiPlus className="text-success"/> Generar Nueva Orden de Compra</h5>
                 <button className="btn-close" onClick={() => setMostrarFormulario(false)}></button>
               </div>
               <div className="modal-body">
@@ -209,13 +182,14 @@ const PedidosProveedorIntranet = () => {
                   </div>
                   <div className="col-md-6">
                     <label className="small fw-bold">Notas/Descripción</label>
-                    <input type="text" className="form-control bg-light" placeholder="Ej: Resurtido mensual" value={nuevaOrden.descripcion} onChange={(e) => setNuevaOrden({...nuevaOrden, descripcion: e.target.value})}/>
+                    <input type="text" className="form-control bg-light" placeholder="Ej: Resurtido urgente" value={nuevaOrden.descripcion} onChange={(e) => setNuevaOrden({...nuevaOrden, descripcion: e.target.value})}/>
                   </div>
                   
                   <hr />
                   
                   <div className="col-md-5">
                     <label className="small fw-bold">Producto</label>
+                    {/* 🚀 SELECTOR CON AUTO-LLENADO DE PRECIO */}
                     <select 
                       className="form-select" 
                       value={itemActual.id_producto} 
@@ -255,7 +229,7 @@ const PedidosProveedorIntranet = () => {
                               <td>{p.nombre}</td>
                               <td>{p.cantidad}</td>
                               <td>${p.precio}</td>
-                              <td className="fw-bold text-primary">${p.cantidad * p.precio}</td>
+                              <td className="fw-bold text-success">${p.cantidad * p.precio}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -265,7 +239,7 @@ const PedidosProveedorIntranet = () => {
                 </div>
               </div>
               <div className="modal-footer border-0">
-                <button className="btn btn-primary w-100 fw-bold py-2 rounded-3" onClick={enviarOrdenBD} disabled={nuevaOrden.productosSeleccionados.length === 0}><FiSave className="me-2"/> Guardar y Enviar Orden</button>
+                <button className="btn btn-success w-100 fw-bold py-2 rounded-3" onClick={enviarOrdenBD} disabled={nuevaOrden.productosSeleccionados.length === 0}><FiSave className="me-2"/> Guardar y Enviar Orden</button>
               </div>
             </div>
           </div>
@@ -292,10 +266,10 @@ const PedidosProveedorIntranet = () => {
                   <td className="ps-4 fw-bold">#{pedido.id_pedido}</td>
                   <td>{pedido.fecha_compra}</td>
                   <td>{pedido.rfc}</td>
-                  <td className="fw-bold text-primary">${parseFloat(pedido.total_compra).toLocaleString()}</td>
+                  <td className="fw-bold text-success">${parseFloat(pedido.total_compra).toLocaleString()}</td>
                   <td>{getBadgeEstatus(pedido.estatus)}</td>
                   <td className="text-center">
-                    <button onClick={() => abrirDetalles(pedido)} className="btn btn-sm btn-outline-primary border-0 rounded-circle"><FiEye size={20} /></button>
+                    <button onClick={() => abrirDetalles(pedido)} className="btn btn-sm btn-outline-success border-0 rounded-circle"><FiEye size={20} /></button>
                   </td>
                 </tr>
               ))}
@@ -309,7 +283,7 @@ const PedidosProveedorIntranet = () => {
         <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)' }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-              <div className="modal-header border-0 bg-primary text-white p-4">
+              <div className="modal-header border-0 bg-success text-white p-4">
                 <div>
                   <h4 className="modal-title fw-bold mb-1 d-flex align-items-center gap-2">
                     <FiShoppingBag /> Detalles de Orden #{pedidoSeleccionado.id_pedido}
@@ -342,7 +316,7 @@ const PedidosProveedorIntranet = () => {
                             </div>
                             <div className="text-end">
                               <small className="text-muted d-block mb-1">Subtotal</small>
-                              <h5 className="fw-bold text-primary m-0">${parseFloat(detalle.precio_subtotal).toLocaleString()}</h5>
+                              <h5 className="fw-bold text-success m-0">${parseFloat(detalle.precio_subtotal).toLocaleString()}</h5>
                             </div>
                           </div>
                         </div>
@@ -355,7 +329,7 @@ const PedidosProveedorIntranet = () => {
                 <button type="button" className="btn btn-light border fw-bold" onClick={() => setModalDetalle(false)}>Cerrar</button>
                 <div className="text-end">
                   <span className="text-muted fw-bold me-3">TOTAL A PAGAR:</span>
-                  <span className="fs-3 fw-bold text-primary">${parseFloat(pedidoSeleccionado.total_compra).toLocaleString()}</span>
+                  <span className="fs-3 fw-bold text-success">${parseFloat(pedidoSeleccionado.total_compra).toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -366,4 +340,4 @@ const PedidosProveedorIntranet = () => {
   );
 };
 
-export default PedidosProveedorIntranet;
+export default PedidosProveedorEmpleado;

@@ -1,10 +1,15 @@
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { FiPackage, FiShoppingCart, FiTruck, FiSettings, FiHelpCircle, FiSearch, FiActivity } from 'react-icons/fi';import VistaOrdenesClientes from './OrdenesClientesIntranet';
+// 1. Agregamos el ícono FiUserPlus para el menú
+import { FiPackage, FiShoppingCart, FiTruck, FiSettings, FiHelpCircle, FiSearch, FiActivity, FiUserPlus } from 'react-icons/fi';
+
+import VistaOrdenesClientes from './OrdenesClientesIntranet';
 import VistaPedidosProveedor from './PedidosProveedorIntranet';
-import VistaInventario from './InventarioIntranet'; // <--- 1. IMPORTAMOS TU NUEVO ARCHIVO AQUÍ
+import VistaInventario from './InventarioIntranet'; 
 import AuditoriaEmpleados from './AuditoriaEmpleados';
+// 2. IMPORTAMOS EL NUEVO COMPONENTE QUE CREASTE
+import CrearUsuarioAdmin from './CrearUsuarioAdmin';
 
 function DashboardIntranet() {
   const { user } = useContext(AuthContext);
@@ -36,8 +41,9 @@ function DashboardIntranet() {
               { id: 'inventario', label: 'Inventario', icon: <FiPackage /> },
               { id: 'ordenes', label: 'Órdenes Clientes', icon: <FiShoppingCart /> },
               { id: 'pedidos', label: 'Pedidos Proveedor', icon: <FiTruck /> },
-              { id: 'auditoria', label: 'Auditoría Empleados', icon: <FiActivity /> } // <-- AGREGAR ESTO
-
+              { id: 'auditoria', label: 'Auditoría Empleados', icon: <FiActivity /> },
+              // 3. AGREGAMOS EL BOTÓN AL MENÚ LATERAL
+              { id: 'crear_usuario', label: 'Alta de Personal', icon: <FiUserPlus /> }
             ].map(item => (
               <li className="nav-item" key={item.id}>
                 <button 
@@ -76,11 +82,12 @@ function DashboardIntranet() {
 
           {/* Renderizado de Vistas */}
           <div className="p-2">
-            {/* 2. AQUÍ SE MUESTRA TU NUEVO COMPONENTE AUTOMÁTICAMENTE */}
             {vistaActiva === 'inventario' && <VistaInventario />}
             {vistaActiva === 'ordenes' && <VistaOrdenesClientes />}
             {vistaActiva === 'pedidos' && <VistaPedidosProveedor />}
             {vistaActiva === 'auditoria' && <AuditoriaEmpleados/>}
+            {/* 4. LE DECIMOS A REACT QUE MUESTRE EL FORMULARIO CUANDO SE SELECCIONE EL BOTÓN */}
+            {vistaActiva === 'crear_usuario' && <CrearUsuarioAdmin />}
           </div>
         </div>
 
