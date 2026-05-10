@@ -19,9 +19,10 @@ from .views import (
     eliminar_producto_carrito,
     actualizar_cantidad_carrito,
     limpiar_carrito,
-    # 1. AGREGAMOS LAS DOS FUNCIONES NUEVAS AQUÍ:
     detalles_pedido,
-    movimientos_recientes
+    movimientos_recientes,
+    # 🔥 1. IMPORTAMOS LA NUEVA FUNCIÓN AQUÍ:
+    crear_usuario_por_admin 
 )
 
 router = DefaultRouter()
@@ -41,16 +42,17 @@ urlpatterns = [
     path('pedidos/movimientos-recientes/', movimientos_recientes, name='movimientos-recientes'),
     path('pedidos/<int:id_pedido>/detalles/', detalles_pedido, name='detalles-pedido'),
     
+    # 🔥 3. AGREGAMOS LA RUTA DEL ADMIN AQUÍ (ANTES DEL ROUTER)
+    path('usuarios/crear-admin/', crear_usuario_por_admin, name='crear-admin'),
+    
     path('', include(router.urls)),
     path('login/', login_usuario, name='login_api'),
     path('checkout/', crear_orden_completa),
     path('mis-pedidos/<str:id_usuario>/', pedidos_usuario),
     path('detalle-orden/<int:id_orden>/', detalle_orden),
     path('carrito/agregar/', agregar_carrito),
-path('carrito/<str:id_usuario>/', obtener_carrito),
+    path('carrito/<str:id_usuario>/', obtener_carrito),
     path('carrito/eliminar/<str:id_usuario>/<int:id_producto>/', eliminar_producto_carrito),
     path('carrito/actualizar/', actualizar_cantidad_carrito),
     path('carrito/limpiar/<str:id_usuario>/', limpiar_carrito),
-    
-
 ]
