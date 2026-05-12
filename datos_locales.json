@@ -1,0 +1,1594 @@
+[
+{
+  "model": "mascotas.carrito",
+  "pk": 1,
+  "fields": {
+    "fecha_creacion": "2026-05-04T04:59:49.086",
+    "id_usuario": "1775545630999"
+  }
+},
+{
+  "model": "mascotas.carrito",
+  "pk": 2,
+  "fields": {
+    "fecha_creacion": "2026-05-04T05:03:31.305",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.carrito",
+  "pk": 3,
+  "fields": {
+    "fecha_creacion": "2026-05-04T05:18:55.910",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.categoria",
+  "pk": 1001,
+  "fields": {
+    "nombre": "Alimento Perro",
+    "descripcion": "Croquetas para perro",
+    "imagen": "cat_alimento_perro.jpg"
+  }
+},
+{
+  "model": "mascotas.categoria",
+  "pk": 1002,
+  "fields": {
+    "nombre": "Alimento Gato",
+    "descripcion": "Croquetas para gato",
+    "imagen": "cat_alimento_gato.jpg"
+  }
+},
+{
+  "model": "mascotas.categoria",
+  "pk": 1003,
+  "fields": {
+    "nombre": "Snacks",
+    "descripcion": "Premios para mascota",
+    "imagen": "cat_snacks.jpg"
+  }
+},
+{
+  "model": "mascotas.categoria",
+  "pk": 1004,
+  "fields": {
+    "nombre": "Accesorios",
+    "descripcion": "Accesorios básicos",
+    "imagen": "cat_accesorios.jpg"
+  }
+},
+{
+  "model": "mascotas.categoria",
+  "pk": 1005,
+  "fields": {
+    "nombre": "Higiene",
+    "descripcion": "Limpieza e higiene",
+    "imagen": "cat_higiene.jpg"
+  }
+},
+{
+  "model": "mascotas.categoria",
+  "pk": 1006,
+  "fields": {
+    "nombre": "Salud",
+    "descripcion": "Prevención y cuidado",
+    "imagen": "cat_salud.jpg"
+  }
+},
+{
+  "model": "mascotas.cobro",
+  "pk": 2026346097,
+  "fields": {
+    "referencia_pago": "REF-1777870808",
+    "estatus": "3",
+    "fecha_cobro": "2026-05-04T05:00:08.962",
+    "metodo_pago": "3",
+    "monto": "789.00",
+    "id_orden": 2026945413
+  }
+},
+{
+  "model": "mascotas.cobro",
+  "pk": 2026829434,
+  "fields": {
+    "referencia_pago": "REF-1778369040",
+    "estatus": "3",
+    "fecha_cobro": "2026-05-09T23:24:00.471",
+    "metodo_pago": "3",
+    "monto": "1828.00",
+    "id_orden": 2026056485
+  }
+},
+{
+  "model": "mascotas.detalleorden",
+  "pk": [
+    2026056485,
+    9000000000008
+  ],
+  "fields": {
+    "id_orden": 2026056485,
+    "id_producto": 9000000000008,
+    "precio_subtotal": "829.00",
+    "cantidad": 1,
+    "precio_unitario": "829.00",
+    "estatus": "1"
+  }
+},
+{
+  "model": "mascotas.detalleorden",
+  "pk": [
+    2026056485,
+    9000000000009
+  ],
+  "fields": {
+    "id_orden": 2026056485,
+    "id_producto": 9000000000009,
+    "precio_subtotal": "999.00",
+    "cantidad": 1,
+    "precio_unitario": "999.00",
+    "estatus": "1"
+  }
+},
+{
+  "model": "mascotas.detalleorden",
+  "pk": [
+    2026945413,
+    9000000000005
+  ],
+  "fields": {
+    "id_orden": 2026945413,
+    "id_producto": 9000000000005,
+    "precio_subtotal": "789.00",
+    "cantidad": 1,
+    "precio_unitario": "789.00",
+    "estatus": "1"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026200113,
+    9000000000018
+  ],
+  "fields": {
+    "id_pedido": 2026200113,
+    "id_producto": 9000000000018,
+    "precio_subtotal": "2700.00",
+    "cantidad": 20,
+    "estatus": "1",
+    "precio_unitario": "135.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026200113,
+    9000000000019
+  ],
+  "fields": {
+    "id_pedido": 2026200113,
+    "id_producto": 9000000000019,
+    "precio_subtotal": "4650.00",
+    "cantidad": 30,
+    "estatus": "1",
+    "precio_unitario": "155.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026206904,
+    9000000000011
+  ],
+  "fields": {
+    "id_pedido": 2026206904,
+    "id_producto": 9000000000011,
+    "precio_subtotal": "3700.00",
+    "cantidad": 50,
+    "estatus": "1",
+    "precio_unitario": "74.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026206904,
+    9000000000012
+  ],
+  "fields": {
+    "id_pedido": 2026206904,
+    "id_producto": 9000000000012,
+    "precio_subtotal": "2340.00",
+    "cantidad": 60,
+    "estatus": "1",
+    "precio_unitario": "39.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026252350,
+    9000000000016
+  ],
+  "fields": {
+    "id_pedido": 2026252350,
+    "id_producto": 9000000000016,
+    "precio_subtotal": "7280.00",
+    "cantidad": 8,
+    "estatus": "1",
+    "precio_unitario": "910.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026252350,
+    9000000000017
+  ],
+  "fields": {
+    "id_pedido": 2026252350,
+    "id_producto": 9000000000017,
+    "precio_subtotal": "2550.00",
+    "cantidad": 25,
+    "estatus": "1",
+    "precio_unitario": "102.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026282329,
+    9000000000010
+  ],
+  "fields": {
+    "id_pedido": 2026282329,
+    "id_producto": 9000000000010,
+    "precio_subtotal": "3696.00",
+    "cantidad": 22,
+    "estatus": "1",
+    "precio_unitario": "168.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026282329,
+    9000000000013
+  ],
+  "fields": {
+    "id_pedido": 2026282329,
+    "id_producto": 9000000000013,
+    "precio_subtotal": "1575.00",
+    "cantidad": 45,
+    "estatus": "1",
+    "precio_unitario": "35.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026544649,
+    9000000000005
+  ],
+  "fields": {
+    "id_pedido": 2026544649,
+    "id_producto": 9000000000005,
+    "precio_subtotal": "8540.00",
+    "cantidad": 14,
+    "estatus": "1",
+    "precio_unitario": "610.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026544649,
+    9000000000009
+  ],
+  "fields": {
+    "id_pedido": 2026544649,
+    "id_producto": 9000000000009,
+    "precio_subtotal": "9780.00",
+    "cantidad": 12,
+    "estatus": "1",
+    "precio_unitario": "815.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026650671,
+    9000000000008
+  ],
+  "fields": {
+    "id_pedido": 2026650671,
+    "id_producto": 9000000000008,
+    "precio_subtotal": "10425.00",
+    "cantidad": 15,
+    "estatus": "1",
+    "precio_unitario": "695.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026650671,
+    9000000000014
+  ],
+  "fields": {
+    "id_pedido": 2026650671,
+    "id_producto": 9000000000014,
+    "precio_subtotal": "2720.00",
+    "cantidad": 40,
+    "estatus": "1",
+    "precio_unitario": "68.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026675605,
+    9000000000007
+  ],
+  "fields": {
+    "id_pedido": 2026675605,
+    "id_producto": 9000000000007,
+    "precio_subtotal": "10080.00",
+    "cantidad": 18,
+    "estatus": "1",
+    "precio_unitario": "560.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026675605,
+    9000000000020
+  ],
+  "fields": {
+    "id_pedido": 2026675605,
+    "id_producto": 9000000000020,
+    "precio_subtotal": "4920.00",
+    "cantidad": 24,
+    "estatus": "1",
+    "precio_unitario": "205.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026721974,
+    9000000000001
+  ],
+  "fields": {
+    "id_pedido": 2026721974,
+    "id_producto": 9000000000001,
+    "precio_subtotal": "11760.00",
+    "cantidad": 12,
+    "estatus": "1",
+    "precio_unitario": "980.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026721974,
+    9000000000015
+  ],
+  "fields": {
+    "id_pedido": 2026721974,
+    "id_producto": 9000000000015,
+    "precio_subtotal": "2550.00",
+    "cantidad": 10,
+    "estatus": "1",
+    "precio_unitario": "255.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026726398,
+    9000000000003
+  ],
+  "fields": {
+    "id_pedido": 2026726398,
+    "id_producto": 9000000000003,
+    "precio_subtotal": "10500.00",
+    "cantidad": 25,
+    "estatus": "1",
+    "precio_unitario": "420.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026726398,
+    9000000000006
+  ],
+  "fields": {
+    "id_pedido": 2026726398,
+    "id_producto": 9000000000006,
+    "precio_subtotal": "8400.00",
+    "cantidad": 16,
+    "estatus": "1",
+    "precio_unitario": "525.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026762712,
+    9000000000002
+  ],
+  "fields": {
+    "id_pedido": 2026762712,
+    "id_producto": 9000000000002,
+    "precio_subtotal": "13680.00",
+    "cantidad": 18,
+    "estatus": "1",
+    "precio_unitario": "760.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026762712,
+    9000000000004
+  ],
+  "fields": {
+    "id_pedido": 2026762712,
+    "id_producto": 9000000000004,
+    "precio_subtotal": "9900.00",
+    "cantidad": 20,
+    "estatus": "1",
+    "precio_unitario": "495.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026987298,
+    9000000000012
+  ],
+  "fields": {
+    "id_pedido": 2026987298,
+    "id_producto": 9000000000012,
+    "precio_subtotal": "59.00",
+    "cantidad": 1,
+    "estatus": "1",
+    "precio_unitario": "59.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026987299,
+    9000000000012
+  ],
+  "fields": {
+    "id_pedido": 2026987299,
+    "id_producto": 9000000000012,
+    "precio_subtotal": "59.00",
+    "cantidad": 1,
+    "estatus": "1",
+    "precio_unitario": "59.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026987300,
+    9000000000013
+  ],
+  "fields": {
+    "id_pedido": 2026987300,
+    "id_producto": 9000000000013,
+    "precio_subtotal": "216.00",
+    "cantidad": 4,
+    "estatus": "1",
+    "precio_unitario": "54.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026987301,
+    9000000000014
+  ],
+  "fields": {
+    "id_pedido": 2026987301,
+    "id_producto": 9000000000014,
+    "precio_subtotal": "95.00",
+    "cantidad": 1,
+    "estatus": "1",
+    "precio_unitario": "95.00"
+  }
+},
+{
+  "model": "mascotas.detallepedido",
+  "pk": [
+    2026987302,
+    9000000000012
+  ],
+  "fields": {
+    "id_pedido": 2026987302,
+    "id_producto": 9000000000012,
+    "precio_subtotal": "59.00",
+    "cantidad": 1,
+    "estatus": "1",
+    "precio_unitario": "59.00"
+  }
+},
+{
+  "model": "mascotas.orden",
+  "pk": 2026056485,
+  "fields": {
+    "descripcion": "Compra desde frontend",
+    "estatus": "1",
+    "fecha_creacion": "2026-05-09T23:24:00.403",
+    "total_orden": "1828.00",
+    "direccion_envio": "Calle Carlos A gomez",
+    "id_usuario": "1775545630999"
+  }
+},
+{
+  "model": "mascotas.orden",
+  "pk": 2026945413,
+  "fields": {
+    "descripcion": "Compra desde frontend",
+    "estatus": "2",
+    "fecha_creacion": "2026-05-04T05:00:08.887",
+    "total_orden": "789.00",
+    "direccion_envio": "Calle Tamani",
+    "id_usuario": "1775545630999"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026010460,
+  "fields": {
+    "descripcion": "PRUEBA LUCHANO",
+    "fecha_compra": "2026-04-27",
+    "estatus": "4",
+    "total_compra": "2398.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026037770,
+  "fields": {
+    "descripcion": "PRUEBA LUCHANO",
+    "fecha_compra": "2026-04-27",
+    "estatus": "4",
+    "total_compra": "2398.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026076811,
+  "fields": {
+    "descripcion": "LLLL",
+    "fecha_compra": "2026-05-10",
+    "estatus": "4",
+    "total_compra": "999.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026123423,
+  "fields": {
+    "descripcion": "AUTOMATIZACION",
+    "fecha_compra": "2026-05-10",
+    "estatus": "1",
+    "total_compra": "239.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "1777874966"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026200113,
+  "fields": {
+    "descripcion": "Compra Higiene Abril 2026",
+    "fecha_compra": "2026-04-22",
+    "estatus": "1",
+    "total_compra": "7350.00",
+    "rfc": "HSM260401I9J",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026206904,
+  "fields": {
+    "descripcion": "Compra Snacks Abril 2026",
+    "fecha_compra": "2026-04-22",
+    "estatus": "1",
+    "total_compra": "6040.00",
+    "rfc": "SAP260401F6G",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026239952,
+  "fields": {
+    "descripcion": "Productos de Mayo",
+    "fecha_compra": "2026-05-01",
+    "estatus": "2",
+    "total_compra": "1199.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026252350,
+  "fields": {
+    "descripcion": "Compra Petmate Abril 2026",
+    "fecha_compra": "2026-04-22",
+    "estatus": "2",
+    "total_compra": "9830.00",
+    "rfc": "APM260401G7H",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026264620,
+  "fields": {
+    "descripcion": "Dexter Morgan",
+    "fecha_compra": "2026-04-27",
+    "estatus": "4",
+    "total_compra": "2398.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026282329,
+  "fields": {
+    "descripcion": "Compra Trixie Abril 2026",
+    "fecha_compra": "2026-04-22",
+    "estatus": "1",
+    "total_compra": "5271.00",
+    "rfc": "TAC260401H8I",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026285831,
+  "fields": {
+    "descripcion": "Zyanya",
+    "fecha_compra": "2026-05-10",
+    "estatus": "4",
+    "total_compra": "59.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "1777874966"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026360297,
+  "fields": {
+    "descripcion": "HOLAHOLAHOLA",
+    "fecha_compra": "2026-05-10",
+    "estatus": "1",
+    "total_compra": "956.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "1777874966"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026381484,
+  "fields": {
+    "descripcion": "Zyanya",
+    "fecha_compra": "2026-05-09",
+    "estatus": "1",
+    "total_compra": "0.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "1777874966"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026487983,
+  "fields": {
+    "descripcion": "Hanamichi Pedido",
+    "fecha_compra": "2026-04-27",
+    "estatus": "4",
+    "total_compra": "0.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026494633,
+  "fields": {
+    "descripcion": "VANESSA PRODUCTO",
+    "fecha_compra": "2026-05-01",
+    "estatus": "4",
+    "total_compra": "54.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026516657,
+  "fields": {
+    "descripcion": "PRUEBA LUCHANO",
+    "fecha_compra": "2026-04-27",
+    "estatus": "4",
+    "total_compra": "1199.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026516745,
+  "fields": {
+    "descripcion": "PRUEBA 55",
+    "fecha_compra": "2026-04-27",
+    "estatus": "4",
+    "total_compra": "0.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026518380,
+  "fields": {
+    "descripcion": "Prueba autotomatizacion",
+    "fecha_compra": "2026-05-10",
+    "estatus": "4",
+    "total_compra": "829.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026544649,
+  "fields": {
+    "descripcion": "Compra Nupec y Pro Plan Cat Abril 2026",
+    "fecha_compra": "2026-04-22",
+    "estatus": "1",
+    "total_compra": "18320.00",
+    "rfc": "NEM260401E5F",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026581085,
+  "fields": {
+    "descripcion": "GERARDOPOLLO",
+    "fecha_compra": "2026-05-10",
+    "estatus": "1",
+    "total_compra": "59.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026648935,
+  "fields": {
+    "descripcion": "PRUEBA COMUNICACION",
+    "fecha_compra": "2026-04-27",
+    "estatus": "3",
+    "total_compra": "1199.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026650671,
+  "fields": {
+    "descripcion": "Abastecimiento Felino Premium Abril 2026",
+    "fecha_compra": "2026-04-22",
+    "estatus": "1",
+    "total_compra": "13145.00",
+    "rfc": "AFS260401B2C",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026675605,
+  "fields": {
+    "descripcion": "Compra Salud Preventiva Abril 2026",
+    "fecha_compra": "2026-04-22",
+    "estatus": "1",
+    "total_compra": "15000.00",
+    "rfc": "SAM260401J1K",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026721974,
+  "fields": {
+    "descripcion": "Abastecimiento Royal y Kong Abril 2026",
+    "fecha_compra": "2026-04-22",
+    "estatus": "4",
+    "total_compra": "14310.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026726398,
+  "fields": {
+    "descripcion": "Compra Mars Petcare Abril 2026",
+    "fecha_compra": "2026-04-22",
+    "estatus": "2",
+    "total_compra": "18900.00",
+    "rfc": "CMP260401D4E",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026729296,
+  "fields": {
+    "descripcion": "Zyanya",
+    "fecha_compra": "2026-05-09",
+    "estatus": "1",
+    "total_compra": "0.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "1777874966"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026762712,
+  "fields": {
+    "descripcion": "Compra Purina Canino Abril 2026",
+    "fecha_compra": "2026-04-22",
+    "estatus": "1",
+    "total_compra": "23580.00",
+    "rfc": "CPV260401C3D",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026773018,
+  "fields": {
+    "descripcion": "HOLA",
+    "fecha_compra": "2026-05-10",
+    "estatus": "1",
+    "total_compra": "1199.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026794605,
+  "fields": {
+    "descripcion": "GENIO",
+    "fecha_compra": "2026-05-10",
+    "estatus": "4",
+    "total_compra": "999.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "1777874966"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026812536,
+  "fields": {
+    "descripcion": "Automatizacion",
+    "fecha_compra": "2026-05-10",
+    "estatus": "4",
+    "total_compra": "729.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "1777874966"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026953201,
+  "fields": {
+    "descripcion": "PRUEBA LUCHANO",
+    "fecha_compra": "2026-04-27",
+    "estatus": "4",
+    "total_compra": "1199.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026987298,
+  "fields": {
+    "descripcion": "Zyanya",
+    "fecha_compra": "2026-05-09",
+    "estatus": "1",
+    "total_compra": "59.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "1777874966"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026987299,
+  "fields": {
+    "descripcion": "akagi",
+    "fecha_compra": "2026-05-10",
+    "estatus": "4",
+    "total_compra": "59.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026987300,
+  "fields": {
+    "descripcion": "RYOTAMIYAGI",
+    "fecha_compra": "2026-05-10",
+    "estatus": "4",
+    "total_compra": "216.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "1777874966"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026987301,
+  "fields": {
+    "descripcion": "HARUKO AKAGI",
+    "fecha_compra": "2026-05-10",
+    "estatus": "4",
+    "total_compra": "95.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "1777874966"
+  }
+},
+{
+  "model": "mascotas.pedido",
+  "pk": 2026987302,
+  "fields": {
+    "descripcion": "Pedido de Mayo 2026",
+    "fecha_compra": "2026-05-10",
+    "estatus": "1",
+    "total_compra": "59.00",
+    "rfc": "DPG260401A1B",
+    "id_usuario": "ADM0000000001"
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000001,
+  "fields": {
+    "nombre": "Royal Canin Medium Adult 4kg",
+    "descripcion": "Alimento seco para perro adulto de raza mediana.",
+    "precio": "1199.00",
+    "stock": true,
+    "imagen": "royal_medium_adult_4kg.jpg",
+    "activo": true,
+    "id_categoria": 1001
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000002,
+  "fields": {
+    "nombre": "Purina Pro Plan Sensitive Skin 3kg",
+    "descripcion": "Alimento para perro adulto con piel sensible.",
+    "precio": "949.00",
+    "stock": true,
+    "imagen": "proplan_sensitive_skin_3kg.jpg",
+    "activo": true,
+    "id_categoria": 1001
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000003,
+  "fields": {
+    "nombre": "Pedigree Adulto Res y Vegetales 8kg",
+    "descripcion": "Croquetas para perro adulto sabor res y vegetales.",
+    "precio": "549.00",
+    "stock": true,
+    "imagen": "pedigree_res_8kg.jpg",
+    "activo": true,
+    "id_categoria": 1001
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000004,
+  "fields": {
+    "nombre": "Dog Chow Adultos 10kg",
+    "descripcion": "Alimento seco para perros medianos y grandes.",
+    "precio": "629.00",
+    "stock": true,
+    "imagen": "dogchow_adulto_10kg.jpg",
+    "activo": true,
+    "id_categoria": 1001
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000005,
+  "fields": {
+    "nombre": "Nupec Adulto Razas Medianas 8kg",
+    "descripcion": "Alimento premium para perro adulto.",
+    "precio": "789.00",
+    "stock": true,
+    "imagen": "nupec_adulto_8kg.jpg",
+    "activo": true,
+    "id_categoria": 1001
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000006,
+  "fields": {
+    "nombre": "Whiskas Adulto Pescado 10kg",
+    "descripcion": "Croquetas para gato adulto sabor pescado.",
+    "precio": "689.00",
+    "stock": true,
+    "imagen": "whiskas_pescado_10kg.jpg",
+    "activo": true,
+    "id_categoria": 1002
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000007,
+  "fields": {
+    "nombre": "Purina Cat Chow Defense Plus 8kg",
+    "descripcion": "Alimento para gato adulto con prebióticos.",
+    "precio": "729.00",
+    "stock": true,
+    "imagen": "cat_chow_defense_8kg.jpg",
+    "activo": true,
+    "id_categoria": 1002
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000008,
+  "fields": {
+    "nombre": "Royal Canin Sterilised 2kg",
+    "descripcion": "Alimento para gato esterilizado.",
+    "precio": "829.00",
+    "stock": true,
+    "imagen": "royal_sterilised_2kg.jpg",
+    "activo": true,
+    "id_categoria": 1002
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000009,
+  "fields": {
+    "nombre": "Pro Plan Cat Sterilized 3kg",
+    "descripcion": "Alimento premium para gato esterilizado.",
+    "precio": "999.00",
+    "stock": true,
+    "imagen": "proplan_cat_sterilized_3kg.jpg",
+    "activo": true,
+    "id_categoria": 1002
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000010,
+  "fields": {
+    "nombre": "Minino Plus Adulto 3kg",
+    "descripcion": "Alimento seco para gato adulto.",
+    "precio": "239.00",
+    "stock": true,
+    "imagen": "minino_plus_3kg.jpg",
+    "activo": true,
+    "id_categoria": 1002
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000011,
+  "fields": {
+    "nombre": "Pedigree Dentastix Mediano 180g",
+    "descripcion": "Snack dental para perro.",
+    "precio": "109.00",
+    "stock": true,
+    "imagen": "dentastix_180g.jpg",
+    "activo": true,
+    "id_categoria": 1003
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000012,
+  "fields": {
+    "nombre": "Dreamies Pollo 60g",
+    "descripcion": "Premio crocante para gato sabor pollo.",
+    "precio": "59.00",
+    "stock": true,
+    "imagen": "dreamies_pollo_60g.jpg",
+    "activo": true,
+    "id_categoria": 1003
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000013,
+  "fields": {
+    "nombre": "Felix Party Mix Original 60g",
+    "descripcion": "Premio para gato con mezcla de sabores.",
+    "precio": "54.00",
+    "stock": true,
+    "imagen": "felix_party_mix_60g.jpg",
+    "activo": true,
+    "id_categoria": 1003
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000014,
+  "fields": {
+    "nombre": "Inaba Churu Atun 4 tubos",
+    "descripcion": "Snack cremoso para gato sabor atún.",
+    "precio": "95.00",
+    "stock": true,
+    "imagen": "inaba_churu_atun_4.jpg",
+    "activo": true,
+    "id_categoria": 1003
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000015,
+  "fields": {
+    "nombre": "Kong Classic Medium",
+    "descripcion": "Juguete rellenable de caucho natural.",
+    "precio": "329.00",
+    "stock": true,
+    "imagen": "kong_classic_medium.jpg",
+    "activo": true,
+    "id_categoria": 1004
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000016,
+  "fields": {
+    "nombre": "Petmate Two Door Top Load Small",
+    "descripcion": "Transportadora rígida para mascota pequeña.",
+    "precio": "1190.00",
+    "stock": true,
+    "imagen": "petmate_two_door_small.jpg",
+    "activo": true,
+    "id_categoria": 1004
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000017,
+  "fields": {
+    "nombre": "Trixie Plato Acero Inoxidable 900ml",
+    "descripcion": "Plato metálico para perro o gato.",
+    "precio": "149.00",
+    "stock": true,
+    "imagen": "trixie_plato_900ml.jpg",
+    "activo": true,
+    "id_categoria": 1004
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000018,
+  "fields": {
+    "nombre": "Hartz Shampoo Avena 532ml",
+    "descripcion": "Shampoo para perro con avena.",
+    "precio": "189.00",
+    "stock": true,
+    "imagen": "hartz_shampoo_avena.jpg",
+    "activo": true,
+    "id_categoria": 1005
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000019,
+  "fields": {
+    "nombre": "Catsan Arena Higienica 10L",
+    "descripcion": "Arena absorbente para gato.",
+    "precio": "219.00",
+    "stock": true,
+    "imagen": "catsan_10l.jpg",
+    "activo": true,
+    "id_categoria": 1005
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000020,
+  "fields": {
+    "nombre": "Frontline Plus Perro 10 a 20kg",
+    "descripcion": "Pipeta antipulgas y garrapatas para perro.",
+    "precio": "289.00",
+    "stock": true,
+    "imagen": "frontline_plus_10_20kg.jpg",
+    "activo": true,
+    "id_categoria": 1006
+  }
+},
+{
+  "model": "mascotas.producto",
+  "pk": 9000000000021,
+  "fields": {
+    "nombre": "Genio Sakuragi",
+    "descripcion": "Genio Basketball",
+    "precio": "100.00",
+    "stock": true,
+    "imagen": "https://i.pinimg.com/originals/28/44/af/2844aff3fac240d013ceb830a5de044a.png",
+    "activo": true,
+    "id_categoria": 1001
+  }
+},
+{
+  "model": "mascotas.proveedor",
+  "pk": "AFS260401B2C",
+  "fields": {
+    "nombre_empresa": "Abasto Felino del Sureste",
+    "telefono": "2291014502",
+    "correo": "contacto@abastofelino.com",
+    "direccion": "Calle Altamirano 88, Boca del Rio, Veracruz",
+    "activo": true
+  }
+},
+{
+  "model": "mascotas.proveedor",
+  "pk": "APM260401G7H",
+  "fields": {
+    "nombre_empresa": "Accesorios Petmate Mexico",
+    "telefono": "2291014507",
+    "correo": "ventas@petmatemx.com",
+    "direccion": "Parque Industrial Bruno Pagliai, Veracruz",
+    "activo": true
+  }
+},
+{
+  "model": "mascotas.proveedor",
+  "pk": "CMP260401D4E",
+  "fields": {
+    "nombre_empresa": "Comercial Mars Petcare Oriente",
+    "telefono": "2291014504",
+    "correo": "atencion@marspetoriente.com",
+    "direccion": "Blvd Ruiz Cortines 1120, Veracruz, Veracruz",
+    "activo": true
+  }
+},
+{
+  "model": "mascotas.proveedor",
+  "pk": "CPV260401C3D",
+  "fields": {
+    "nombre_empresa": "Comercializadora Purina Veracruz",
+    "telefono": "2291014503",
+    "correo": "ventas@purinaveracruz.com",
+    "direccion": "Av Diaz Miron 520, Veracruz, Veracruz",
+    "activo": true
+  }
+},
+{
+  "model": "mascotas.proveedor",
+  "pk": "DPG260401A1B",
+  "fields": {
+    "nombre_empresa": "Distribuidora Pet Premium del Golfo",
+    "telefono": "2291014501",
+    "correo": "ventas@petpremiumgolfo.com",
+    "direccion": "Av Independencia 245, Veracruz, Veracruz",
+    "activo": true
+  }
+},
+{
+  "model": "mascotas.proveedor",
+  "pk": "HSM260401I9J",
+  "fields": {
+    "nombre_empresa": "Higiene y Salud Mascotas Mexico",
+    "telefono": "2291014509",
+    "correo": "proveedores@hsmmexico.com",
+    "direccion": "Calle Urano 34, Boca del Rio, Veracruz",
+    "activo": true
+  }
+},
+{
+  "model": "mascotas.proveedor",
+  "pk": "NEM260401E5F",
+  "fields": {
+    "nombre_empresa": "Nutricion Especializada de Mascotas del Centro",
+    "telefono": "2291014505",
+    "correo": "pedido@nemcentro.com",
+    "direccion": "Calle España 65, Xalapa, Veracruz",
+    "activo": true
+  }
+},
+{
+  "model": "mascotas.proveedor",
+  "pk": "SAM260401J1K",
+  "fields": {
+    "nombre_empresa": "Salud Animal del Mayab",
+    "telefono": "2291014510",
+    "correo": "ventas@saludanimalmayab.com",
+    "direccion": "Calle 60 145, Merida, Yucatan",
+    "activo": true
+  }
+},
+{
+  "model": "mascotas.proveedor",
+  "pk": "SAP260401F6G",
+  "fields": {
+    "nombre_empresa": "Snacks y Accesorios Pet del Golfo",
+    "telefono": "2291014506",
+    "correo": "mayoreo@sapgolfo.com",
+    "direccion": "Av Americas 310, Veracruz, Veracruz",
+    "activo": true
+  }
+},
+{
+  "model": "mascotas.proveedor",
+  "pk": "TAC260401H8I",
+  "fields": {
+    "nombre_empresa": "Trixie Accesorios del Centro",
+    "telefono": "2291014508",
+    "correo": "contacto@trixiecentro.com",
+    "direccion": "Av Lazaro Cardenas 900, Xalapa, Veracruz",
+    "activo": true
+  }
+},
+{
+  "model": "mascotas.seccionextranet",
+  "pk": 1,
+  "fields": {
+    "titulo_pagina": "Campaña Royal Canin Perro",
+    "imagen_banner": "banner_royal_dog.jpg",
+    "texto_bienvenida": "Descubre la línea Royal Canin para perro adulto con fórmulas por etapa y tamaño.",
+    "estatus": false,
+    "url_destino": "/productos/9000000000001",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.seccionextranet",
+  "pk": 2,
+  "fields": {
+    "titulo_pagina": "Campaña Pro Plan Sensitive",
+    "imagen_banner": "banner_proplan_sensitive.jpg",
+    "texto_bienvenida": "Promoción de Pro Plan Sensitive Skin para perros con necesidades dermatológicas.",
+    "estatus": false,
+    "url_destino": "/productos/9000000000002",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.seccionextranet",
+  "pk": 3,
+  "fields": {
+    "titulo_pagina": "Promoción Pedigree Adulto",
+    "imagen_banner": "banner_pedigree_adulto.jpg",
+    "texto_bienvenida": "Oferta especial en croquetas Pedigree Adulto Res y Vegetales.",
+    "estatus": false,
+    "url_destino": "/productos/9000000000003",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.seccionextranet",
+  "pk": 4,
+  "fields": {
+    "titulo_pagina": "Campaña Cat Chow Defense Plus",
+    "imagen_banner": "banner_cat_chow.jpg",
+    "texto_bienvenida": "Nutrición diaria para gato adulto con la línea Cat Chow Defense Plus.",
+    "estatus": false,
+    "url_destino": "/productos/9000000000007",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.seccionextranet",
+  "pk": 5,
+  "fields": {
+    "titulo_pagina": "Royal Canin Gato Esterilizado",
+    "imagen_banner": "banner_royal_cat.jpg",
+    "texto_bienvenida": "Alimento premium para gatos esterilizados con control de peso.",
+    "estatus": false,
+    "url_destino": "/productos/9000000000008",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.seccionextranet",
+  "pk": 6,
+  "fields": {
+    "titulo_pagina": "Semana de Snacks para Gato",
+    "imagen_banner": "banner_snacks_gato.jpg",
+    "texto_bienvenida": "Dreamies, Felix e Inaba Churu con promociones por volumen.",
+    "estatus": false,
+    "url_destino": "/productos/9000000000012",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.seccionextranet",
+  "pk": 7,
+  "fields": {
+    "titulo_pagina": "Especial Dentastix",
+    "imagen_banner": "banner_dentastix.jpg",
+    "texto_bienvenida": "Cuida la salud oral de tu perro con Pedigree Dentastix.",
+    "estatus": false,
+    "url_destino": "/productos/9000000000011",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.seccionextranet",
+  "pk": 8,
+  "fields": {
+    "titulo_pagina": "Accesorios Kong y Petmate",
+    "imagen_banner": "banner_kong_petmate.jpg",
+    "texto_bienvenida": "Juguetes y transportadoras para viajes y enriquecimiento ambiental.",
+    "estatus": false,
+    "url_destino": "/productos/9000000000015",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.seccionextranet",
+  "pk": 9,
+  "fields": {
+    "titulo_pagina": "Higiene del Hogar Felino",
+    "imagen_banner": "banner_catsan.jpg",
+    "texto_bienvenida": "Mantén limpio el arenero con Catsan y más productos de higiene.",
+    "estatus": false,
+    "url_destino": "/productos/9000000000019",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.seccionextranet",
+  "pk": 10,
+  "fields": {
+    "titulo_pagina": "Protección Antipulgas Frontline",
+    "imagen_banner": "banner_frontline.jpg",
+    "texto_bienvenida": "Prevención mensual contra pulgas y garrapatas para perro.",
+    "estatus": false,
+    "url_destino": "/productos/9000000000020",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.seccionextranet",
+  "pk": 12,
+  "fields": {
+    "titulo_pagina": "HANAMICHI SAKURAGI",
+    "imagen_banner": "https://static.zerochan.net/Sakuragi.Hanamichi.full.4528592.jpg",
+    "texto_bienvenida": "EL GENIO DEL BASKETBALL",
+    "estatus": true,
+    "url_destino": "",
+    "id_usuario": "EXT0000000001"
+  }
+},
+{
+  "model": "mascotas.usuario",
+  "pk": "1775545630999",
+  "fields": {
+    "nombre_usuario": "Aurelio Cadena",
+    "contrasena": "Morgado90",
+    "correo": "sans15cadena@gmail.com",
+    "rol": "1",
+    "fecha_registro": "2026-04-07T07:07:10.999"
+  }
+},
+{
+  "model": "mascotas.usuario",
+  "pk": "1775626188368",
+  "fields": {
+    "nombre_usuario": "Leonel Somarriba",
+    "contrasena": "macopollo",
+    "correo": "leonelsomarri@gmail.com",
+    "rol": "1",
+    "fecha_registro": "2026-04-08T05:29:48.368"
+  }
+},
+{
+  "model": "mascotas.usuario",
+  "pk": "1775627090654",
+  "fields": {
+    "nombre_usuario": "gerardo",
+    "contrasena": "morgado90",
+    "correo": "titto_102014@gmail.com",
+    "rol": "1",
+    "fecha_registro": "2026-04-08T05:44:50.654"
+  }
+},
+{
+  "model": "mascotas.usuario",
+  "pk": "1777072418029",
+  "fields": {
+    "nombre_usuario": "Cesar",
+    "contrasena": "springmaster",
+    "correo": "cr1275768@gmail.com",
+    "rol": "1",
+    "fecha_registro": "2026-04-24T23:13:38.029"
+  }
+},
+{
+  "model": "mascotas.usuario",
+  "pk": "1777663067233",
+  "fields": {
+    "nombre_usuario": "Vanessa Cadena",
+    "contrasena": "1234",
+    "correo": "elviracadberz@hotmail.com",
+    "rol": "1",
+    "fecha_registro": "2026-05-01T19:17:47.233"
+  }
+},
+{
+  "model": "mascotas.usuario",
+  "pk": "1777874966",
+  "fields": {
+    "nombre_usuario": "Pablo Alberto",
+    "contrasena": "temporal123",
+    "correo": "pablocastellanos@gmail.com",
+    "rol": "2",
+    "fecha_registro": "2026-05-04T06:09:26.625"
+  }
+},
+{
+  "model": "mascotas.usuario",
+  "pk": "ADM0000000001",
+  "fields": {
+    "nombre_usuario": "Monica Herrera",
+    "contrasena": "$2b$12$AdminHashEjemplo001",
+    "correo": "monica.herrera@petmarketlocal.com",
+    "rol": "3",
+    "fecha_registro": "2026-04-22T17:17:57.762"
+  }
+},
+{
+  "model": "mascotas.usuario",
+  "pk": "CLI0000000001",
+  "fields": {
+    "nombre_usuario": "Alejandra Torres",
+    "contrasena": "$2b$12$ClienteHashEjemplo001",
+    "correo": "alejandra.torres@gmail.com",
+    "rol": "1",
+    "fecha_registro": "2026-04-22T17:17:57.762"
+  }
+},
+{
+  "model": "mascotas.usuario",
+  "pk": "EXT0000000001",
+  "fields": {
+    "nombre_usuario": "Daniel Rosas",
+    "contrasena": "$2b$12$ExtranetHashEjemplo001",
+    "correo": "daniel.rosas@petmediaads.com",
+    "rol": "4",
+    "fecha_registro": "2026-04-22T17:17:57.762"
+  }
+}
+]

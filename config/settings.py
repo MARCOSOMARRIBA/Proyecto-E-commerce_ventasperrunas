@@ -83,15 +83,15 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
+'default': {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "pagina_mascotas",
-        "USER": "postgres",
-        "PASSWORD": "12345",
-        "HOST": "localhost",
-        "PORT": "5434",
+        "NAME": "postgres",
+        "USER": "postgres.lebbqfhcmicvhvutxovu",
+        "PASSWORD": "Morgado9090@",
+        "HOST": "aws-1-us-east-1.pooler.supabase.com",
+        "PORT": "6543",
         'OPTIONS': {
-            'options': '-csearch_path=tienda_mascotas',
+            'options': '-c search_path=public'
         },
     }
 }

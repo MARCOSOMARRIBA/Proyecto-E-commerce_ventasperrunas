@@ -14,7 +14,7 @@ class Carrito(models.Model):
     id_usuario = models.ForeignKey('Usuario', models.DO_NOTHING, db_column='id_usuario')
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'carrito'
 
 
@@ -25,7 +25,7 @@ class Categoria(models.Model):
     imagen = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'categoria'
 
 
@@ -39,7 +39,7 @@ class Cobro(models.Model):
     id_orden = models.OneToOneField('Orden', models.DO_NOTHING, db_column='id_orden')
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'cobro'
 
 
@@ -51,7 +51,7 @@ class DetalleCarrito(models.Model):
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'detalle_carrito'
 
 
@@ -65,7 +65,7 @@ class DetalleOrden(models.Model):
     estatus = models.CharField(max_length=1)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'detalle_orden'
 
 
@@ -79,7 +79,7 @@ class DetallePedido(models.Model):
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'detalle_pedido'
 
 
@@ -93,7 +93,7 @@ class Orden(models.Model):
     id_usuario = models.ForeignKey('Usuario', models.DO_NOTHING, db_column='id_usuario')
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'orden'
 
 
@@ -107,7 +107,7 @@ class Pedido(models.Model):
     id_usuario = models.ForeignKey('Usuario', models.DO_NOTHING, db_column='id_usuario')
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'pedido'
 
 
@@ -122,7 +122,7 @@ class Producto(models.Model):
     id_categoria = models.ForeignKey(Categoria, models.DO_NOTHING, db_column='id_categoria')
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'producto'
 
 
@@ -135,7 +135,7 @@ class Proveedor(models.Model):
     activo = models.BooleanField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'proveedor'
 
 
@@ -149,7 +149,7 @@ class SeccionExtranet(models.Model):
     id_usuario = models.ForeignKey('Usuario', models.DO_NOTHING, db_column='id_usuario')
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'seccion_extranet'
 
 
@@ -163,7 +163,7 @@ class Usuario(models.Model):
 
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'usuario'
         
 class Notificacion(models.Model):

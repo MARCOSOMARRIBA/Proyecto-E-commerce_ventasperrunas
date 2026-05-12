@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.db import transaction, connection
 import random
 import time
+from django.db.models import Max
 
 from .models import (
     Carrito, Categoria, Cobro, Orden, Pedido, Producto, 
@@ -211,9 +212,9 @@ def crear_pedido(request):
     data = request.data
     try:
         with transaction.atomic():
-            # 🚀 1. FORZAMOS UN ID NUEVO MANUALMENTE
-            ultimo_pedido = Pedido.objects.all().order_by('-id_pedido').first()
-            nuevo_id = (ultimo_pedido.id_pedido + 1) if ultimo_pedido else 1
+            # 🚀 1. FORZAMOS EL ID SEGURO USANDO MATEMÁTICAS (MAX)
+            max_pedido = Pedido.objects.aggregate(Max('id_pedido'))['id_pedido__max']
+            nuevo_id = (max_pedido or 0) + 1
 
             fecha = data.get('fecha_compra')
             if not fecha:
@@ -245,7 +246,13 @@ def crear_pedido(request):
                     }
 
             for prod_id, info in detalles_limpios.items():
+                # 🚀 2. TAMBIÉN ASEGURAMOS EL ID DEL DETALLE POR SI ACASO
+                # Si tu tabla de detalles se llama diferente, ajusta 'pk' o 'id_detalle'
+                max_detalle = DetallePedido.objects.aggregate(Max('pk'))['pk__max']
+                nuevo_id_detalle = (max_detalle or 0) + 1
+
                 DetallePedido.objects.create(
+                    id=nuevo_id_detalle, # Cambia 'id' a 'id_detalle' si tu modelo lo requiere
                     id_pedido_id=nuevo_id,
                     id_producto_id=prod_id,
                     cantidad=info['cantidad'],
@@ -253,6 +260,15 @@ def crear_pedido(request):
                     precio_subtotal=info['precio_subtotal'],
                     estatus='1'
                 )
+
+            # 🚀 3. ¡AQUÍ DEBE IR TU CÓDIGO DE NOTIFICACIÓN!
+            # Si guardabas la notificación en una tabla "Notificacion", sería algo así:
+            # Notificacion.objects.create(
+            #     usuario_destino=data.get('rfc'), 
+            #     mensaje=f"Tienes un nuevo pedido B2B de Farmacia El Ranchero (#{nuevo_id})"
+            # )
+            # Si usabas requests para Firebase, colócalo aquí antes del return.
+
         return Response({"message": "Pedido creado con éxito", "id_pedido": nuevo_id}, status=201)
     except Exception as e:
         import traceback
@@ -301,11 +317,11 @@ def crear_orden_completa(request):
         if not id_usuario or not productos:
             return Response({"error": "Datos incompletos"}, status=400)
 
-        if metodo_pago == "3":  
+        if metodo_pago == "3":  # OXXO
             estatus_orden = "1"   
             estatus_cobro = "3"   
             descontar_stock = False
-        else:
+        else:                   # Tarjeta
             estatus_orden = "1"   
             estatus_cobro = "1"   
             descontar_stock = True
@@ -328,37 +344,58 @@ def crear_orden_completa(request):
             if not productos_db:
                 return Response({"error": "Carrito vacío"}, status=400)
 
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO orden (
-                        descripcion, estatus, fecha_creacion, total_orden, direccion_envio, id_usuario
-                    ) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id_orden
-                """, ["Compra desde frontend", estatus_orden, timezone.now(), total_orden, direccion_envio, id_usuario])
-                id_orden = cursor.fetchone()[0]
+            # 🚀 1. ID SEGURO PARA ORDEN USANDO MATEMÁTICAS PURAS
+            max_orden = Orden.objects.aggregate(Max('id_orden'))['id_orden__max']
+            nuevo_id_orden = (max_orden or 0) + 1
 
+            nueva_orden = Orden.objects.create(
+                id_orden=nuevo_id_orden,
+                descripcion="Compra desde frontend",
+                estatus=estatus_orden,
+                fecha_creacion=timezone.now(),
+                total_orden=total_orden,
+                direccion_envio=direccion_envio,
+                id_usuario_id=id_usuario
+            )
+
+            # 🚀 2. CREAMOS DETALLES (Sin forzar ID para evitar el error de Tupla)
             for producto, cantidad, subtotal in productos_db:
                 DetalleOrden.objects.create(
-                    precio_subtotal=subtotal, cantidad=cantidad, precio_unitario=producto.precio,
-                    estatus="1", id_producto=producto, id_orden_id=id_orden
+                    precio_subtotal=subtotal, 
+                    cantidad=cantidad, 
+                    precio_unitario=producto.precio,
+                    estatus="1", 
+                    id_producto=producto, 
+                    id_orden=nueva_orden
                 )
                 if descontar_stock:
                     producto.stock -= cantidad
                     producto.save()
 
             referencia = f"REF-{int(timezone.now().timestamp())}"
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO cobro (
-                        referencia_pago, estatus, fecha_cobro, metodo_pago, monto, id_orden
-                    ) VALUES (%s, %s, %s, %s, %s, %s)
-                """, [referencia, estatus_cobro, timezone.now(), metodo_pago, total_orden, id_orden])
+            
+            # 🚀 3. ID SEGURO PARA COBRO USANDO MATEMÁTICAS PURAS
+            max_cobro = Cobro.objects.aggregate(Max('id_cobro'))['id_cobro__max']
+            nuevo_id_cobro = (max_cobro or 0) + 1
+            
+            Cobro.objects.create(
+                id_cobro=nuevo_id_cobro,
+                referencia_pago=referencia, 
+                estatus=estatus_cobro, 
+                fecha_cobro=timezone.now(), 
+                metodo_pago=metodo_pago, 
+                monto=total_orden, 
+                id_orden=nueva_orden
+            )
 
             carrito = Carrito.objects.filter(id_usuario_id=id_usuario).first()
             if carrito:
                 DetalleCarrito.objects.filter(id_carrito=carrito).delete()
 
-        return Response({"success": True, "id_orden": id_orden, "estatus": estatus_orden, "referencia": referencia}, status=201)
+        return Response({"success": True, "id_orden": nuevo_id_orden, "estatus": estatus_orden, "referencia": referencia}, status=201)
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return Response({"error": str(e)}, status=500)
 
 @api_view(['GET'])
