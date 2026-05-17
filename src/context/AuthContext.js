@@ -1,6 +1,9 @@
 import React, { createContext, useState } from "react";
 import { api } from "../api/client";
 import { useMessage } from "./MessageContext";
+import { signInWithPopup } from "firebase/auth";
+
+import { auth, googleProvider } from "../firebaseConfig";
 
 export const AuthContext = createContext();
 
@@ -26,7 +29,9 @@ export const AuthProvider = ({ children }) => {
   const { showMessage } = useMessage();
 
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem(USER_STORAGE_KEY);
+    const savedUser =
+      localStorage.getItem(USER_STORAGE_KEY) ||
+      sessionStorage.getItem(USER_STORAGE_KEY);
 
     if (!savedUser) return null;
 
@@ -34,6 +39,7 @@ export const AuthProvider = ({ children }) => {
       return JSON.parse(savedUser);
     } catch (error) {
       localStorage.removeItem(USER_STORAGE_KEY);
+      sessionStorage.removeItem(USER_STORAGE_KEY);
       return null;
     }
   });
@@ -48,7 +54,11 @@ export const AuthProvider = ({ children }) => {
       const loggedUser = mapBackendUser(backendUser);
 
       setUser(loggedUser);
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
+      if (credentials.recordarme) {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
+      } else {
+        sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
+      }
 
       showMessage({
         title: "Inicio de sesión exitoso",
@@ -70,6 +80,52 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginGoogle = async () => {
+    try {
+      // Firebase popup
+      const result = await signInWithPopup(auth, googleProvider);
+
+      const userFirebase = result.user;
+
+      // Django busca/crea usuario
+      const backendUser = await api.auth.googleLogin({
+        correo: userFirebase.email,
+
+        nombre: userFirebase.displayName,
+      });
+
+      // Mapeamos igual que login normal
+      const loggedUser = mapBackendUser(backendUser);
+
+      // Guardamos sesión REAL
+      setUser(loggedUser);
+
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
+
+      showMessage({
+        title: "Inicio con Google exitoso",
+
+        message: `Bienvenido, ${loggedUser.nombre}.`,
+
+        type: "success",
+      });
+
+      return loggedUser;
+    } catch (error) {
+      console.error("Error login Google:", error);
+
+      showMessage({
+        title: "Error con Google",
+
+        message: "No se pudo iniciar sesión.",
+
+        type: "error",
+      });
+
+      return null;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem(USER_STORAGE_KEY);
@@ -81,20 +137,46 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  const updateProfile = (newData) => {
+  const updateProfile = async (newData) => {
+    // 🔥 ACTUALIZACIÓN INSTANTÁNEA
     const updatedUser = {
       ...user,
-      ...newData,
+      nombre: newData.nombre,
     };
 
     setUser(updatedUser);
+
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
 
+    // 🔥 ALERTA INSTANTÁNEA
     showMessage({
       title: "Perfil actualizado",
-      message: "Tu información se actualizó correctamente.",
+      message: "Tus datos fueron actualizados correctamente.",
       type: "success",
     });
+
+    // 🔥 BACKEND EN SEGUNDO PLANO
+    try {
+      await fetch(`http://localhost:8000/api/usuarios/actualizar/${user.id}/`, {
+        method: "PUT",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          nombre: newData.nombre,
+        }),
+      });
+    } catch (error) {
+      console.error(error);
+
+      showMessage({
+        title: "Error",
+        message: "No se pudo sincronizar con el servidor.",
+        type: "error",
+      });
+    }
   };
 
   const registroReal = async (userData) => {
@@ -132,7 +214,14 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, loginReal, logout, updateProfile, registroReal }}
+      value={{
+        user,
+        loginReal,
+        loginGoogle,
+        logout,
+        updateProfile,
+        registroReal,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -391,6 +391,7 @@ const SimuladorCobro = () => {
                       {direccion.alias}
                       {direccion.principal ? " · Principal" : ""}
                     </strong>
+
                     <small>{formatearDireccion(direccion)}</small>
                   </span>
                 </button>
@@ -404,15 +405,80 @@ const SimuladorCobro = () => {
             </small>
           )}
 
-          <textarea
-            value={direccionEnvio}
-            onChange={(e) => {
-              setDireccionSeleccionadaId("");
-              setDireccionEnvio(e.target.value);
-            }}
-            placeholder="Calle, número, colonia, código postal y referencias"
-            rows="3"
-          />
+          {/* 🔥 NUEVO FORMULARIO DE DIRECCIÓN */}
+          <div className="checkout-address-form">
+            <div className="row g-3">
+              <div className="col-md-8">
+                <label className="checkout-label">Calle</label>
+
+                <input
+                  type="text"
+                  className="checkout-input"
+                  placeholder="Ej. Av. Siempre Viva"
+                />
+              </div>
+
+              <div className="col-md-4">
+                <label className="checkout-label">Número</label>
+
+                <input
+                  type="text"
+                  className="checkout-input"
+                  placeholder="Ej. 742"
+                />
+              </div>
+
+              <div className="col-md-6">
+                <label className="checkout-label">Colonia</label>
+
+                <input
+                  type="text"
+                  className="checkout-input"
+                  placeholder="Ej. Centro"
+                />
+              </div>
+
+              <div className="col-md-6">
+                <label className="checkout-label">Código postal</label>
+
+                <input
+                  type="text"
+                  className="checkout-input"
+                  placeholder="Ej. 91700"
+                />
+              </div>
+
+              <div className="col-md-6">
+                <label className="checkout-label">Ciudad</label>
+
+                <input
+                  type="text"
+                  className="checkout-input"
+                  placeholder="Ej. Veracruz"
+                />
+              </div>
+
+              <div className="col-md-6">
+                <label className="checkout-label">Estado</label>
+
+                <input
+                  type="text"
+                  className="checkout-input"
+                  placeholder="Ej. Veracruz"
+                />
+              </div>
+
+              <div className="col-12">
+                <label className="checkout-label">Referencias</label>
+
+                <textarea
+                  className="checkout-textarea"
+                  rows="3"
+                  placeholder="Color de la casa, entre qué calles está, referencias para el repartidor..."
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="simulador-form-group">

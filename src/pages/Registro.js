@@ -1,23 +1,28 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 // 1. Importamos las herramientas de Firebase
-import { auth, googleProvider, facebookProvider } from '../firebaseConfig';
-import { createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup } from 'firebase/auth';
-import { api } from '../api/client';
+import { auth, googleProvider, facebookProvider } from "../firebaseConfig";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  signInWithPopup,
+} from "firebase/auth";
+import { api } from "../api/client";
+import { FaFacebookF } from "react-icons/fa";
 
 function Registro() {
   const navigate = useNavigate();
 
   // Memoria del formulario
   const [formData, setFormData] = useState({
-    correo: '',
-    nombre: '',
-    telefono: '',
-    password: ''
+    correo: "",
+    nombre: "",
+    telefono: "",
+    password: "",
   });
 
   // Estados para alertas y carga
-  const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
+  const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
   const [cargando, setCargando] = useState(false);
 
   const handleChange = (e) => {
@@ -35,8 +40,8 @@ function Registro() {
       nombre_usuario: datosUsuario.nombre,
       correo: datosUsuario.email,
       contrasena: datosUsuario.password || datosUsuario.firebase_uid,
-      rol: '1',
-      fecha_registro: new Date().toISOString()
+      rol: "1",
+      fecha_registro: new Date().toISOString(),
     });
   };
 
@@ -46,11 +51,15 @@ function Registro() {
   const handleRegister = async (e) => {
     e.preventDefault();
     setCargando(true);
-    setMensaje({ texto: '', tipo: '' });
+    setMensaje({ texto: "", tipo: "" });
 
     try {
       // 1. Firebase crea la cuenta
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.correo, formData.password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.correo,
+        formData.password,
+      );
       const userFirebase = userCredential.user;
 
       // 2. Firebase envía el correo de confirmación
@@ -62,24 +71,26 @@ function Registro() {
         email: formData.correo,
         telefono: formData.telefono,
         password: formData.password,
-        rol: '1', // Cliente
-        firebase_uid: userFirebase.uid
+        rol: "1", // Cliente
+        firebase_uid: userFirebase.uid,
       });
 
-      setMensaje({ 
-        texto: '¡Éxito! Revisa tu bandeja de entrada o SPAM para confirmar tu correo.', 
-        tipo: 'success' 
+      setMensaje({
+        texto:
+          "¡Éxito! Revisa tu bandeja de entrada o SPAM para confirmar tu correo.",
+        tipo: "success",
       });
-      
+
       // Limpiamos el formulario
-      setFormData({ correo: '', nombre: '', telefono: '', password: '' });
-
+      setFormData({ correo: "", nombre: "", telefono: "", password: "" });
     } catch (error) {
       console.error("Error Firebase:", error);
       let errorMsg = "Ocurrió un error al registrarse.";
-      if (error.code === 'auth/email-already-in-use') errorMsg = "Este correo ya está registrado.";
-      if (error.code === 'auth/weak-password') errorMsg = "La contraseña debe tener al menos 6 caracteres.";
-      setMensaje({ texto: errorMsg, tipo: 'error' });
+      if (error.code === "auth/email-already-in-use")
+        errorMsg = "Este correo ya está registrado.";
+      if (error.code === "auth/weak-password")
+        errorMsg = "La contraseña debe tener al menos 6 caracteres.";
+      setMensaje({ texto: errorMsg, tipo: "error" });
     } finally {
       setCargando(false);
     }
@@ -90,107 +101,127 @@ function Registro() {
   // =================================================================
   const manejarRegistroSocial = async (proveedor) => {
     try {
-      setMensaje({ texto: '', tipo: '' });
+      setMensaje({ texto: "", tipo: "" });
       const result = await signInWithPopup(auth, proveedor);
       const userFirebase = result.user;
 
-      // Lo registramos en Django. 
+      // Lo registramos en Django.
       // Las redes sociales no siempre dan teléfono, así que lo mandamos vacío por ahora
       await guardarEnDjango({
-        nombre: userFirebase.displayName || 'Usuario Nuevo',
+        nombre: userFirebase.displayName || "Usuario Nuevo",
         email: userFirebase.email,
-        telefono: '', 
-        rol: '1',
-        firebase_uid: userFirebase.uid
+        telefono: "",
+        rol: "1",
+        firebase_uid: userFirebase.uid,
       });
 
       // Como Google/Facebook ya verifican la identidad, lo mandamos directo a la tienda
-      navigate('/'); 
-      
+      navigate("/");
     } catch (error) {
       console.error("Error Social:", error);
-      setMensaje({ texto: 'No se pudo completar el inicio de sesión con esta red social.', tipo: 'error' });
+      setMensaje({
+        texto: "No se pudo completar el inicio de sesión con esta red social.",
+        tipo: "error",
+      });
     }
   };
 
   return (
-    <div className="register-wrapper">
-      <div className="register-container">
-        
+    <div className="register-wrapper-modern">
+      <div className="register-container-modern">
         {/* Lado Izquierdo (Textos y Perritos) INTACTO */}
-        <div className="register-left d-none d-md-flex">
+        <div className="register-left-modern d-none d-md-flex">
           <div className="register-text">
-            <h1>Ventas Perrunas es fácil!!</h1>
-            <p>Negocio dedicado a darle lo mejor a esas pequeñas mascotitas que siempre nos alegran nuestros malos días y siempre nos sacan una sonrisa.</p>
-          </div>
-          
-          <div className="register-dogs">
-            <img src="https://images.vexels.com/media/users/3/298818/isolated/preview/e395e5482bf4ed55d5d3bca7d4b4a1df-corgi-dog-sitting-character.png" alt="Corgi" />
-            <img src="https://images.vexels.com/media/users/3/298815/isolated/preview/a108df1e0dbb3a2cd7de385317b9b1e7-golden-retriever-dog-sitting-character.png" alt="Golden Retriever" style={{height: '420px'}}/>
+            <h1>
+              Todo para tus mascotas
+              <br />
+              en un solo lugar
+            </h1>
+            <p>
+              Compra alimentos, accesorios y productos premium para consentir a
+              quienes alegran tus días.
+            </p>
+            <div className="register-stats">
+              <div className="stat-box">
+                <h3>+500</h3>
+                <span>Productos</span>
+              </div>
+
+              <div className="stat-box">
+                <h3>24/7</h3>
+                <span>Atención</span>
+              </div>
+
+              <div className="stat-box">
+                <h3>100%</h3>
+                <span>Seguro</span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Lado Derecho (Formulario de Registro) */}
-        <div className="register-right">
-          <div className="login-card">
-            
-            <div className="login-header-text">
-              <span>Bienvenido a <span style={{color: '#0084ff', fontWeight: 'bold'}}>VENTAS PERRUNAS</span></span>
-              <span style={{fontSize: '0.85rem', color: '#666', textAlign: 'right'}}>
-                Tienes cuenta ? <br/>
-                <Link to="/login" style={{color: '#0084ff', textDecoration: 'none'}}>Inicia Sesión</Link>
-              </span>
-            </div>
+        <div className="register-right-modern">
+          <div className="register-card-modern">
+            <div className="register-header-modern"></div>
 
-            <h2 style={{fontSize: '3.5rem', marginBottom: '15px'}}>Regístrate</h2>
+            <h2 className="register-title-modern">Crea tu cuenta</h2>
 
             {/* CAJA DE MENSAJES (Éxito o Error) */}
             {mensaje.texto && (
-              <div style={{
-                padding: '12px', marginBottom: '20px', borderRadius: '8px', fontSize: '0.9rem',
-                backgroundColor: mensaje.tipo === 'error' ? '#ffebee' : '#e8f5e9',
-                color: mensaje.tipo === 'error' ? '#c62828' : '#2e7d32',
-                border: `1px solid ${mensaje.tipo === 'error' ? '#ffcdd2' : '#c8e6c9'}`
-              }}>
+              <div
+                style={{
+                  padding: "12px",
+                  marginBottom: "20px",
+                  borderRadius: "8px",
+                  fontSize: "0.9rem",
+                  backgroundColor:
+                    mensaje.tipo === "error" ? "#ffebee" : "#e8f5e9",
+                  color: mensaje.tipo === "error" ? "#c62828" : "#2e7d32",
+                  border: `1px solid ${mensaje.tipo === "error" ? "#ffcdd2" : "#c8e6c9"}`,
+                }}
+              >
                 {mensaje.texto}
               </div>
             )}
 
             {/* BOTONES SOCIALES */}
-            <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-              <button 
-                type="button" 
+            <div className="social-register-buttons">
+              <button
+                type="button"
                 onClick={() => manejarRegistroSocial(googleProvider)}
-                style={{ flex: 1, padding: '12px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#fff', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: '0.3s' }}
+                className="social-btn-modern google-btn"
               >
-                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style={{width: '18px'}}/> 
-                Google
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
+                  alt="Google"
+                />
+
+                <span>Continuar con Google</span>
               </button>
-              
-              <button 
-                type="button" 
-                onClick={() => manejarRegistroSocial(facebookProvider)}
-                style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '8px', backgroundColor: '#1877F2', color: '#fff', cursor: 'pointer', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: '0.3s' }}
-              >
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/2021_Facebook_icon.svg/1024px-2021_Facebook_icon.svg.png" alt="Facebook" style={{width: '18px', filter: 'brightness(0) invert(1)'}}/> 
-                Facebook
+
+              <button className="btn-facebook-modern">
+                <FaFacebookF />
+                <span>Continuar con Facebook</span>
               </button>
             </div>
 
-            <div style={{ textAlign: 'center', marginBottom: '20px', color: '#999', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
-              <div style={{ flex: 1, height: '1px', backgroundColor: '#eee' }}></div>
-              <span style={{ padding: '0 10px' }}>o regístrate con tu correo</span>
-              <div style={{ flex: 1, height: '1px', backgroundColor: '#eee' }}></div>
+            <div className="divider-register-modern">
+              <div className="divider-line"></div>
+              <span style={{ padding: "0 10px" }}>
+                o regístrate con tu correo
+              </span>
+              <div className="divider-line"></div>
             </div>
 
             {/* Formulario conectado a React */}
-            <form onSubmit={handleRegister}>
+            <form onSubmit={handleRegister} className="register-form-modern">
               <div className="form-group">
                 <label>Ingresa tu correo electronico</label>
-                <input 
-                  type="email" 
-                  className="form-control-custom" 
-                  placeholder="ejemplo@correo.com" 
+                <input
+                  type="email"
+                  className="form-control-custom"
+                  placeholder="ejemplo@correo.com"
                   name="correo"
                   value={formData.correo}
                   onChange={handleChange}
@@ -202,10 +233,10 @@ function Registro() {
               <div className="row-inputs">
                 <div className="form-group">
                   <label>Usuario / Nombre</label>
-                  <input 
-                    type="text" 
-                    className="form-control-custom" 
-                    placeholder="Tu nombre" 
+                  <input
+                    type="text"
+                    className="form-control-custom"
+                    placeholder="Tu nombre"
                     name="nombre"
                     value={formData.nombre}
                     onChange={handleChange}
@@ -214,10 +245,10 @@ function Registro() {
                 </div>
                 <div className="form-group">
                   <label>Numero de Contacto</label>
-                  <input 
-                    type="tel" 
-                    className="form-control-custom" 
-                    placeholder="10 dígitos" 
+                  <input
+                    type="tel"
+                    className="form-control-custom"
+                    placeholder="10 dígitos"
                     name="telefono"
                     value={formData.telefono}
                     onChange={handleChange}
@@ -227,10 +258,10 @@ function Registro() {
 
               <div className="form-group">
                 <label>Escribe tu contraseña</label>
-                <input 
-                  type="password" 
-                  className="form-control-custom" 
-                  placeholder="Mínimo 6 caracteres" 
+                <input
+                  type="password"
+                  className="form-control-custom"
+                  placeholder="Mínimo 6 caracteres"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -239,14 +270,24 @@ function Registro() {
                 />
               </div>
 
-              <button type="submit" className="btn-login-main" style={{marginTop: '20px'}} disabled={cargando}>
-                {cargando ? 'Procesando...' : 'Regístrate'}
+              <button
+                type="submit"
+                className="btn-login-main"
+                style={{ marginTop: "20px" }}
+                disabled={cargando}
+              >
+                {cargando ? "Procesando..." : "Regístrate"}
               </button>
+              <div className="register-login-link">
+                ¿Ya tienes una cuenta?
+                <Link to="/login">Inicia sesión</Link>
+              </div>
             </form>
-
           </div>
         </div>
-
+      </div>
+      <div className="register-security-text">
+        🔒 Tus datos están protegidos y cifrados.
       </div>
     </div>
   );

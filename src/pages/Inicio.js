@@ -2,11 +2,13 @@ import React, { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { Card, Container, Row, Col, Spinner } from "react-bootstrap";
 import { FiStar, FiAlertCircle, FiHeart } from "react-icons/fi";
+import axios from "axios";
+
 import SeccionServicios from "../components/SeccionServicios";
 import { CartContext } from "../context/CartContext";
 import { FavoritesContext } from "../context/FavoritesContext";
 import CarruselPromociones from "../components/CarruselPromociones";
-import { api } from "../api/client";
+
 import {
   getProductImage,
   isProductAvailable,
@@ -19,22 +21,26 @@ function Inicio() {
   const [error, setError] = useState(null);
 
   const { addToCart } = useContext(CartContext);
+
   const { toggleFavorite, isFavorite } = useContext(FavoritesContext);
 
   useEffect(() => {
-    const obtenerProductos = async () => {
-      try {
-        const datos = await api.productos.list();
-        setProductos(datos);
-      } catch (err) {
-        setError(err.message || "No se pudo conectar con el servidor");
-      } finally {
-        setCargando(false);
-      }
-    };
-
-    obtenerProductos();
+    obtenerMasVendidos();
   }, []);
+
+  const obtenerMasVendidos = async () => {
+    try {
+      const response = await axios.get(
+        "http://127.0.0.1:8000/api/productos/mas_vendidos/",
+      );
+
+      setProductos(response.data);
+    } catch (err) {
+      setError(err.message || "No se pudo conectar con el servidor");
+    } finally {
+      setCargando(false);
+    }
+  };
 
   const agregarAlCarrito = (prod) => {
     addToCart(toCartProduct(prod));
@@ -46,26 +52,33 @@ function Inicio() {
 
   return (
     <div>
-      {/* Carrusel único (sin duplicar) */}
+      {/* Carrusel principal */}
       <CarruselPromociones />
 
       <Container className="mt-5 pb-5">
-        <h2 className="text-center section-title mb-5">Nuestros Productos</h2>
+        <h2 className="text-center section-title mb-5">
+          LOS PRODUCTOS MAS VENDIDOS
+        </h2>
 
         {cargando ? (
           <div className="text-center py-5">
             <Spinner animation="border" variant="info" />
-            <p className="mt-3 text-muted">Consultando base de datos...</p>
+
+            <p className="mt-3 text-muted">
+              Consultando productos más vendidos...
+            </p>
           </div>
         ) : error ? (
           <div className="text-center py-5 text-danger">
             <FiAlertCircle size={40} />
+
             <p className="mt-2">Error: {error}</p>
           </div>
         ) : (
           <Row>
             {productos.map((prod, i) => {
               const disponible = isProductAvailable(prod);
+
               const esFavorito = isFavorite(prod.id_producto);
 
               return (
@@ -105,7 +118,10 @@ function Inicio() {
                         src={getProductImage(prod)}
                         alt={prod.nombre}
                         onError={handleImageError}
-                        style={{ height: "200px", objectFit: "cover" }}
+                        style={{
+                          height: "200px",
+                          objectFit: "cover",
+                        }}
                       />
                     </Link>
 

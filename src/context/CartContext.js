@@ -11,18 +11,19 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
   const [cartReady, setCartReady] = useState(false);
 
-  // 🔥 CARGAR CARRITO
+  // 🔥 CARGAR CARRITO SOLO AL INICIO
   const fetchCart = async () => {
     if (!user) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/api/carrito/${user.id}/`);
+      const res = await fetch(`http://localhost:8000/api/cart/${user.id}/`);
 
       if (!res.ok) {
         console.error("ERROR BACKEND:", await res.text());
         setCart([]);
         return;
       }
+
       const data = await res.json();
 
       console.log("CARRITO:", data);
@@ -45,7 +46,7 @@ export const CartProvider = ({ children }) => {
     }
   }, [user]);
 
-  // 🛒 AGREGAR CON BLOQUEO DE AUDITORÍA
+  // 🛒 AGREGAR PRODUCTO (UI OPTIMISTA)
   const addToCart = async (product) => {
     if (!user) {
       showMessage({
@@ -53,95 +54,212 @@ export const CartProvider = ({ children }) => {
         message: "Debes iniciar sesión para comprar.",
         type: "warning",
       });
+
       return;
     }
 
-    // 🛑 CANDADO DE SEGURIDAD: Bloquear a roles 2, 3 y 4
-    if (user.rol === '2' || user.rol === '3' || user.rol === '4') {
+    // 🛑 BLOQUEO PARA EMPLEADOS / ADMINS / PROVEEDORES
+    if (user.rol === "2" || user.rol === "3" || user.rol === "4") {
       showMessage({
         title: "Acción Denegada ⚠️",
-        message: "Modo Auditoría: Las cuentas de empleados, administradores y proveedores no tienen permitido realizar compras.",
-        type: "error", // Saldrá como un mensaje de error o advertencia
+        message:
+          "Modo Auditoría: Las cuentas de empleados, administradores y proveedores no tienen permitido realizar compras.",
+        type: "error",
       });
-      
-      return; // <--- ESTE RETURN DETIENE LA FUNCIÓN Y EVITA QUE SE AGREGUE AL CARRITO
+
+      return;
     }
 
-    // Si es un cliente normal (rol 1), el código sigue ejecutándose normalmente:
+    const productId = product.id_producto || product.id;
+
+    // 🔥 ALERTA INSTANTÁNEA
+    showMessage({
+      title: "Producto agregado",
+      message: `${product.nombre} agregado al carrito`,
+      type: "success",
+    });
+
+    // 🔥 ACTUALIZACIÓN INSTANTÁNEA
+    setCart((prevCart) => {
+      const existe = prevCart.find((item) => item.id === productId);
+
+      if (existe) {
+        return prevCart.map((item) =>
+          item.id === productId
+            ? {
+                ...item,
+                cantidad: item.cantidad + 1,
+
+                // 🔥 MANTENER PRECIO CORRECTO
+                precio: Number(
+                  item.precio ??
+                    product.precio ??
+                    product.precio_final ??
+                    product.precio_unitario ??
+                    0,
+                ),
+              }
+            : item,
+        );
+      }
+
+      return [
+        ...prevCart,
+        {
+          id: productId,
+          nombre: product.nombre,
+
+          // 🔥 PRECIO COMPATIBLE CON TODAS LAS VISTAS
+          precio: Number(
+            product.precio ??
+              product.precio_final ??
+              product.precio_unitario ??
+              0,
+          ),
+
+          cantidad: 1,
+
+          imagen:
+            product.imagen ||
+            "https://via.placeholder.com/500x500.png?text=Sin+Imagen",
+        },
+      ];
+    });
+
+    // 🔥 BACKEND EN SEGUNDO PLANO
     try {
-      const res = await fetch("http://localhost:8000/api/carrito/agregar/", {
+      await fetch("http://localhost:8000/api/cart/agregar/", {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify({
           id_usuario: user.id,
-          id_producto: product.id_producto || product.id,
+          id_producto: productId,
           cantidad: 1,
         }),
       });
-
-      const data = await res.json();
-      console.log("RESPUESTA:", data);
-
-      fetchCart();
-
-      showMessage({
-        title: "Producto agregado",
-        message: `${product.nombre} agregado al carrito`,
-        type: "success",
-      });
     } catch (error) {
-      console.error(error);
+      console.error("Error agregando producto:", error);
+
+      // 🔥 RECUPERAR SI FALLA
+      fetchCart();
     }
   };
 
-  // ❌ ELIMINAR
-  const removeFromCart = async (id) => {
-    await fetch(
-      `http://localhost:8000/api/carrito/eliminar/${user.id}/${id}/`,
-      { method: "DELETE" },
-    );
+  // ❌ ELIMINAR PRODUCTO (UI OPTIMISTA)
+  const removeFromCart = async (id_producto) => {
+    // 🔥 ELIMINAR INSTANTÁNEAMENTE
+    setCart((prevCart) => prevCart.filter((item) => item.id !== id_producto));
 
-    fetchCart();
-  };
-
-  // 🔄 ACTUALIZAR
-  const updateQuantity = async (id, qty) => {
-    await fetch(`http://localhost:8000/api/carrito/actualizar/`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id_usuario: user.id,
-        id_producto: id,
-        cantidad: qty,
-      }),
+    showMessage({
+      title: "Producto eliminado",
+      message: "El producto fue eliminado del carrito.",
+      type: "info",
     });
 
-    fetchCart();
+    try {
+      await fetch(
+        `http://localhost:8000/api/cart/eliminar/${user.id}/${id_producto}/`,
+        {
+          method: "DELETE",
+        },
+      );
+    } catch (error) {
+      console.error("Error eliminando producto:", error);
+
+      // 🔥 RECUPERAR SI FALLA
+      fetchCart();
+    }
   };
 
-  // ➕➖
-  const incrementQuantity = (id, amount) => {
-    const item = cart.find((p) => p.id === id);
+  // 🔄 ACTUALIZAR CANTIDAD (UI OPTIMISTA)
+  const updateQuantity = async (id_producto, qty) => {
+    // 🔥 MANTENER ORDEN ORIGINAL
+    setCart((prevCart) => {
+      const updatedCart = [...prevCart];
+
+      const index = updatedCart.findIndex((item) => item.id === id_producto);
+
+      if (index !== -1) {
+        updatedCart[index] = {
+          ...updatedCart[index],
+          cantidad: qty,
+        };
+      }
+
+      return updatedCart;
+    });
+
+    try {
+      await fetch("http://localhost:8000/api/cart/actualizar/", {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          id_usuario: user.id,
+          id_producto: id_producto,
+          cantidad: qty,
+        }),
+      });
+    } catch (error) {
+      console.error("Error actualizando cantidad:", error);
+
+      fetchCart();
+    }
+  };
+
+  // ➕➖ SUMAR / RESTAR
+  const incrementQuantity = (id_producto, amount) => {
+    const item = cart.find((p) => p.id === id_producto);
+
     if (!item) return;
 
-    updateQuantity(id, item.cantidad + amount);
+    const nuevaCantidad = item.cantidad + amount;
+
+    if (nuevaCantidad < 1) return;
+
+    updateQuantity(id_producto, nuevaCantidad);
   };
 
-  // 🧹 LIMPIAR
+  // 🧹 LIMPIAR CARRITO
   const clearCart = async () => {
-    await fetch(`http://localhost:8000/api/carrito/limpiar/${user.id}/`, {
-      method: "DELETE",
-    });
-
+    // 🔥 LIMPIAR INSTANTÁNEAMENTE
     setCart([]);
+
+    try {
+      await fetch(`http://localhost:8000/api/cart/limpiar/${user.id}/`, {
+        method: "DELETE",
+      });
+
+      showMessage({
+        title: "Carrito limpio",
+        message: "Todos los productos fueron eliminados.",
+        type: "info",
+      });
+    } catch (error) {
+      console.error("Error limpiando carrito:", error);
+
+      fetchCart();
+    }
   };
 
+  // 💰 TOTAL
   const getCartTotal = () =>
-    cart.reduce((t, p) => t + p.precio * p.cantidad, 0);
+    cart.reduce(
+      (total, item) =>
+        total + parseFloat(item.precio || 0) * parseInt(item.cantidad || 0),
+      0,
+    );
 
-  const getCartCount = () => cart.reduce((t, p) => t + p.cantidad, 0);
+  // 🛒 TOTAL DE PRODUCTOS
+  const getCartCount = () =>
+    cart.reduce((total, item) => total + item.cantidad, 0);
 
   return (
     <CartContext.Provider
