@@ -11,6 +11,8 @@ from .models import (
     Usuario,
     DetallePedido,
 )
+from django.contrib.auth.hashers import make_password
+
 
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,12 +28,22 @@ class ProductoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class UsuarioSerializer(serializers.ModelSerializer):
+
     class Meta:
+
         model = Usuario
+
         fields = '__all__'
-        extra_kwargs = {
-            'contrasena': {'write_only': True}
-        }
+
+    def create(self, validated_data):
+
+        validated_data['contrasena'] = make_password(
+            validated_data['contrasena']
+        )
+
+        return Usuario.objects.create(
+            **validated_data
+        )
 
 class ProveedorSerializer(serializers.ModelSerializer):
     class Meta:

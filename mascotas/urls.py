@@ -10,6 +10,7 @@ from .views import (
     ProveedorViewSet,
     SeccionExtranetViewSet,
     UsuarioViewSet,
+    login_google,
     pedidos_usuario,
     crear_orden_completa,
     detalle_orden,
@@ -21,9 +22,13 @@ from .views import (
     limpiar_carrito,
     detalles_pedido,
     movimientos_recientes,
+    actualizar_usuario,
     # 🔥 1. IMPORTAMOS LA NUEVA FUNCIÓN AQUÍ:
-    crear_usuario_por_admin 
-)
+    crear_usuario_por_admin,
+    BannerExtranetView,
+    )
+from django.conf import settings
+from django.conf.urls.static import static
 
 router = DefaultRouter()
 router.register(r'categorias', CategoriaViewSet, basename='categoria')
@@ -44,15 +49,28 @@ urlpatterns = [
     
     # 🔥 3. AGREGAMOS LA RUTA DEL ADMIN AQUÍ (ANTES DEL ROUTER)
     path('usuarios/crear-admin/', crear_usuario_por_admin, name='crear-admin'),
-    
-    path('', include(router.urls)),
     path('login/', login_usuario, name='login_api'),
     path('checkout/', crear_orden_completa),
     path('mis-pedidos/<str:id_usuario>/', pedidos_usuario),
     path('detalle-orden/<int:id_orden>/', detalle_orden),
-    path('carrito/agregar/', agregar_carrito),
-    path('carrito/<str:id_usuario>/', obtener_carrito),
-    path('carrito/eliminar/<str:id_usuario>/<int:id_producto>/', eliminar_producto_carrito),
-    path('carrito/actualizar/', actualizar_cantidad_carrito),
-    path('carrito/limpiar/<str:id_usuario>/', limpiar_carrito),
+    path(
+    'usuarios/actualizar/<str:id_usuario>/',
+    actualizar_usuario
+),
+path('cart/agregar/', agregar_carrito),
+path('cart/eliminar/<str:id_usuario>/<int:id_producto>/', eliminar_producto_carrito),
+path('cart/actualizar/', actualizar_cantidad_carrito),
+path('cart/limpiar/<str:id_usuario>/', limpiar_carrito),
+path('cart/<str:id_usuario>/', obtener_carrito),
+    path('login-google/', login_google),
+    path('extranet/banners/', BannerExtranetView.as_view(), name='extranet-banners'),
+    
+    path('', include(router.urls)),
+
 ]
+
+
+urlpatterns += static(
+    settings.MEDIA_URL,
+    document_root=settings.MEDIA_ROOT
+)

@@ -6,6 +6,13 @@ from django.db import transaction, connection
 import random
 import time
 from django.db.models import Max
+from rest_framework.generics import ListAPIView
+from django.db.models import Sum
+from rest_framework.decorators import action
+from datetime import datetime
+from django.contrib.auth.hashers import check_password, make_password
+
+
 
 from .models import (
     Carrito, Categoria, Cobro, Orden, Pedido, Producto, 
@@ -14,7 +21,8 @@ from .models import (
 from .serializers import (
     CarritoSerializer, CategoriaSerializer, CobroSerializer, 
     OrdenSerializer, PedidoSerializer, ProductoSerializer, 
-    ProveedorSerializer, SeccionExtranetSerializer, UsuarioSerializer, DetallePedidoSerializer
+    ProveedorSerializer, SeccionExtranetSerializer, UsuarioSerializer, DetallePedidoSerializer, SeccionExtranetSerializer
+
 )
 
 # ==========================================
@@ -57,6 +65,62 @@ class ProductoViewSet(viewsets.ModelViewSet):
             traceback.print_exc()
             return Response({"error": f"Error interno: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+    
+    @action(detail=False, methods=['get'])
+    def mas_vendidos(self, request):
+
+        productos = (
+
+            DetalleOrden.objects
+
+            .values('id_producto')
+
+            .annotate(
+                total_vendido=Sum('cantidad')
+            )
+
+            .order_by('-total_vendido')[:12]
+        )
+
+        data = []
+
+        for item in productos:
+
+            try:
+
+                producto = Producto.objects.get(
+                    id_producto=item['id_producto']
+                )
+
+                data.append({
+
+                    "id_producto":
+                        producto.id_producto,
+
+                    "nombre":
+                        producto.nombre,
+
+                    "precio":
+                        producto.precio,
+
+                    "imagen":
+                        producto.imagen,
+
+                    "stock":
+                        producto.stock,
+
+                    "activo":
+                        producto.activo,
+
+                    "total_vendido":
+                        item['total_vendido']
+                })
+
+            except Producto.DoesNotExist:
+                continue
+
+        return Response(data)
+
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
     serializer_class = UsuarioSerializer
@@ -80,6 +144,16 @@ class OrdenViewSet(viewsets.ModelViewSet):
 class CobroViewSet(viewsets.ModelViewSet):
     queryset = Cobro.objects.all()
     serializer_class = CobroSerializer
+
+class BannerExtranetView(ListAPIView):
+
+    serializer_class = SeccionExtranetSerializer
+
+    def get_queryset(self):
+
+        return SeccionExtranet.objects.filter(
+            estatus=True
+        ).order_by('-id_seccion')
 
 # ==========================================
 # VIEWSET DE PEDIDOS (CON LÓGICA DE DETALLES)
@@ -189,7 +263,7 @@ def login_usuario(request):
 
     try:
         usuario = Usuario.objects.get(correo=correo)
-        if usuario.contrasena == contrasena:
+        if check_password(contrasena, usuario.contrasena):
             rfc_asignado = None
             if usuario.rol == '4':
                 if usuario.id_usuario == 'EXT0000000001':
@@ -493,7 +567,7 @@ def eliminar_producto_carrito(request, id_usuario, id_producto):
     except Carrito.DoesNotExist:
         return Response({"error": "Carrito no encontrado"}, status=404)
 
-@api_view(['PUT'])
+@api_view(['POST'])
 def actualizar_cantidad_carrito(request):
     try:
         id_usuario = request.data.get('id_usuario')
@@ -521,3 +595,106 @@ def limpiar_carrito(request, id_usuario):
         return Response({"success": True})
     except Carrito.DoesNotExist:
         return Response({"success": True})
+
+@api_view(['POST'])
+def login_google(request):
+
+    correo = request.data.get('correo')
+    nombre = request.data.get('nombre')
+
+    if not correo:
+        return Response(
+            {
+                "error": "Correo requerido"
+            },
+            status=400
+        )
+
+    try:
+
+        usuario = Usuario.objects.get(
+            correo=correo
+        )
+
+        return Response({
+
+            "id_usuario":
+                usuario.id_usuario,
+
+            "nombre_usuario":
+                usuario.nombre_usuario,
+
+            "correo":
+                usuario.correo,
+
+            "rol":
+                usuario.rol
+        })
+
+    except Usuario.DoesNotExist:
+
+        nuevo_usuario = Usuario.objects.create(
+
+            id_usuario=str(
+                int(datetime.now().timestamp())
+            ),
+
+            nombre_usuario=nombre,
+
+            correo=correo,
+
+            contrasena=make_password("GOOGLE_AUTH"),
+
+            rol='1',
+
+            fecha_registro=datetime.now()
+        )
+
+        return Response({
+
+            "id_usuario":
+                nuevo_usuario.id_usuario,
+
+            "nombre_usuario":
+                nuevo_usuario.nombre_usuario,
+
+            "correo":
+                nuevo_usuario.correo,
+
+            "rol":
+                nuevo_usuario.rol
+        })
+    
+@api_view(['PUT'])
+def actualizar_usuario(request, id_usuario):
+    try:
+        usuario = Usuario.objects.get(id_usuario=id_usuario)
+
+        usuario.nombre_usuario = request.data.get(
+            'nombre',
+            usuario.nombre_usuario
+        )
+
+        usuario.save()
+
+        return Response({
+            "success": True,
+            "usuario": {
+                "id_usuario": usuario.id_usuario,
+                "nombre_usuario": usuario.nombre_usuario,
+                "correo": usuario.correo,
+                "rol": usuario.rol,
+            }
+        })
+
+    except Usuario.DoesNotExist:
+        return Response(
+            {"error": "Usuario no encontrado"},
+            status=404
+        )
+
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=500
+        )
