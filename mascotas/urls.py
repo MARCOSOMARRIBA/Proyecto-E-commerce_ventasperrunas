@@ -23,10 +23,13 @@ from .views import (
     detalles_pedido,
     movimientos_recientes,
     actualizar_usuario,
-    # 🔥 1. IMPORTAMOS LA NUEVA FUNCIÓN AQUÍ:
     crear_usuario_por_admin,
-    BannerExtranetView,
-    )
+    # 🔥 1. IMPORTAMOS LA NUEVA VISTA DE BANNERS AQUÍ:
+    BannerPorPortalView,
+    cancelar_orden,
+    actualizar_estatus_orden,
+    recuperar_password
+)
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -47,28 +50,32 @@ urlpatterns = [
     path('pedidos/movimientos-recientes/', movimientos_recientes, name='movimientos-recientes'),
     path('pedidos/<int:id_pedido>/detalles/', detalles_pedido, name='detalles-pedido'),
     
-    # 🔥 3. AGREGAMOS LA RUTA DEL ADMIN AQUÍ (ANTES DEL ROUTER)
+    # 3. RUTAS DE ADMINISTRACIÓN Y ÓRDENES
     path('usuarios/crear-admin/', crear_usuario_por_admin, name='crear-admin'),
+    
+    # 4. RUTAS DE ÓRDENES
+    path('ordenes/cancelar/<int:id_orden>/', cancelar_orden, name='cancelar-orden'),
+    path('ordenes/actualizar-estatus/<int:id_orden>/', actualizar_estatus_orden, name='actualizar-estatus'),
+    
     path('login/', login_usuario, name='login_api'),
     path('checkout/', crear_orden_completa),
     path('mis-pedidos/<str:id_usuario>/', pedidos_usuario),
     path('detalle-orden/<int:id_orden>/', detalle_orden),
-    path(
-    'usuarios/actualizar/<str:id_usuario>/',
-    actualizar_usuario
-),
-path('cart/agregar/', agregar_carrito),
-path('cart/eliminar/<str:id_usuario>/<int:id_producto>/', eliminar_producto_carrito),
-path('cart/actualizar/', actualizar_cantidad_carrito),
-path('cart/limpiar/<str:id_usuario>/', limpiar_carrito),
-path('cart/<str:id_usuario>/', obtener_carrito),
+    path('usuarios/actualizar/<str:id_usuario>/', actualizar_usuario),
+    
+    path('cart/agregar/', agregar_carrito),
+    path('cart/eliminar/<str:id_usuario>/<int:id_producto>/', eliminar_producto_carrito),
+    path('cart/actualizar/', actualizar_cantidad_carrito),
+    path('cart/limpiar/<str:id_usuario>/', limpiar_carrito),
+    path('cart/<str:id_usuario>/', obtener_carrito),
+    path('usuarios/recuperar-password/', recuperar_password, name='recuperar-password'),
     path('login-google/', login_google),
-    path('extranet/banners/', BannerExtranetView.as_view(), name='extranet-banners'),
+    
+    # 🔥 5. RUTA DINÁMICA DE BANNERS POR ROL:
+    path('banners/<str:rol>/', BannerPorPortalView.as_view(), name='banners-portal'),
     
     path('', include(router.urls)),
-
 ]
-
 
 urlpatterns += static(
     settings.MEDIA_URL,

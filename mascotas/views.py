@@ -11,8 +11,9 @@ from django.db.models import Sum
 from rest_framework.decorators import action
 from datetime import datetime
 from django.contrib.auth.hashers import check_password, make_password
-
-
+from django.utils.crypto import get_random_string
+from django.core.mail import send_mail
+from django.conf import settings
 
 from .models import (
     Carrito, Categoria, Cobro, Orden, Pedido, Producto, 
@@ -21,8 +22,7 @@ from .models import (
 from .serializers import (
     CarritoSerializer, CategoriaSerializer, CobroSerializer, 
     OrdenSerializer, PedidoSerializer, ProductoSerializer, 
-    ProveedorSerializer, SeccionExtranetSerializer, UsuarioSerializer, DetallePedidoSerializer, SeccionExtranetSerializer
-
+    ProveedorSerializer, SeccionExtranetSerializer, UsuarioSerializer, DetallePedidoSerializer
 )
 
 # ==========================================
@@ -33,11 +33,33 @@ class CategoriaViewSet(viewsets.ModelViewSet):
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
 
+from django.db.models import Sum
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.decorators import action
+
 class ProductoViewSet(viewsets.ModelViewSet):
-    queryset = Producto.objects.all()
     serializer_class = ProductoSerializer
 
-    # 🚀 SOBREESCRIBIMOS LA CREACIÓN PARA INVENTAR EL CÓDIGO DE BARRAS
+    # 🚀 1. CONTROL DE VISIBILIDAD DE DATOS (Data Isolation)
+    def get_queryset(self):
+        user_rol = self.request.query_params.get('rol', None)
+        user_rfc = self.request.query_params.get('rfc', None)
+
+        queryset = Producto.objects.all().order_by('-id_producto')
+
+        # Clientes (1), Empleados (2), Admins (3) o público general ven todo el catálogo
+        if user_rol in ['1', '2', '3'] or not user_rol:
+            return queryset
+
+        # Proveedores (4) solo ven sus propios productos
+        if user_rol == '4' and user_rfc:
+            # ⚠️ Asumimos que tu modelo Producto tiene un campo llamado 'rfc' (o ajústalo al nombre real)
+            return queryset.filter(rfc_id=user_rfc)
+
+        return Producto.objects.none()
+
+    # 🚀 2. SOBREESCRIBIMOS LA CREACIÓN PARA INVENTAR EL CÓDIGO Y SELLAR EL DUEÑO
     def create(self, request, *args, **kwargs):
         data = request.data
         try:
@@ -55,7 +77,10 @@ class ProductoViewSet(viewsets.ModelViewSet):
                 stock=data.get('stock', True),
                 imagen=data.get('imagen', ''),
                 activo=data.get('activo', True),
-                id_categoria_id=data.get('id_categoria') # Asignamos la categoría directamente
+                id_categoria_id=data.get('id_categoria'),
+                
+                # 🔥 CLAVE: Guardamos a qué proveedor le pertenece este producto
+                rfc_id=data.get('rfc') 
             )
 
             return Response({"message": "¡Producto agregado con éxito!", "id_producto": nuevo_id}, status=status.HTTP_201_CREATED)
@@ -65,57 +90,32 @@ class ProductoViewSet(viewsets.ModelViewSet):
             traceback.print_exc()
             return Response({"error": f"Error interno: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
-    
     @action(detail=False, methods=['get'])
     def mas_vendidos(self, request):
-
         productos = (
-
             DetalleOrden.objects
-
             .values('id_producto')
-
             .annotate(
                 total_vendido=Sum('cantidad')
             )
-
             .order_by('-total_vendido')[:12]
         )
 
         data = []
-
         for item in productos:
-
             try:
-
                 producto = Producto.objects.get(
                     id_producto=item['id_producto']
                 )
-
                 data.append({
-
-                    "id_producto":
-                        producto.id_producto,
-
-                    "nombre":
-                        producto.nombre,
-
-                    "precio":
-                        producto.precio,
-
-                    "imagen":
-                        producto.imagen,
-
-                    "stock":
-                        producto.stock,
-
-                    "activo":
-                        producto.activo,
-
-                    "total_vendido":
-                        item['total_vendido']
+                    "id_producto": producto.id_producto,
+                    "nombre": producto.nombre,
+                    "precio": producto.precio,
+                    "imagen": producto.imagen,
+                    "stock": producto.stock,
+                    "activo": producto.activo,
+                    "total_vendido": item['total_vendido']
                 })
-
             except Producto.DoesNotExist:
                 continue
 
@@ -130,29 +130,76 @@ class ProveedorViewSet(viewsets.ModelViewSet):
     serializer_class = ProveedorSerializer
 
 class SeccionExtranetViewSet(viewsets.ModelViewSet):
-    queryset = SeccionExtranet.objects.all()
     serializer_class = SeccionExtranetSerializer
+
+    # 🚀 CONTROL DE VISIBILIDAD DE BANNERS (Data Isolation)
+    def get_queryset(self):
+        user_rol = self.request.query_params.get('rol', None)
+        
+        # Ordenamos los banners del más reciente al más antiguo
+        queryset = SeccionExtranet.objects.all().order_by('-id_seccion')
+
+        # 👑 Administrador (3): Tiene control total, ve absolutamente todos los banners
+        if user_rol == '3':
+            return queryset
+
+        # 👷 Empleado (2): Solo ve los banners del panel operativo
+        if user_rol == '2':
+            return queryset.filter(portal_destino='2')
+
+        # 📦 Proveedor/Extranet (4): Solo ve los banners dirigidos a proveedores
+        if user_rol == '4':
+            return queryset.filter(portal_destino='4')
+
+        # 👤 Cliente (1) o Público: Solo ve los banners activos de la tienda principal
+        if user_rol == '1' or not user_rol:
+            return queryset.filter(portal_destino='1', estatus=True)
+
+        return SeccionExtranet.objects.none()
 
 class CarritoViewSet(viewsets.ModelViewSet):
     queryset = Carrito.objects.all()
     serializer_class = CarritoSerializer
 
 class OrdenViewSet(viewsets.ModelViewSet):
-    queryset = Orden.objects.all()
     serializer_class = OrdenSerializer
+
+    # 🚀 CONTROL DE VISIBILIDAD DE DATOS (Data Isolation)
+    def get_queryset(self):
+        # Capturamos quién está haciendo la petición desde React
+        user_rol = self.request.query_params.get('rol', None)
+        user_id = self.request.query_params.get('id_usuario', None)
+
+        # Preparamos la consulta base ordenada desde la más reciente
+        # (Si tu modelo tiene fecha_creacion, puedes cambiar '-id_orden' por '-fecha_creacion')
+        queryset = Orden.objects.all().order_by('-id_orden')
+
+        # 🏪 Empleados (2) y Administradores (3) tienen acceso total para despachar
+        if user_rol in ['2', '3']:
+            return queryset
+
+        # 👤 Clientes (1) solo pueden ver sus propias compras
+        if user_rol == '1' and user_id:
+            return queryset.filter(id_usuario_id=user_id)
+
+        # 🔒 Por privacidad, los Proveedores (4) u otros roles NO ven las órdenes de clientes finales
+        return Orden.objects.none()
 
 class CobroViewSet(viewsets.ModelViewSet):
     queryset = Cobro.objects.all()
     serializer_class = CobroSerializer
 
-class BannerExtranetView(ListAPIView):
-
+# ✅ CÓDIGO NUEVO (Cópialo y pégalo)
+class BannerPorPortalView(ListAPIView):
     serializer_class = SeccionExtranetSerializer
 
     def get_queryset(self):
-
+        # Capturamos el rol que nos pide React desde la URL
+        rol_solicitado = self.kwargs.get('rol', '4') 
+        
         return SeccionExtranet.objects.filter(
-            estatus=True
+            estatus=True,
+            portal_destino=rol_solicitado # Filtramos por el rol
         ).order_by('-id_seccion')
 
 # ==========================================
@@ -160,9 +207,30 @@ class BannerExtranetView(ListAPIView):
 # ==========================================
 
 class PedidoViewSet(viewsets.ModelViewSet):
-    queryset = Pedido.objects.all()
     serializer_class = PedidoSerializer
 
+    # 🚀 1. CONTROL DE VISIBILIDAD DE DATOS (Data Isolation)
+    def get_queryset(self):
+        # Capturamos el rol y el RFC desde los parámetros de consulta (Query Params) de la URL
+        user_rol = self.request.query_params.get('rol', None)
+        user_rfc = self.request.query_params.get('rfc', None)
+
+        # Base de consulta ordenada por el pedido más reciente
+        queryset = Pedido.objects.all().order_by('-id_pedido')
+
+        # Si el usuario es Operativo/Empleado (2) o Administrador (3), tiene acceso total
+        if user_rol in ['2', '3']:
+            return queryset
+
+        # Si el usuario es un Proveedor de la Extranet (4), filtramos estrictamente por su RFC
+        if user_rol == '4' and user_rfc:
+            return queryset.filter(rfc_id=user_rfc)
+
+        # Por seguridad, si no se especifican roles válidos o no hay sesión activa, 
+        # devolvemos un conjunto vacío para proteger la base de datos de filtraciones
+        return Pedido.objects.none()
+
+    # 📦 2. TU MÉTODO DE CREACIÓN ATÓMICA DE PEDIDOS
     def create(self, request, *args, **kwargs):
         data = request.data
         try:
@@ -220,6 +288,8 @@ class PedidoViewSet(viewsets.ModelViewSet):
             import traceback
             traceback.print_exc() 
             return Response({"error": f"Fallo en BD: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 # ==========================================
 # ENDPOINTS PERSONALIZADOS (@api_view)
@@ -320,13 +390,11 @@ def crear_pedido(request):
                     }
 
             for prod_id, info in detalles_limpios.items():
-                # 🚀 2. TAMBIÉN ASEGURAMOS EL ID DEL DETALLE POR SI ACASO
-                # Si tu tabla de detalles se llama diferente, ajusta 'pk' o 'id_detalle'
                 max_detalle = DetallePedido.objects.aggregate(Max('pk'))['pk__max']
                 nuevo_id_detalle = (max_detalle or 0) + 1
 
                 DetallePedido.objects.create(
-                    id=nuevo_id_detalle, # Cambia 'id' a 'id_detalle' si tu modelo lo requiere
+                    id=nuevo_id_detalle, 
                     id_pedido_id=nuevo_id,
                     id_producto_id=prod_id,
                     cantidad=info['cantidad'],
@@ -334,14 +402,6 @@ def crear_pedido(request):
                     precio_subtotal=info['precio_subtotal'],
                     estatus='1'
                 )
-
-            # 🚀 3. ¡AQUÍ DEBE IR TU CÓDIGO DE NOTIFICACIÓN!
-            # Si guardabas la notificación en una tabla "Notificacion", sería algo así:
-            # Notificacion.objects.create(
-            #     usuario_destino=data.get('rfc'), 
-            #     mensaje=f"Tienes un nuevo pedido B2B de Farmacia El Ranchero (#{nuevo_id})"
-            # )
-            # Si usabas requests para Firebase, colócalo aquí antes del return.
 
         return Response({"message": "Pedido creado con éxito", "id_pedido": nuevo_id}, status=201)
     except Exception as e:
@@ -362,21 +422,26 @@ def crear_usuario_por_admin(request):
         if Usuario.objects.filter(correo=correo).exists():
             return Response({"error": "Ya existe un usuario registrado con este correo"}, status=400)
 
+        password_generada = get_random_string(length=8)
         nuevo_id = str(int(time.time())) 
+        
         nuevo_usuario = Usuario.objects.create(
             id_usuario=nuevo_id,                  
             nombre_usuario=nombre_recibido,       
             correo=correo,
             rol=rol,
-            contrasena='temporal123',             
+            contrasena=make_password(password_generada),             
             fecha_registro=timezone.now()         
         )
 
         return Response({
             "success": True, 
-            "mensaje": f"Usuario {nombre_recibido} creado exitosamente como {'Empleado' if rol == '2' else 'Proveedor'}"
+            "mensaje": f"Usuario {nombre_recibido} creado exitosamente como {'Empleado' if rol == '2' else 'Proveedor'}",
+            "password_temporal": password_generada
         })
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return Response({"error": str(e)}, status=500)
 
 @api_view(['POST'])
@@ -418,7 +483,6 @@ def crear_orden_completa(request):
             if not productos_db:
                 return Response({"error": "Carrito vacío"}, status=400)
 
-            # 🚀 1. ID SEGURO PARA ORDEN USANDO MATEMÁTICAS PURAS
             max_orden = Orden.objects.aggregate(Max('id_orden'))['id_orden__max']
             nuevo_id_orden = (max_orden or 0) + 1
 
@@ -432,7 +496,6 @@ def crear_orden_completa(request):
                 id_usuario_id=id_usuario
             )
 
-            # 🚀 2. CREAMOS DETALLES (Sin forzar ID para evitar el error de Tupla)
             for producto, cantidad, subtotal in productos_db:
                 DetalleOrden.objects.create(
                     precio_subtotal=subtotal, 
@@ -448,7 +511,6 @@ def crear_orden_completa(request):
 
             referencia = f"REF-{int(timezone.now().timestamp())}"
             
-            # 🚀 3. ID SEGURO PARA COBRO USANDO MATEMÁTICAS PURAS
             max_cobro = Cobro.objects.aggregate(Max('id_cobro'))['id_cobro__max']
             nuevo_id_cobro = (max_cobro or 0) + 1
             
@@ -598,83 +660,41 @@ def limpiar_carrito(request, id_usuario):
 
 @api_view(['POST'])
 def login_google(request):
-
     correo = request.data.get('correo')
     nombre = request.data.get('nombre')
 
     if not correo:
-        return Response(
-            {
-                "error": "Correo requerido"
-            },
-            status=400
-        )
+        return Response({"error": "Correo requerido"}, status=400)
 
     try:
-
-        usuario = Usuario.objects.get(
-            correo=correo
-        )
-
+        usuario = Usuario.objects.get(correo=correo)
         return Response({
-
-            "id_usuario":
-                usuario.id_usuario,
-
-            "nombre_usuario":
-                usuario.nombre_usuario,
-
-            "correo":
-                usuario.correo,
-
-            "rol":
-                usuario.rol
+            "id_usuario": usuario.id_usuario,
+            "nombre_usuario": usuario.nombre_usuario,
+            "correo": usuario.correo,
+            "rol": usuario.rol
         })
-
     except Usuario.DoesNotExist:
-
         nuevo_usuario = Usuario.objects.create(
-
-            id_usuario=str(
-                int(datetime.now().timestamp())
-            ),
-
+            id_usuario=str(int(datetime.now().timestamp())),
             nombre_usuario=nombre,
-
             correo=correo,
-
             contrasena=make_password("GOOGLE_AUTH"),
-
             rol='1',
-
             fecha_registro=datetime.now()
         )
-
         return Response({
-
-            "id_usuario":
-                nuevo_usuario.id_usuario,
-
-            "nombre_usuario":
-                nuevo_usuario.nombre_usuario,
-
-            "correo":
-                nuevo_usuario.correo,
-
-            "rol":
-                nuevo_usuario.rol
+            "id_usuario": nuevo_usuario.id_usuario,
+            "nombre_usuario": nuevo_usuario.nombre_usuario,
+            "correo": nuevo_usuario.correo,
+            "rol": nuevo_usuario.rol
         })
     
 @api_view(['PUT'])
 def actualizar_usuario(request, id_usuario):
     try:
         usuario = Usuario.objects.get(id_usuario=id_usuario)
-
-        usuario.nombre_usuario = request.data.get(
-            'nombre',
-            usuario.nombre_usuario
-        )
-
+        usuario.nombre_usuario = request.data.get('nombre', usuario.nombre_usuario)
         usuario.save()
 
         return Response({
@@ -686,15 +706,127 @@ def actualizar_usuario(request, id_usuario):
                 "rol": usuario.rol,
             }
         })
+    except Usuario.DoesNotExist:
+        return Response({"error": "Usuario no encontrado"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+
+# 🔥 FUNCIÓN DE CANCELAR ORDEN CORREGIDA 🔥
+@api_view(['POST'])
+def cancelar_orden(request, id_orden):
+    try:
+        orden = Orden.objects.get(id_orden=id_orden)
+        
+        if str(orden.estatus) == "0":
+            return Response({"error": "Esta orden ya se encuentra cancelada."}, status=400)
+            
+        orden.estatus = "0"
+        orden.save()
+
+        return Response({
+            "success": True, 
+            "mensaje": f"La orden #{id_orden} ha sido cancelada exitosamente."
+        }, status=200)
+
+    except Orden.DoesNotExist:
+        return Response({"error": "Orden no encontrada en la base de datos."}, status=404)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response({"error": str(e)}, status=500)
+
+
+# 🔥 NUEVA FUNCIÓN PARA QUE EL EMPLEADO ACTUALICE CUALQUIER ESTATUS 🔥
+@api_view(['PUT'])
+def actualizar_estatus_orden(request, id_orden):
+    try:
+        orden = Orden.objects.get(id_orden=id_orden)
+        nuevo_estatus = str(request.data.get('estatus'))
+
+        # Validamos que sea un estatus permitido (0=Cancelado, 1=Pendiente, 2=Enviado, 3=Entregado)
+        if nuevo_estatus not in ["0", "1", "2", "3"]:
+            return Response({"error": "Estatus inválido."}, status=400)
+
+        orden.estatus = nuevo_estatus
+        orden.save()
+
+        return Response({
+            "success": True, 
+            "mensaje": f"El estatus de la orden #{id_orden} se actualizó correctamente."
+        }, status=200)
+
+    except Orden.DoesNotExist:
+        return Response({"error": "Orden no encontrada en la base de datos."}, status=404)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response({"error": str(e)}, status=500)
+    
+    from django.core.mail import send_mail # 🔥 IMPORTACIÓN CLAVE PARA EL ENVÍO REAL
+from django.conf import settings
+
+@api_view(['POST'])
+def recuperar_password(request):
+    correo = request.data.get('correo')
+
+    if not correo:
+        return Response({"error": "Debes proporcionar un correo electrónico."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # 1. Validamos si el usuario existe
+        usuario = Usuario.objects.get(correo=correo)
+
+        # 2. Generamos la nueva contraseña temporal alfanumérica
+        password_temporal = get_random_string(length=8)
+
+        # 3. Encriptamos y guardamos la nueva contraseña en la base de datos
+        usuario.contrasena = make_password(password_temporal)
+        usuario.save()
+
+        # ==============================================================
+        # 📧 DISPARO REAL DE CORREO ELECTRÓNICO VIA SMTP
+        # ==============================================================
+        asunto = 'Recuperación de contraseña - Ventas Perrunas'
+        
+        mensaje_cuerpo = (
+            f"Hola, {usuario.nombre_usuario}.\n\n"
+            f"Hemos recibido una solicitud para restablecer la contraseña de tu cuenta.\n"
+            f"Tu nueva contraseña temporal de acceso es:\n\n"
+            f"👉   {password_temporal}   <---\n\n"
+            f"Por razones de seguridad, te recomendamos cambiarla desde tu perfil "
+            f"inmediatamente después de iniciar sesión.\n\n"
+            f"Si no solicitaste este cambio, por favor ponte en contacto con soporte.\n\n"
+            f"Saludos cordiales,\n"
+            f"El equipo de Ventas Perrunas."
+        )
+        
+        email_origen = settings.DEFAULT_FROM_EMAIL
+        email_destino = [usuario.correo]
+
+        # Envía el correo de manera síncrona. Si el SMTP falla, saltará al bloque except.
+        send_mail(
+            subject=asunto,
+            message=mensaje_cuerpo,
+            from_email=email_origen,
+            recipient_list=email_destino,
+            fail_silently=False # Si se cae la conexión SMTP, levantará una excepción para avisarte
+        )
+
+        return Response({
+            "success": True,
+            "mensaje": "Se ha enviado un correo electrónico con tu nueva contraseña temporal con éxito."
+        }, status=status.HTTP_200_OK)
 
     except Usuario.DoesNotExist:
-        return Response(
-            {"error": "Usuario no encontrado"},
-            status=404
-        )
-
+        # Mantenemos el mensaje genérico por seguridad contra ataques de enumeración de cuentas
+        return Response({
+            "error": "Si el correo está registrado en nuestro sistema, recibirás las instrucciones en tu bandeja de entrada."
+        }, status=status.HTTP_404_NOT_FOUND)
+        
     except Exception as e:
-        return Response(
-            {"error": str(e)},
-            status=500
-        )
+        import traceback
+        traceback.print_exc()
+        return Response({
+            "error": f"El usuario se actualizó, pero falló el envío del correo electrónico. Error: {str(e)}"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

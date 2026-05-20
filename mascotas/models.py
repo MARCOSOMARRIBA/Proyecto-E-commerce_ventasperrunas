@@ -120,6 +120,9 @@ class Producto(models.Model):
     imagen = models.CharField(max_length=255, blank=True, null=True)
     activo = models.BooleanField()
     id_categoria = models.ForeignKey(Categoria, models.DO_NOTHING, db_column='id_categoria')
+    
+    # 🔥 NUEVO CAMPO: Conecta el producto con su proveedor (Extranet)
+    rfc = models.ForeignKey('Proveedor', models.DO_NOTHING, db_column='rfc', blank=True, null=True)
 
     class Meta:
         managed = True
@@ -147,6 +150,7 @@ class SeccionExtranet(models.Model):
     estatus = models.BooleanField()
     url_destino = models.CharField(max_length=255, blank=True, null=True)
     id_usuario = models.ForeignKey('Usuario', models.DO_NOTHING, db_column='id_usuario')
+    portal_destino = models.CharField(max_length=1, default='4')
 
     class Meta:
         managed = True
