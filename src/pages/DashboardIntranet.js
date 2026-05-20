@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 // 1. Agregamos el ícono FiUserPlus para el menú
-import { FiPackage, FiShoppingCart, FiTruck, FiSettings, FiHelpCircle, FiSearch, FiActivity, FiUserPlus } from 'react-icons/fi';
+import { FiPackage, FiShoppingCart, FiTruck, FiSettings, FiHelpCircle, FiSearch, FiActivity, FiUserPlus, FiImage } from 'react-icons/fi';
 
 import VistaOrdenesClientes from './OrdenesClientesIntranet';
 import VistaPedidosProveedor from './PedidosProveedorIntranet';
@@ -10,6 +10,8 @@ import VistaInventario from './InventarioIntranet';
 import AuditoriaEmpleados from './AuditoriaEmpleados';
 // 2. IMPORTAMOS EL NUEVO COMPONENTE QUE CREASTE
 import CrearUsuarioAdmin from './CrearUsuarioAdmin';
+// 🔥 3. IMPORTAMOS EL COMPONENTE DE BANNERS QUE FALTABA
+import BannersIntranet from './BannersIntranet';
 
 function DashboardIntranet() {
   const { user } = useContext(AuthContext);
@@ -42,8 +44,10 @@ function DashboardIntranet() {
               { id: 'ordenes', label: 'Órdenes Clientes', icon: <FiShoppingCart /> },
               { id: 'pedidos', label: 'Pedidos Proveedor', icon: <FiTruck /> },
               { id: 'auditoria', label: 'Auditoría Empleados', icon: <FiActivity /> },
-              // 3. AGREGAMOS EL BOTÓN AL MENÚ LATERAL
-              { id: 'crear_usuario', label: 'Alta de Personal', icon: <FiUserPlus /> }
+              { id: 'crear_usuario', label: 'Alta de Personal', icon: <FiUserPlus /> },
+              // 🔥 NUEVO BOTÓN PARA BANNERS AQUÍ
+              { id: 'banners', label: 'Gestión de Banners', icon: <FiImage /> }
+              
             ].map(item => (
               <li className="nav-item" key={item.id}>
                 <button 
@@ -88,6 +92,7 @@ function DashboardIntranet() {
             {vistaActiva === 'auditoria' && <AuditoriaEmpleados/>}
             {/* 4. LE DECIMOS A REACT QUE MUESTRE EL FORMULARIO CUANDO SE SELECCIONE EL BOTÓN */}
             {vistaActiva === 'crear_usuario' && <CrearUsuarioAdmin />}
+            {vistaActiva === 'banners' && <BannersIntranet />}
           </div>
         </div>
 

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react"; // 🔥 1. Importamos useContext
 import { FiBox, FiPlus, FiTrash2, FiSave, FiX } from "react-icons/fi";
 import { useMessage } from "../context/MessageContext";
+import { AuthContext } from "../context/AuthContext"; // 🔥 2. Importamos el contexto
 
 const ProductosExtranet = () => {
   const { showMessage } = useMessage();
+  const { user } = useContext(AuthContext); // 🔥 3. Extraemos el usuario actual
 
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -27,14 +29,20 @@ const ProductosExtranet = () => {
 
   useEffect(() => {
     cargarDatos();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // 🔥 Se vuelve a ejecutar si el usuario cambia
 
   const cargarDatos = async () => {
+    if (!user) return; // Si no hay usuario, no cargamos nada todavía
+
     try {
       setCargando(true);
 
+      // 🚀 4. INYECTAMOS ROL Y RFC EN LA URL PARA EL FILTRO DE SEGURIDAD
+      const urlProductosFiltrada = `${API_PRODUCTOS}?rol=${user.rol}&rfc=${user.rfc || ""}`;
+
       const [resProds, resCat] = await Promise.all([
-        fetch(API_PRODUCTOS),
+        fetch(urlProductosFiltrada),
         fetch(API_CATEGORIAS),
       ]);
 
@@ -132,6 +140,8 @@ const ProductosExtranet = () => {
         id_producto: Number(nuevoProducto.id_producto),
         precio: Number(nuevoProducto.precio),
         id_categoria: Number(nuevoProducto.id_categoria),
+        // 🚀 5. ETIQUETAMOS EL PRODUCTO CON EL RFC DEL PROVEEDOR
+        rfc: user?.rfc, 
       };
 
       const res = await fetch(API_PRODUCTOS, {

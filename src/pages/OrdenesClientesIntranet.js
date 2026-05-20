@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react'; // 🔥 1. Agregado useContext
 import { FiEye, FiShoppingBag, FiX } from 'react-icons/fi';
+import { AuthContext } from '../context/AuthContext'; // 🔥 2. Importado el AuthContext
 
 const OrdenesClientesIntranet = () => {
+  const { user } = useContext(AuthContext); // 🔥 3. Extraemos el usuario activo
   const [ordenes, setOrdenes] = useState([]);
   const [cargando, setCargando] = useState(true);
 
@@ -13,8 +15,14 @@ const OrdenesClientesIntranet = () => {
 
   useEffect(() => {
     const fetchOrdenes = async () => {
+      // Si el usuario no ha cargado, no hacemos la petición
+      if (!user) return; 
+
       try {
-        const res = await fetch('http://127.0.0.1:8000/api/ordenes/');
+        // 🚀 4. APLICAMOS EL FILTRO EN LA URL PARA EL DATA ISOLATION
+        const url = `http://127.0.0.1:8000/api/ordenes/?rol=${user.rol}&id_usuario=${user.id}`;
+        const res = await fetch(url);
+        
         if (res.ok) {
           const data = await res.json();
           setOrdenes(data);
@@ -26,33 +34,34 @@ const OrdenesClientesIntranet = () => {
       }
     };
     fetchOrdenes();
-  }, []);
+  }, [user]); // 🔥 Agregamos `user` como dependencia del useEffect
 
   const actualizarEstatus = async (id_orden, nuevoEstatus) => {
-    // Actualización visual rápida
+    // Actualización visual rápida en el frontend
     setOrdenes(ordenes.map(orden => 
       orden.id_orden === id_orden ? { ...orden, estatus: nuevoEstatus } : orden
     ));
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/ordenes/${id_orden}/`, {
-        method: 'PATCH',
+      const res = await fetch(`http://127.0.0.1:8000/api/ordenes/actualizar-estatus/${id_orden}/`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estatus: nuevoEstatus }) // Manda '1', '2' o '3'
+        body: JSON.stringify({ estatus: nuevoEstatus })
       });
-      if (!res.ok) throw new Error("Error en servidor");
+      if (!res.ok) throw new Error("Error en servidor al actualizar estatus");
     } catch (error) {
       console.error("Error:", error);
       alert("No se pudo guardar el cambio en la base de datos.");
     }
   };
 
-  // 🎨 Asignamos colores según las 3 reglas de tu manual
+  // 🎨 Asignamos colores incluyendo la regla del CANCELADO (0)
   const getColorPorEstado = (estado) => {
     switch (String(estado)) {
-      case '1': return 'text-warning'; // Pendiente
-      case '2': return 'text-info';    // Enviado
-      case '3': return 'text-success'; // Recibido
+      case '0': return 'text-danger fw-bold';  // Cancelado
+      case '1': return 'text-warning fw-bold'; // Pendiente
+      case '2': return 'text-info fw-bold';    // Enviado
+      case '3': return 'text-success fw-bold'; // Recibido
       default: return 'text-secondary';
     }
   };
@@ -115,16 +124,17 @@ const OrdenesClientesIntranet = () => {
                     </td>
                     
                     <td>
-                      {/* 🔥 SELECTOR LIMITADO A LAS 3 OPCIONES OFICIALES */}
+                      {/* 🔥 SELECTOR CON LA OPCIÓN DE CANCELADO INCLUIDA */}
                       <select 
                         className={`form-select form-select-sm fw-bold ${getColorPorEstado(orden.estatus)}`}
                         style={{ width: '130px', backgroundColor: '#f8f9fa', border: 'none' }}
-                        value={orden.estatus || "1"}
+                        value={String(orden.estatus || "1")}
                         onChange={(e) => actualizarEstatus(orden.id_orden, e.target.value)}
                       >
                         <option value="1" className="text-dark">Pendiente</option>
                         <option value="2" className="text-dark">Enviado</option>
                         <option value="3" className="text-dark">Recibido</option>
+                        <option value="0" className="text-danger fw-bold">Cancelado</option>
                       </select>
                     </td>
 

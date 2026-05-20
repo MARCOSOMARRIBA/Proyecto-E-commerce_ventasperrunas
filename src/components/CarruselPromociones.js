@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 const CarruselPromociones = () => {
   const [banners, setBanners] = useState([]);
@@ -6,11 +6,13 @@ const CarruselPromociones = () => {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const res = await fetch('http://127.0.0.1:8000/api/secciones-extranet/');
+        const res = await fetch(
+          "http://127.0.0.1:8000/api/secciones-extranet/",
+        );
         if (res.ok) {
           const data = await res.json();
           // Filtramos para mostrar SOLO los que están marcados como activos
-          const bannersActivos = data.filter(b => b.estatus === true);
+          const bannersActivos = data.filter((b) => b.estatus === true);
           setBanners(bannersActivos);
         }
       } catch (error) {
@@ -21,53 +23,126 @@ const CarruselPromociones = () => {
   }, []);
 
   // Si no hay ningún banner activo en la base de datos, el carrusel se oculta y no estorba
-  if (banners.length === 0) return null; 
+  if (banners.length === 0) return null;
 
   return (
-    <div id="carruselPromociones" className="carousel slide mb-5 shadow rounded-4 overflow-hidden" data-bs-ride="carousel">
-      <div className="carousel-inner">
+    <div
+      id="carruselPromociones"
+      className="carousel slide carousel-fade mb-5"
+      data-bs-ride="carousel"
+      data-bs-interval="4000"
+      data-bs-pause="false"
+    >
+      {/* INDICADORES */}
+      {banners.length > 1 && (
+        <div className="carousel-indicators">
+          {banners.map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              data-bs-target="#carruselPromociones"
+              data-bs-slide-to={index}
+              className={index === 0 ? "active" : ""}
+              aria-current={index === 0 ? "true" : "false"}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* SLIDES */}
+      <div className="carousel-inner rounded-4 overflow-hidden shadow-lg">
         {banners.map((banner, index) => (
-          <div className={`carousel-item ${index === 0 ? 'active' : ''}`} key={banner.id_seccion}>
-            {/* Si el proveedor le puso un link, la imagen será clickeable */}
-            <a href={banner.url_destino || '#'} target={banner.url_destino ? "_blank" : "_self"} rel="noreferrer" style={{ textDecoration: 'none' }}>
+          <div
+            className={`carousel-item ${index === 0 ? "active" : ""}`}
+            key={banner.id_seccion}
+          >
+            <a
+              href={banner.url_destino || "#"}
+              target={banner.url_destino ? "_blank" : "_self"}
+              rel="noreferrer"
+              style={{ textDecoration: "none" }}
+            >
               <div
+                className="position-relative d-flex align-items-center justify-content-center"
                 style={{
-                  height: '350px',
+                  height: "500px",
                   backgroundImage: `url(${banner.imagen_banner})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundColor: '#f8fafc' // Color de fondo por si la imagen tarda en cargar
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
                 }}
-                className="w-100 d-flex align-items-end justify-content-center pb-5 position-relative"
               >
-                {/* Filtro oscuro transparente para que las letras blancas siempre se lean bien */}
-                <div className="position-absolute top-0 start-0 w-100 h-100" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}></div>
-                
-                {/* Textos del Banner */}
-                <div className="text-center text-white position-relative" style={{ zIndex: 1 }}>
-                  <h1 className="fw-bold" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                {/* Overlay oscuro */}
+                <div
+                  className="position-absolute top-0 start-0 w-100 h-100"
+                  style={{
+                    background:
+                      "linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.55))",
+                  }}
+                ></div>
+
+                {/* Contenido */}
+                <div
+                  className="text-center text-white position-relative px-3"
+                  style={{ zIndex: 2, maxWidth: "900px" }}
+                >
+                  <h1
+                    className="fw-bold mb-3"
+                    style={{
+                      fontSize: "clamp(2rem, 5vw, 4rem)",
+                      textShadow: "0 4px 12px rgba(0,0,0,0.7)",
+                    }}
+                  >
                     {banner.titulo_pagina}
                   </h1>
-                  <p className="fs-5 mb-0" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.8)' }}>
+
+                  <p
+                    className="mb-4"
+                    style={{
+                      fontSize: "clamp(1rem, 2vw, 1.4rem)",
+                      textShadow: "0 2px 8px rgba(0,0,0,0.7)",
+                    }}
+                  >
                     {banner.texto_bienvenida}
                   </p>
+
+                  {banner.url_destino && (
+                    <span className="btn btn-light btn-lg rounded-pill px-4 fw-semibold">
+                      Ver más
+                    </span>
+                  )}
                 </div>
               </div>
             </a>
           </div>
         ))}
       </div>
-      
-      {/* Las flechitas de siguiente/anterior solo salen si hay más de 1 banner */}
+
+      {/* FLECHA IZQUIERDA */}
       {banners.length > 1 && (
         <>
-          <button className="carousel-control-prev" type="button" data-bs-target="#carruselPromociones" data-bs-slide="prev">
-            <span className="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span className="visually-hidden">Anterior</span>
+          <button
+            className="carousel-control-prev"
+            type="button"
+            data-bs-target="#carruselPromociones"
+            data-bs-slide="prev"
+          >
+            <span
+              className="carousel-control-prev-icon bg-dark rounded-circle p-4"
+              aria-hidden="true"
+            ></span>
           </button>
-          <button className="carousel-control-next" type="button" data-bs-target="#carruselPromociones" data-bs-slide="next">
-            <span className="carousel-control-next-icon" aria-hidden="true"></span>
-            <span className="visually-hidden">Siguiente</span>
+
+          {/* FLECHA DERECHA */}
+          <button
+            className="carousel-control-next"
+            type="button"
+            data-bs-target="#carruselPromociones"
+            data-bs-slide="next"
+          >
+            <span
+              className="carousel-control-next-icon bg-dark rounded-circle p-4"
+              aria-hidden="true"
+            ></span>
           </button>
         </>
       )}

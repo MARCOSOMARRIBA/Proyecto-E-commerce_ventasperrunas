@@ -47,10 +47,17 @@ export const api = {
         method: "POST",
         body: JSON.stringify(credentials),
       }),
+
     register: (user) =>
       apiFetch("/usuarios/", {
         method: "POST",
         body: JSON.stringify(user),
+      }),
+
+    googleLogin: (data) =>
+      apiFetch("/login-google/", {
+        method: "POST",
+        body: JSON.stringify(data),
       }),
   },
 };

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext'; 
 import { db } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { FiPlus, FiEye, FiPackage, FiCalendar, FiClock, FiCheckCircle, FiX, FiShoppingBag, FiSave } from 'react-icons/fi';
+import { FiPlus, FiEye, FiPackage, FiClock, FiCheckCircle, FiX, FiShoppingBag, FiSave } from 'react-icons/fi';
 
 const PedidosProveedorEmpleado = () => {
   const { user } = useContext(AuthContext);
@@ -25,15 +25,20 @@ const PedidosProveedorEmpleado = () => {
   const [itemActual, setItemActual] = useState({ id_producto: '', cantidad: 1, precio: 0 });
 
   useEffect(() => {
-    cargarHistorialPedidos();
-    cargarCatalogos();
-  }, []);
+    // 🔥 Validamos que el usuario exista antes de consultar a la base de datos
+    if (user) {
+      cargarHistorialPedidos();
+      cargarCatalogos();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const cargarCatalogos = async () => {
     try {
       const [resProv, resProd] = await Promise.all([
         fetch('http://127.0.0.1:8000/api/proveedores/'),
-        fetch('http://127.0.0.1:8000/api/productos/')
+        // 🚀 INYECTAMOS ROL PARA QUE EL EMPLEADO VEA TODOS LOS PRODUCTOS
+        fetch(`http://127.0.0.1:8000/api/productos/?rol=${user.rol}&rfc=${user.rfc || ''}`)
       ]);
       if (resProv.ok) setProveedores(await resProv.json());
       if (resProd.ok) setProductosDisponibles(await resProd.json());
@@ -42,12 +47,13 @@ const PedidosProveedorEmpleado = () => {
 
   const cargarHistorialPedidos = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/pedidos/');
+      // 🚀 INYECTAMOS ROL PARA QUE EL EMPLEADO VEA TODOS LOS PEDIDOS
+      const res = await fetch(`http://127.0.0.1:8000/api/pedidos/?rol=${user.rol}&rfc=${user.rfc || ''}`);
       if (res.ok) setPedidosBD(await res.json());
     } catch (error) { console.error("Error historial:", error); }
   };
 
-  // 🚀 LÓGICA DE AGREGAR PRODUCTO (Corregida)
+  // 🚀 LÓGICA DE AGREGAR PRODUCTO
   const agregarProductoALista = () => {
     if (!itemActual.id_producto || itemActual.cantidad <= 0) {
       alert("Selecciona un producto y una cantidad válida.");
@@ -64,7 +70,7 @@ const PedidosProveedorEmpleado = () => {
           id_producto: itemActual.id_producto,
           nombre: prodInfo.nombre,
           cantidad: itemActual.cantidad,
-          precio: itemActual.precio // Se guarda el precio auto-llenado
+          precio: itemActual.precio 
         }
       ]
     });
@@ -78,13 +84,12 @@ const PedidosProveedorEmpleado = () => {
     const cantidadArticulos = nuevaOrden.productosSeleccionados.reduce((acc, p) => acc + p.cantidad, 0);
     const fechaHoy = new Date().toISOString().split('T')[0];
 
-    // 🛠️ CORRECCIÓN AQUÍ: Ajustamos los nombres de las columnas del detalle
     const detallesFormateados = nuevaOrden.productosSeleccionados.map(p => ({
-      id_producto: p.id_producto,      // Debe coincidir con el campo en tu modelo DetallePedido
+      id_producto: p.id_producto,      
       cantidad: p.cantidad,
       precio_unitario: p.precio,
       precio_subtotal: (p.cantidad * p.precio),
-      estatus: '1'                     // Estatus inicial del detalle
+      estatus: '1'                     
     }));
 
     const payload = {
@@ -94,7 +99,7 @@ const PedidosProveedorEmpleado = () => {
       estatus: '1', 
       fecha_compra: fechaHoy,
       id_usuario: user.id,
-      detalles: detallesFormateados // 👈 Mandamos la lista ya corregida
+      detalles: detallesFormateados 
     };
 
     try {
@@ -142,7 +147,7 @@ const getBadgeEstatus = (estatus) => {
     switch(String(estatus)) {
       case '1': return <span className="badge bg-warning text-dark rounded-pill"><FiClock/> Solicitado</span>;
       case '2': return <span className="badge bg-info text-dark rounded-pill"><FiPackage/> En Proceso</span>;
-      case '3': return <span className="badge bg-danger rounded-pill"><FiX/> Cancelado</span>; // <--- LÍNEA NUEVA
+      case '3': return <span className="badge bg-danger rounded-pill"><FiX/> Cancelado</span>; 
       case '4': return <span className="badge bg-success rounded-pill"><FiCheckCircle/> Entregado</span>;
       default: return <span className="badge bg-secondary rounded-pill">Desconocido</span>;
     }
@@ -189,7 +194,6 @@ const getBadgeEstatus = (estatus) => {
                   
                   <div className="col-md-5">
                     <label className="small fw-bold">Producto</label>
-                    {/* 🚀 SELECTOR CON AUTO-LLENADO DE PRECIO */}
                     <select 
                       className="form-select" 
                       value={itemActual.id_producto} 

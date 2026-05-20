@@ -18,9 +18,17 @@ function Carrito() {
     <div className="container mt-5 mb-5 pb-5 pt-3">
       {/* Banner */}
       <div className="cart-banner">
-        <h2>
-          ¡Si a tu mascota quieres mimar, a Ventas Perrunas tienes que llegar!
-        </h2>
+        <div className="cart-banner-content">
+          <span className="cart-badge">🛒 Ventas Perrunas</span>
+
+          <h2>Tu carrito de compras</h2>
+
+          <p>
+            Revisa tus productos favoritos y finaliza tu compra de forma rápida
+            y segura.
+          </p>
+        </div>
+
         <img
           src="https://images.vexels.com/media/users/3/298815/isolated/preview/a108df1e0dbb3a2cd7de385317b9b1e7-golden-retriever-dog-sitting-character.png"
           alt="Mascotas"
@@ -34,11 +42,18 @@ function Carrito() {
 
         <div className="cart-body">
           {cart.length === 0 ? (
-            <div className="text-center py-5">
-              <h4>Tu carrito está vacío 🐶</h4>
+            <div className="empty-cart">
+              <div className="empty-cart-icon">🐾</div>
 
-              <Link to="/" className="btn btn-pagar mt-3 text-decoration-none">
-                Volver a la tienda
+              <h3>Tu carrito aún está vacío</h3>
+
+              <p>
+                Descubre alimentos, juguetes y accesorios para consentir a tu
+                mascota.
+              </p>
+
+              <Link to="/" className="btn-pagar text-decoration-none">
+                Explorar productos
               </Link>
             </div>
           ) : (

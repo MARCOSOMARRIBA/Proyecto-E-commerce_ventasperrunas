@@ -12,24 +12,22 @@ const OrdenesExtranet = () => {
 
   useEffect(() => {
     cargarPedidosProveedor();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const cargarPedidosProveedor = async () => {
+    if (!user) return; // Protegemos la petición hasta que haya usuario
+
     try {
       setCargando(true);
-      const res = await fetch("http://127.0.0.1:8000/api/pedidos/");
+      // 🚀 INYECTAMOS EL FILTRO DE PRIVACIDAD EN LA URL
+      const url = `http://127.0.0.1:8000/api/pedidos/?rol=${user.rol}&rfc=${user.rfc || ""}`;
+      const res = await fetch(url);
 
       if (res.ok) {
         const data = await res.json();
-
-        // ==============================================================
-        // HACK TEMPORAL PARA LA TABLA
-        // Después lo cambiaremos por user?.rfc cuando el backend lo mande.
-        // ==============================================================
-        const RFC_PRUEBA = "DPG260401A1B";
-        const misPedidos = data.filter((p) => p.rfc === RFC_PRUEBA);
-
-        setPedidos(misPedidos);
+        // Ya no filtramos en el frontend, el backend nos manda exactamente lo que nos toca
+        setPedidos(data);
       } else {
         showMessage({
           title: "Error al cargar órdenes",
@@ -49,7 +47,7 @@ const OrdenesExtranet = () => {
     }
   };
 
-const actualizarEstatus = async (id_pedido, nuevoEstatus) => {
+  const actualizarEstatus = async (id_pedido, nuevoEstatus) => {
     try {
       // 1. Actualizamos el estatus del pedido
       const res = await fetch(`http://127.0.0.1:8000/api/pedidos/${id_pedido}/`, {
@@ -63,7 +61,6 @@ const actualizarEstatus = async (id_pedido, nuevoEstatus) => {
           prevPedidos.map((p) => p.id_pedido === id_pedido ? { ...p, estatus: nuevoEstatus } : p)
         );
         
-        // Esta es tu alerta bonita, esa la dejamos intacta
         showMessage({
           title: "Estatus actualizado",
           message: `El pedido #${id_pedido} fue actualizado correctamente.`,
@@ -88,7 +85,6 @@ const actualizarEstatus = async (id_pedido, nuevoEstatus) => {
               });
               
               await Promise.all(promesasDeActivacion);
-              // ¡Listo! Eliminamos los alert(). Ahora la magia ocurre sin hacer ruido.
             }
           }
         }

@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FiShoppingCart,
   FiHeart,
@@ -16,15 +16,18 @@ import NotificadorProveedor from "./NotificadorProveedor";
 import { FaSearch, FaTimes, FaClipboardList } from "react-icons/fa";
 import SearchBar from "./SearchBar";
 import { FavoritesContext } from "../context/FavoritesContext";
+import { useMessage } from "../context/MessageContext";
 
 function Navbar() {
   const { user, logout } = useContext(AuthContext);
   const { getCartCount } = useContext(CartContext);
   const navigate = useNavigate();
+  const { showMessage } = useMessage();
   const [mostrarBusqueda, setMostrarBusqueda] = useState(false);
   const { getFavoritesCount } = useContext(FavoritesContext);
   // Estado para controlar si el menú de Facebook está abierto o cerrado
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const location = useLocation();
   const menuRef = useRef(null);
 
   const handleLogout = () => {
@@ -44,235 +47,274 @@ function Navbar() {
   }, []);
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-custom px-3">
+    <nav className="navbar navbar-expand-lg navbar-modern px-4 py-3">
       <div className="container-fluid">
         {/* LOGO */}
         <Link
-          className="navbar-brand d-flex align-items-center gap-2 text-white"
+          className="navbar-brand d-flex align-items-center gap-3 text-white"
           to="/"
         >
-          <span style={{ fontSize: "2rem" }}>🐾</span>
-          <span className="fw-bold" style={{ lineHeight: "1.1" }}>
-            Ventas
-            <br />
-            Perrunas
-          </span>
+          <div className="logo-icon">🐾</div>
+
+          <div className="d-flex flex-column">
+            <span className="fw-bold brand-title">Ventas Perrunas</span>
+
+            <small className="brand-subtitle">Todo para tu mascota</small>
+          </div>
         </Link>
 
-        {/* MENÚ DEL CENTRO */}
-        <ul
-          className={`navbar-nav mx-auto mb-2 mb-lg-0 d-none d-lg-flex novedades-navbar ${
-            mostrarBusqueda ? "novedades-navbar-hidden" : ""
+        {/* MENÚ CENTRAL */}
+        <div
+          className={`d-none d-lg-flex align-items-center gap-3 mx-auto navbar-center-links ${
+            mostrarBusqueda ? "navbar-hidden-elements" : ""
           }`}
         >
-          <li className="nav-item">
-            <Link
-              className="nav-link text-white fw-bold d-flex align-items-center gap-2 px-4 py-2 bg-white bg-opacity-10 rounded-pill hover-scale"
-              to="/novedades"
+          <Link
+            className={`nav-modern-link ${
+              location.pathname === "/" ? "active" : ""
+            }`}
+            to="/"
+          >
+            Inicio
+          </Link>
+
+          <Link
+            className={`nav-modern-link ${
+              location.pathname === "/Tienda" ? "active" : ""
+            }`}
+            to="/Tienda"
+          >
+            Productos
+          </Link>
+
+          <Link
+            className={`nav-modern-link ${
+              location.pathname === "/categorias" ? "active" : ""
+            }`}
+            to="/categorias"
+          >
+            Categorías
+          </Link>
+
+          <Link
+            className={`nav-modern-link ${
+              location.pathname === "/novedades" ? "active" : ""
+            }`}
+            to="/novedades"
+          >
+            <FiStar className="text-warning" />
+            Novedades
+          </Link>
+        </div>
+
+        {/* DERECHA */}
+        <div className="d-none d-lg-flex align-items-center gap-3">
+          {/* SEARCH */}
+          <div className="animated-navbar-search">
+            <button
+              type="button"
+              className="animated-search-toggle"
+              onClick={() => setMostrarBusqueda(!mostrarBusqueda)}
+              title={mostrarBusqueda ? "Cerrar búsqueda" : "Buscar productos"}
             >
-              <FiStar className="text-warning" /> Novedades
-            </Link>
-          </li>
-        </ul>
+              {mostrarBusqueda ? <FaTimes /> : <FaSearch />}
+            </button>
 
-        {/* BOTONES E ICONOS DE LA DERECHA */}
-        <div className="nav-icons d-none d-lg-flex align-items-center gap-4">
-          {/* ICONOS FUNCIONALES (Búsqueda, Favoritos, Carrito, y CAMPANITA) */}
-          <div className="d-flex align-items-center gap-3 text-white">
-            <div className="animated-navbar-search">
-              <button
-                type="button"
-                className="animated-search-toggle"
-                onClick={() => setMostrarBusqueda(!mostrarBusqueda)}
-                title={mostrarBusqueda ? "Cerrar búsqueda" : "Buscar productos"}
-              >
-                {mostrarBusqueda ? <FaTimes /> : <FaSearch />}
-              </button>
-
-              <div
-                className={`animated-search-panel ${mostrarBusqueda ? "open" : ""}`}
-              >
-                <SearchBar />
-              </div>
+            <div
+              className={`animated-search-panel ${
+                mostrarBusqueda ? "open" : ""
+              }`}
+            >
+              <SearchBar />
             </div>
-            <Link
-              to="/mis-pedidos"
-              title="Mis Pedidos"
-              className="text-white text-decoration-none hover-scale position-relative"
-            >
-              <FaClipboardList size={22} />
-            </Link>
-            <Link
-              to="/favoritos"
-              title="Mis Favoritos"
-              className="text-white text-decoration-none hover-scale position-relative"
-            >
-              <FiHeart size={22} />
-
-              {getFavoritesCount() > 0 && (
-                <span
-                  className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                  style={{ fontSize: "0.6rem" }}
-                >
-                  {getFavoritesCount()}
-                </span>
-              )}
-            </Link>
-
-            <Link
-              to="/carrito"
-              title="Ir al Carrito"
-              className="text-white text-decoration-none hover-scale position-relative"
-            >
-              <FiShoppingCart size={22} />
-              {getCartCount() > 0 && (
-                <span
-                  className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark"
-                  style={{ fontSize: "0.6rem" }}
-                >
-                  {getCartCount()}
-                </span>
-              )}
-            </Link>
-
-            {/* 🔔 AQUÍ ESTÁ LA MAGIA: Solo renderizamos el notificador si hay un usuario logueado Y su rol es 4 */}
-            {user && user.rol === "4" && <NotificadorProveedor />}
+            <div
+              className={`d-flex align-items-center gap-3 navbar-right-elements ${
+                mostrarBusqueda ? "navbar-hidden-elements" : ""
+              }`}
+            ></div>
           </div>
 
-          <div
-            className="nav-divider"
-            style={{
-              width: "2px",
-              height: "30px",
-              backgroundColor: "rgba(255,255,255,0.2)",
-            }}
-          ></div>
+          {/* PEDIDOS */}
+          <Link
+            to="/mis-pedidos"
+            className="modern-icon-btn"
+            onClick={(e) => {
+              if (!user) {
+                e.preventDefault();
 
-          {/* RENDERIZADO CONDICIONAL DEL USUARIO (Estilo Facebook) */}
+                showMessage({
+                  title: "Inicia sesión",
+
+                  message: "Debes iniciar sesión para ver tus pedidos.",
+
+                  type: "warning",
+                });
+
+                return;
+              }
+            }}
+          >
+            <FaClipboardList size={18} />
+          </Link>
+
+          {/* FAVORITOS */}
+          <Link
+            to="/favoritos"
+            className="modern-icon-btn position-relative"
+            onClick={(e) => {
+              if (!user) {
+                e.preventDefault();
+
+                showMessage({
+                  title: "Inicia sesión",
+
+                  message:
+                    "Debes iniciar sesión para guardar productos en favoritos.",
+
+                  type: "warning",
+                });
+
+                return;
+              }
+            }}
+          >
+            <FiHeart size={18} />
+
+            {getFavoritesCount() > 0 && (
+              <span className="modern-badge danger">{getFavoritesCount()}</span>
+            )}
+          </Link>
+
+          {/* CARRITO */}
+          <Link
+            to="/carrito"
+            className="modern-icon-btn position-relative"
+            onClick={(e) => {
+              if (!user) {
+                e.preventDefault();
+
+                showMessage({
+                  title: "Inicia sesión",
+
+                  message: "Debes iniciar sesión para comprar.",
+
+                  type: "warning",
+                });
+
+                return;
+              }
+            }}
+          >
+            <FiShoppingCart size={18} />
+
+            {getCartCount() > 0 && (
+              <span className="modern-badge warning">{getCartCount()}</span>
+            )}
+          </Link>
+
+          {/* NOTIFICADOR */}
+          {user && user.rol === "4" && <NotificadorProveedor />}
+
+          <div className="modern-divider"></div>
+
+          {/* USUARIO */}
           {user ? (
             <div className="position-relative" ref={menuRef}>
-              {/* Botón que despliega el menú */}
               <button
                 onClick={() => setMenuAbierto(!menuAbierto)}
-                className="btn btn-link text-white text-decoration-none d-flex align-items-center gap-2 p-0 border-0 shadow-none hover-scale"
+                className="modern-user-btn"
               >
-                <div
-                  className="d-flex justify-content-center align-items-center bg-light text-dark rounded-circle"
-                  style={{ width: "40px", height: "40px" }}
-                >
-                  <span className="fw-bold fs-5">
-                    {user.nombre ? user.nombre.charAt(0).toUpperCase() : "U"}
-                  </span>
+                <div className="modern-avatar">
+                  {user.nombre ? user.nombre.charAt(0).toUpperCase() : "U"}
                 </div>
-                <span className="fw-bold d-none d-xl-block">{user.nombre}</span>
+
+                <div className="d-flex flex-column text-start">
+                  <span className="modern-user-name">{user.nombre}</span>
+
+                  <small className="modern-user-role">Usuario</small>
+                </div>
+
                 <FiChevronDown
-                  className={`transition-transform ${menuAbierto ? "rotate-180" : ""}`}
+                  className={`transition-transform ${
+                    menuAbierto ? "rotate-180" : ""
+                  }`}
                 />
               </button>
 
-              {/* EL MENÚ DESPLEGABLE */}
+              {/* DROPDOWN */}
               {menuAbierto && (
-                <div
-                  className="dropdown-menu show position-absolute end-0 mt-3 shadow-lg border-0 fade-in-up"
-                  style={{
-                    minWidth: "260px",
-                    borderRadius: "12px",
-                    zIndex: 1050,
-                  }}
-                >
-                  {/* Cabecera del menú */}
-                  <div
-                    className="px-4 py-3 border-bottom bg-light rounded-top"
-                    style={{
-                      borderTopLeftRadius: "12px",
-                      borderTopRightRadius: "12px",
-                    }}
-                  >
-                    <p className="mb-0 fw-bold text-dark fs-6">{user.nombre}</p>
-                    <small className="text-muted">
-                      {user.email || "Usuario registrado"}
-                    </small>
+                <div className="modern-dropdown">
+                  <div className="modern-dropdown-header">
+                    <div className="modern-avatar large">
+                      {user.nombre ? user.nombre.charAt(0).toUpperCase() : "U"}
+                    </div>
+
+                    <div>
+                      <p className="mb-0 fw-bold">{user.nombre}</p>
+
+                      <small className="text-muted">
+                        {user.email || "Usuario registrado"}
+                      </small>
+                    </div>
                   </div>
 
-                  <div className="py-2">
-                    <Link
-                      to="/perfil"
-                      className="dropdown-item d-flex align-items-center gap-3 py-2 px-4 fw-medium text-secondary hover-bg-light"
-                      onClick={() => setMenuAbierto(false)}
-                    >
-                      <FiUser size={18} /> Mi Perfil
+                  <div className="modern-dropdown-body">
+                    <Link to="/perfil" className="modern-dropdown-item">
+                      <FiUser /> Mi Perfil
                     </Link>
 
-                    <Link
-                      to="/configuracion"
-                      className="dropdown-item d-flex align-items-center gap-2"
-                    >
+                    <Link to="/configuracion" className="modern-dropdown-item">
                       <FiSettings /> Configuración
                     </Link>
 
-                    {/* 💼 SOLO PARA EMPLEADO (Rol 2) */}
                     {user.rol === "2" && (
                       <Link
                         to="/empleado"
-                        className="dropdown-item d-flex align-items-center gap-3 py-2 px-4 fw-bold text-success hover-bg-light"
-                        onClick={() => setMenuAbierto(false)}
+                        className="modern-dropdown-item success"
                       >
-                        <FiMonitor size={18} /> Panel Empleado
+                        <FiMonitor /> Panel Empleado
                       </Link>
                     )}
 
-                    {/* 🛡️ SOLO PARA ADMIN (Rol 3) */}
                     {user.rol === "3" && (
                       <Link
                         to="/intranet"
-                        className="dropdown-item d-flex align-items-center gap-3 py-2 px-4 fw-bold text-info hover-bg-light"
-                        onClick={() => setMenuAbierto(false)}
+                        className="modern-dropdown-item info"
                       >
-                        <FiMonitor size={18} /> Panel Admin
+                        <FiMonitor /> Panel Admin
                       </Link>
                     )}
 
-                    {/* 🏭 SOLO PARA PROVEEDORES (Rol 4) */}
                     {user.rol === "4" && (
                       <Link
                         to="/extranet"
-                        className="dropdown-item d-flex align-items-center gap-3 py-2 px-4 fw-bold text-warning hover-bg-light"
-                        style={{ color: "#d97706" }}
-                        onClick={() => setMenuAbierto(false)}
+                        className="modern-dropdown-item warning"
                       >
-                        <FiMonitor size={18} /> Portal Proveedor
+                        <FiMonitor /> Portal Proveedor
                       </Link>
                     )}
                   </div>
 
-                  <div className="border-top my-1"></div>
-
-                  <button
-                    onClick={handleLogout}
-                    className="dropdown-item d-flex align-items-center gap-3 py-3 px-4 fw-bold text-danger hover-bg-light w-100 text-start"
-                    style={{
-                      borderBottomLeftRadius: "12px",
-                      borderBottomRightRadius: "12px",
-                    }}
-                  >
-                    <FiLogOut size={18} /> Cerrar Sesión
-                  </button>
+                  <div className="modern-dropdown-footer">
+                    <button
+                      onClick={handleLogout}
+                      className="modern-logout-btn"
+                    >
+                      <FiLogOut />
+                      Cerrar Sesión
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           ) : (
-            // BOTONES DE LOGIN SI NO HAY USUARIO
             <div className="d-flex align-items-center gap-2">
-              <Link
-                to="/login"
-                className="btn btn-outline-light d-flex align-items-center gap-2 fw-bold rounded-pill px-4"
-              >
-                <FiUser /> Iniciar sesión
+              <Link to="/login" className="modern-login-btn">
+                <FiUser />
+                Iniciar sesión
               </Link>
-              <Link
-                to="/registro"
-                className="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm"
-              >
+
+              <Link to="/registro" className="modern-register-btn">
                 Regístrate
               </Link>
             </div>

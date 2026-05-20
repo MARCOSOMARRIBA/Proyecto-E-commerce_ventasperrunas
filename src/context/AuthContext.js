@@ -1,6 +1,10 @@
 import React, { createContext, useState } from "react";
 import { api } from "../api/client";
 import { useMessage } from "./MessageContext";
+import { signInWithPopup } from "firebase/auth";
+
+// 🔥 1. Asegúrate de importar facebookProvider (lo creamos en el paso anterior en firebaseConfig)
+import { auth, googleProvider, facebookProvider } from "../firebaseConfig";
 
 export const AuthContext = createContext();
 
@@ -8,7 +12,6 @@ const USER_STORAGE_KEY = "usuarioMascotas";
 
 const buildAvatarUrl = (name = "V P") => {
   const initials = name.substring(0, 2).toUpperCase();
-
   return `https://ui-avatars.com/api/?name=${initials}&background=0D8ABC&color=fff&size=200&rounded=true&font-size=0.4`;
 };
 
@@ -26,7 +29,9 @@ export const AuthProvider = ({ children }) => {
   const { showMessage } = useMessage();
 
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem(USER_STORAGE_KEY);
+    const savedUser =
+      localStorage.getItem(USER_STORAGE_KEY) ||
+      sessionStorage.getItem(USER_STORAGE_KEY);
 
     if (!savedUser) return null;
 
@@ -34,6 +39,7 @@ export const AuthProvider = ({ children }) => {
       return JSON.parse(savedUser);
     } catch (error) {
       localStorage.removeItem(USER_STORAGE_KEY);
+      sessionStorage.removeItem(USER_STORAGE_KEY);
       return null;
     }
   });
@@ -48,7 +54,11 @@ export const AuthProvider = ({ children }) => {
       const loggedUser = mapBackendUser(backendUser);
 
       setUser(loggedUser);
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
+      if (credentials.recordarme) {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
+      } else {
+        sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
+      }
 
       showMessage({
         title: "Inicio de sesión exitoso",
@@ -70,6 +80,75 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginGoogle = async () => {
+    try {
+      // Firebase popup
+      const result = await signInWithPopup(auth, googleProvider);
+      const userFirebase = result.user;
+
+      // Django busca/crea usuario (Reutilizamos la ruta, ya que solo pide nombre y correo)
+      const backendUser = await api.auth.googleLogin({
+        correo: userFirebase.email,
+        nombre: userFirebase.displayName,
+      });
+
+      const loggedUser = mapBackendUser(backendUser);
+      setUser(loggedUser);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
+
+      showMessage({
+        title: "Inicio con Google exitoso",
+        message: `Bienvenido, ${loggedUser.nombre}.`,
+        type: "success",
+      });
+
+      return loggedUser;
+    } catch (error) {
+      console.error("Error login Google:", error);
+      showMessage({
+        title: "Error con Google",
+        message: "No se pudo iniciar sesión.",
+        type: "error",
+      });
+      return null;
+    }
+  };
+
+  // 🚀 2. NUEVA FUNCIÓN PARA FACEBOOK
+  const loginFacebook = async () => {
+    try {
+      // Firebase popup para Facebook
+      const result = await signInWithPopup(auth, facebookProvider);
+      const userFirebase = result.user;
+
+      // Django busca/crea usuario (Usamos el mismo endpoint porque la lógica de recibir correo es igual)
+      const backendUser = await api.auth.googleLogin({
+        correo: userFirebase.email,
+        nombre: userFirebase.displayName,
+      });
+
+      const loggedUser = mapBackendUser(backendUser);
+      setUser(loggedUser);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
+
+      showMessage({
+        title: "Inicio con Facebook exitoso",
+        message: `Bienvenido, ${loggedUser.nombre}.`,
+        type: "success",
+      });
+
+      return loggedUser;
+    } catch (error) {
+      console.error("Error login Facebook:", error);
+      showMessage({
+        title: "Error con Facebook",
+        message: "No se pudo iniciar sesión. " + error.message,
+        type: "error",
+      });
+      return null;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem(USER_STORAGE_KEY);
@@ -81,10 +160,10 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  const updateProfile = (newData) => {
+  const updateProfile = async (newData) => {
     const updatedUser = {
       ...user,
-      ...newData,
+      nombre: newData.nombre,
     };
 
     setUser(updatedUser);
@@ -92,9 +171,28 @@ export const AuthProvider = ({ children }) => {
 
     showMessage({
       title: "Perfil actualizado",
-      message: "Tu información se actualizó correctamente.",
+      message: "Tus datos fueron actualizados correctamente.",
       type: "success",
     });
+
+    try {
+      await fetch(`http://localhost:8000/api/usuarios/actualizar/${user.id}/`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nombre: newData.nombre,
+        }),
+      });
+    } catch (error) {
+      console.error(error);
+      showMessage({
+        title: "Error",
+        message: "No se pudo sincronizar con el servidor.",
+        type: "error",
+      });
+    }
   };
 
   const registroReal = async (userData) => {
@@ -119,20 +217,26 @@ export const AuthProvider = ({ children }) => {
       return true;
     } catch (error) {
       console.error("Error al registrar usuario:", error);
-
       showMessage({
         title: "Error en el registro",
         message: error.message || "No se pudo registrar la cuenta.",
         type: "error",
       });
-
       return false;
     }
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, loginReal, logout, updateProfile, registroReal }}
+      value={{
+        user,
+        loginReal,
+        loginGoogle,
+        loginFacebook, // 🚀 3. EXPORTAMOS LA FUNCIÓN
+        logout,
+        updateProfile,
+        registroReal,
+      }}
     >
       {children}
     </AuthContext.Provider>

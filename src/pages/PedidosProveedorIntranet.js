@@ -3,7 +3,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext'; 
 import { db } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { FiPlus, FiEye, FiPackage, FiCalendar, FiClock, FiCheckCircle, FiX, FiShoppingBag, FiSave } from 'react-icons/fi';
+import { FiPlus, FiEye, FiPackage, FiClock, FiCheckCircle, FiX, FiShoppingBag, FiSave } from 'react-icons/fi';
 
 const PedidosProveedorIntranet = () => {
   const { user } = useContext(AuthContext);
@@ -26,15 +26,20 @@ const PedidosProveedorIntranet = () => {
   const [itemActual, setItemActual] = useState({ id_producto: '', cantidad: 1, precio: 0 });
 
   useEffect(() => {
-    cargarHistorialPedidos();
-    cargarCatalogos();
-  }, []);
+    // 🔥 Aseguramos que el usuario esté cargado antes de hacer fetch
+    if (user) {
+      cargarHistorialPedidos();
+      cargarCatalogos();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const cargarCatalogos = async () => {
     try {
       const [resProv, resProd] = await Promise.all([
         fetch('http://127.0.0.1:8000/api/proveedores/'),
-        fetch('http://127.0.0.1:8000/api/productos/')
+        // 🚀 INYECTAMOS ROL PARA QUE EL ADMIN VEA TODOS LOS PRODUCTOS
+        fetch(`http://127.0.0.1:8000/api/productos/?rol=${user.rol}&rfc=${user.rfc || ''}`)
       ]);
       if (resProv.ok) setProveedores(await resProv.json());
       if (resProd.ok) setProductosDisponibles(await resProd.json());
@@ -43,7 +48,8 @@ const PedidosProveedorIntranet = () => {
 
   const cargarHistorialPedidos = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/pedidos/');
+      // 🚀 INYECTAMOS ROL PARA QUE EL ADMIN VEA TODOS LOS PEDIDOS
+      const res = await fetch(`http://127.0.0.1:8000/api/pedidos/?rol=${user.rol}&rfc=${user.rfc || ''}`);
       if (res.ok) setPedidosBD(await res.json());
     } catch (error) { console.error("Error historial:", error); }
   };

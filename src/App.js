@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -27,6 +28,9 @@ import Favoritos from "./pages/Favoritos";
 import DashboardEmpleado from "./pages/DashboardEmpleado";
 import AdminExtranet from "./pages/AdminExtranet";
 import MisPedidos from "./pages/MisPedidos";
+import Categorias from "./pages/Categoria";
+import PedidoNotifier from "./components/PedidoNotifier";
+import OlvidePassword from "./pages/OlvidePassword";
 
 function App() {
   return (
@@ -36,12 +40,14 @@ function App() {
           <AppearanceProvider>
             <CartProvider>
               <Router>
+                <PedidoNotifier />
                 <Navbar />
                 <Routes>
                   <Route path="/" element={<Inicio />} />
                   <Route path="/tienda/*" element={<Catalogo />} />
                   <Route path="/buscar" element={<BusquedaProductos />} />
                   <Route path="/login" element={<Login />} />
+                  <Route path="/olvide-password" element={<OlvidePassword />} />
                   <Route path="/producto/:id" element={<DetalleProducto />} />
                   <Route path="/registro" element={<Registro />} />
                   <Route path="/perfil" element={<Perfil />} />
@@ -51,10 +57,14 @@ function App() {
                   <Route path="/nosotros" element={<Nosotros />} />
                   <Route path="/servicios" element={<Servicios />} />
                   <Route path="/contacto" element={<Contacto />} />
+                  <Route path="/categorias" element={<Categorias />} />
                   <Route path="/favoritos" element={<Favoritos />} />
+                  
+                  {/* RUTAS DEL EMPLEADO Y ADMIN (El dashboard ya controla las pestañas por dentro) */}
                   <Route path="/empleado" element={<DashboardEmpleado />} />
-                  <Route path="/novedades" element={<SeccionesDinamicas />} />
                   <Route path="/intranet" element={<DashboardIntranet />} />
+                  
+                  <Route path="/novedades" element={<SeccionesDinamicas />} />
                   <Route path="/mis-pedidos" element={<MisPedidos />} />
                   <Route path="/extranet" element={<AdminExtranet />} />
                 </Routes>
