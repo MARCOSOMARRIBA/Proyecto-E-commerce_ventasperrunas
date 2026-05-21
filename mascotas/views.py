@@ -5,15 +5,18 @@ from django.utils import timezone
 from django.db import transaction, connection
 import random
 import time
-from django.db.models import Max
+from django.db.models import Max, Sum, Q
 from rest_framework.generics import ListAPIView
-from django.db.models import Sum
 from rest_framework.decorators import action
 from datetime import datetime
 from django.contrib.auth.hashers import check_password, make_password
 from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 from django.conf import settings
+import ssl
+
+# Parche temporal para correos en desarrollo (Quitar en producción)
+ssl._create_default_https_context = ssl._create_unverified_context
 
 from .models import (
     Carrito, Categoria, Cobro, Orden, Pedido, Producto, 
@@ -33,42 +36,29 @@ class CategoriaViewSet(viewsets.ModelViewSet):
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
 
-from django.db.models import Sum
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.decorators import action
-
 class ProductoViewSet(viewsets.ModelViewSet):
     serializer_class = ProductoSerializer
 
-    # 🚀 1. CONTROL DE VISIBILIDAD DE DATOS (Data Isolation)
     def get_queryset(self):
         user_rol = self.request.query_params.get('rol', None)
         user_rfc = self.request.query_params.get('rfc', None)
 
         queryset = Producto.objects.all().order_by('-id_producto')
 
-        # Clientes (1), Empleados (2), Admins (3) o público general ven todo el catálogo
         if user_rol in ['1', '2', '3'] or not user_rol:
             return queryset
 
-        # Proveedores (4) solo ven sus propios productos
         if user_rol == '4' and user_rfc:
-            # ⚠️ Asumimos que tu modelo Producto tiene un campo llamado 'rfc' (o ajústalo al nombre real)
             return queryset.filter(rfc_id=user_rfc)
 
         return Producto.objects.none()
 
-    # 🚀 2. SOBREESCRIBIMOS LA CREACIÓN PARA INVENTAR EL CÓDIGO Y SELLAR EL DUEÑO
     def create(self, request, *args, **kwargs):
         data = request.data
         try:
-            # 1. Buscamos el ID más alto y le sumamos 1
             ultimo_producto = Producto.objects.all().order_by('-id_producto').first()
-            # Si no hay productos, empezamos desde el 9000000000000
             nuevo_id = (ultimo_producto.id_producto + 1) if ultimo_producto else 9000000000000
 
-            # 2. Creamos el producto forzando el ID nuevo
             nuevo_producto = Producto.objects.create(
                 id_producto=nuevo_id,
                 nombre=data.get('nombre'),
@@ -78,8 +68,6 @@ class ProductoViewSet(viewsets.ModelViewSet):
                 imagen=data.get('imagen', ''),
                 activo=data.get('activo', True),
                 id_categoria_id=data.get('id_categoria'),
-                
-                # 🔥 CLAVE: Guardamos a qué proveedor le pertenece este producto
                 rfc_id=data.get('rfc') 
             )
 
@@ -132,31 +120,75 @@ class ProveedorViewSet(viewsets.ModelViewSet):
 class SeccionExtranetViewSet(viewsets.ModelViewSet):
     serializer_class = SeccionExtranetSerializer
 
-    # 🚀 CONTROL DE VISIBILIDAD DE BANNERS (Data Isolation)
+    # 🔑 1. CORRECCIÓN PARA ELIMINAR Y LISTAR SIN BLOQUEOS
     def get_queryset(self):
         user_rol = self.request.query_params.get('rol', None)
-        
-        # Ordenamos los banners del más reciente al más antiguo
+        # 🔥 NUEVO: Atrapamos el ID exacto del usuario que está haciendo la petición
+        usuario_id = self.request.query_params.get('id_usuario', None)
+
+        # Limpiamos basura del frontend
+        if str(user_rol).lower() in ['undefined', 'null', '', 'none']:
+            user_rol = None
+
         queryset = SeccionExtranet.objects.all().order_by('-id_seccion')
 
-        # 👑 Administrador (3): Tiene control total, ve absolutamente todos los banners
-        if user_rol == '3':
+        # 👑 👷 Admin (3) y Empleado (2): Ellos sí pueden ver todos los banners del sistema
+        if user_rol in ['2', '3']:
             return queryset
 
-        # 👷 Empleado (2): Solo ve los banners del panel operativo
-        if user_rol == '2':
-            return queryset.filter(portal_destino='2')
-
-        # 📦 Proveedor/Extranet (4): Solo ve los banners dirigidos a proveedores
+        # 📦 PROVEEDOR (4): Aislamiento total. SOLO ve los banners donde él sea el autor
         if user_rol == '4':
-            return queryset.filter(portal_destino='4')
+            if usuario_id:
+                return queryset.filter(id_usuario=usuario_id)
+            else:
+                return queryset.none() # Si no manda su ID, no le mostramos nada por seguridad
 
-        # 👤 Cliente (1) o Público: Solo ve los banners activos de la tienda principal
-        if user_rol == '1' or not user_rol:
-            return queryset.filter(portal_destino='1', estatus=True)
+        # 👤 Público General (1): Ve los activos
+        return queryset.filter(estatus=True)
 
-        return SeccionExtranet.objects.none()
+    # 🚀 2. CORRECCIÓN PARA LA CREACIÓN (Generación de ID manual)
+    # 🚀 CORRECCIÓN DEFINITIVA PARA LA CREACIÓN DE BANNERS
+    # 🚀 CORRECCIÓN DEFINITIVA PARA LA CREACIÓN DE BANNERS
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        try:
+            # 1. Buscamos el ID más alto actual en la tabla y le sumamos 1
+            max_seccion = SeccionExtranet.objects.aggregate(Max('id_seccion'))['id_seccion__max']
+            nuevo_id = (max_seccion or 0) + 1
 
+            # 2. Capturamos el ID de texto que manda React
+            usuario_creador = data.get('id_usuario')
+            if not usuario_creador:
+                usuario_creador = "ADM0000000001"
+
+            # 3. 🔥 Buscamos el OBJETO COMPLETO del Usuario en la BD
+            instancia_usuario = Usuario.objects.filter(id_usuario=usuario_creador).first()
+
+            # 4. Creamos el registro en la BD
+            nueva_seccion = SeccionExtranet.objects.create(
+                id_seccion=nuevo_id,
+                titulo_pagina=data.get('titulo_pagina'),
+                texto_bienvenida=data.get('texto_bienvenida', ''),
+                imagen_banner=data.get('imagen_banner', ''),
+                url_destino=data.get('url_destino', ''),
+                estatus=data.get('estatus', True),
+                portal_destino=data.get('portal_destino', '1'),
+                
+                # 🔥 Le entregamos la instancia completa para complacer a Django
+                id_usuario=instancia_usuario 
+            )
+
+            return Response({
+                "success": True,
+                "message": "¡Banner creado exitosamente!",
+                "id_seccion": nuevo_id
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({"error": f"Fallo al crear el banner: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        
 class CarritoViewSet(viewsets.ModelViewSet):
     queryset = Carrito.objects.all()
     serializer_class = CarritoSerializer
@@ -164,87 +196,67 @@ class CarritoViewSet(viewsets.ModelViewSet):
 class OrdenViewSet(viewsets.ModelViewSet):
     serializer_class = OrdenSerializer
 
-    # 🚀 CONTROL DE VISIBILIDAD DE DATOS (Data Isolation)
     def get_queryset(self):
-        # Capturamos quién está haciendo la petición desde React
         user_rol = self.request.query_params.get('rol', None)
         user_id = self.request.query_params.get('id_usuario', None)
 
-        # Preparamos la consulta base ordenada desde la más reciente
-        # (Si tu modelo tiene fecha_creacion, puedes cambiar '-id_orden' por '-fecha_creacion')
         queryset = Orden.objects.all().order_by('-id_orden')
 
-        # 🏪 Empleados (2) y Administradores (3) tienen acceso total para despachar
         if user_rol in ['2', '3']:
             return queryset
 
-        # 👤 Clientes (1) solo pueden ver sus propias compras
         if user_rol == '1' and user_id:
             return queryset.filter(id_usuario_id=user_id)
 
-        # 🔒 Por privacidad, los Proveedores (4) u otros roles NO ven las órdenes de clientes finales
         return Orden.objects.none()
 
 class CobroViewSet(viewsets.ModelViewSet):
     queryset = Cobro.objects.all()
     serializer_class = CobroSerializer
 
-# ✅ CÓDIGO NUEVO (Cópialo y pégalo)
 class BannerPorPortalView(ListAPIView):
     serializer_class = SeccionExtranetSerializer
 
     def get_queryset(self):
-        # Capturamos el rol que nos pide React desde la URL
-        rol_solicitado = self.kwargs.get('rol', '4') 
-        
+        # 🔥 CARRUSEL UNIVERSAL: Ignoramos los roles y los portales.
+        # Traemos ABSOLUTAMENTE TODOS los banners que estén activos.
+        # Así, logueados o no logueados verán exactamente lo mismo.
         return SeccionExtranet.objects.filter(
-            estatus=True,
-            portal_destino=rol_solicitado # Filtramos por el rol
+            estatus=True
         ).order_by('-id_seccion')
 
 # ==========================================
-# VIEWSET DE PEDIDOS (CON LÓGICA DE DETALLES)
+# VIEWSET DE PEDIDOS
 # ==========================================
 
 class PedidoViewSet(viewsets.ModelViewSet):
     serializer_class = PedidoSerializer
 
-    # 🚀 1. CONTROL DE VISIBILIDAD DE DATOS (Data Isolation)
     def get_queryset(self):
-        # Capturamos el rol y el RFC desde los parámetros de consulta (Query Params) de la URL
         user_rol = self.request.query_params.get('rol', None)
         user_rfc = self.request.query_params.get('rfc', None)
 
-        # Base de consulta ordenada por el pedido más reciente
         queryset = Pedido.objects.all().order_by('-id_pedido')
 
-        # Si el usuario es Operativo/Empleado (2) o Administrador (3), tiene acceso total
         if user_rol in ['2', '3']:
             return queryset
 
-        # Si el usuario es un Proveedor de la Extranet (4), filtramos estrictamente por su RFC
         if user_rol == '4' and user_rfc:
             return queryset.filter(rfc_id=user_rfc)
 
-        # Por seguridad, si no se especifican roles válidos o no hay sesión activa, 
-        # devolvemos un conjunto vacío para proteger la base de datos de filtraciones
         return Pedido.objects.none()
 
-    # 📦 2. TU MÉTODO DE CREACIÓN ATÓMICA DE PEDIDOS
     def create(self, request, *args, **kwargs):
         data = request.data
         try:
             with transaction.atomic():
-                # 🚀 1. FORZAMOS UN ID NUEVO MANUALMENTE
                 ultimo_pedido = Pedido.objects.all().order_by('-id_pedido').first()
                 nuevo_id = (ultimo_pedido.id_pedido + 1) if ultimo_pedido else 1
 
-                # 2. Gestión de fecha
                 fecha = data.get('fecha_compra')
                 if not fecha:
                     fecha = timezone.now().date()
 
-                # 3. Creamos la cabecera CON el nuevo ID
                 pedido = Pedido.objects.create(
                     id_pedido=nuevo_id,
                     rfc_id=data.get('rfc'),
@@ -255,7 +267,6 @@ class PedidoViewSet(viewsets.ModelViewSet):
                     fecha_compra=fecha
                 )
 
-                # 4. Escudo Anti-Duplicados para los productos
                 detalles = data.get('detalles', [])
                 detalles_limpios = {}
                 
@@ -271,7 +282,6 @@ class PedidoViewSet(viewsets.ModelViewSet):
                             'precio_subtotal': float(d.get('precio_subtotal', 0))
                         }
 
-                # 5. Guardamos en DetallePedido
                 for prod_id, info in detalles_limpios.items():
                     DetallePedido.objects.create(
                         id_pedido_id=nuevo_id,
@@ -288,8 +298,6 @@ class PedidoViewSet(viewsets.ModelViewSet):
             import traceback
             traceback.print_exc() 
             return Response({"error": f"Fallo en BD: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 # ==========================================
 # ENDPOINTS PERSONALIZADOS (@api_view)
@@ -356,7 +364,6 @@ def crear_pedido(request):
     data = request.data
     try:
         with transaction.atomic():
-            # 🚀 1. FORZAMOS EL ID SEGURO USANDO MATEMÁTICAS (MAX)
             max_pedido = Pedido.objects.aggregate(Max('id_pedido'))['id_pedido__max']
             nuevo_id = (max_pedido or 0) + 1
 
@@ -547,14 +554,27 @@ def pedidos_usuario(request, id_usuario):
 
 @api_view(['GET'])
 def detalle_orden(request, id_orden):
-    detalles = DetalleOrden.objects.filter(id_orden_id=id_orden)
-    data = []
-    for d in detalles:
-        data.append({
-            "producto": d.id_producto.nombre, "cantidad": d.cantidad,
-            "precio": d.precio_unitario, "subtotal": d.precio_subtotal
-        })
-    return Response(data)
+    try:
+        from .models import Orden, DetalleOrden
+        orden = Orden.objects.get(id_orden=id_orden)
+        
+        # 🔥 Ahora tomamos la dirección DIRECTAMENTE de la orden
+        datos_cliente = {
+            "nombre": orden.id_usuario.nombre_usuario, # Usamos el nombre que tienes
+            "correo": orden.id_usuario.correo,
+            "telefono": "No registrado", # Necesitarías agregar este campo a tu modelo Usuario
+            "direccion": orden.direccion_envio, # 🔥 AQUÍ ESTÁ LA DIRECCIÓN QUE GUARDAS EN EL CHECKOUT
+        }
+        
+        detalles = DetalleOrden.objects.filter(id_orden_id=id_orden)
+        productos_data = [
+            {"producto": d.id_producto.nombre, "cantidad": d.cantidad} 
+            for d in detalles
+        ]
+        
+        return Response({"cliente": datos_cliente, "productos": productos_data})
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
 
 @api_view(['POST'])
 def agregar_carrito(request):
@@ -712,7 +732,6 @@ def actualizar_usuario(request, id_usuario):
         return Response({"error": str(e)}, status=500)
 
 
-# 🔥 FUNCIÓN DE CANCELAR ORDEN CORREGIDA 🔥
 @api_view(['POST'])
 def cancelar_orden(request, id_orden):
     try:
@@ -737,14 +756,12 @@ def cancelar_orden(request, id_orden):
         return Response({"error": str(e)}, status=500)
 
 
-# 🔥 NUEVA FUNCIÓN PARA QUE EL EMPLEADO ACTUALICE CUALQUIER ESTATUS 🔥
 @api_view(['PUT'])
 def actualizar_estatus_orden(request, id_orden):
     try:
         orden = Orden.objects.get(id_orden=id_orden)
         nuevo_estatus = str(request.data.get('estatus'))
 
-        # Validamos que sea un estatus permitido (0=Cancelado, 1=Pendiente, 2=Enviado, 3=Entregado)
         if nuevo_estatus not in ["0", "1", "2", "3"]:
             return Response({"error": "Estatus inválido."}, status=400)
 
@@ -763,9 +780,6 @@ def actualizar_estatus_orden(request, id_orden):
         traceback.print_exc()
         return Response({"error": str(e)}, status=500)
     
-    from django.core.mail import send_mail # 🔥 IMPORTACIÓN CLAVE PARA EL ENVÍO REAL
-from django.conf import settings
-
 @api_view(['POST'])
 def recuperar_password(request):
     correo = request.data.get('correo')
@@ -774,19 +788,13 @@ def recuperar_password(request):
         return Response({"error": "Debes proporcionar un correo electrónico."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # 1. Validamos si el usuario existe
         usuario = Usuario.objects.get(correo=correo)
 
-        # 2. Generamos la nueva contraseña temporal alfanumérica
         password_temporal = get_random_string(length=8)
 
-        # 3. Encriptamos y guardamos la nueva contraseña en la base de datos
         usuario.contrasena = make_password(password_temporal)
         usuario.save()
 
-        # ==============================================================
-        # 📧 DISPARO REAL DE CORREO ELECTRÓNICO VIA SMTP
-        # ==============================================================
         asunto = 'Recuperación de contraseña - Ventas Perrunas'
         
         mensaje_cuerpo = (
@@ -804,13 +812,12 @@ def recuperar_password(request):
         email_origen = settings.DEFAULT_FROM_EMAIL
         email_destino = [usuario.correo]
 
-        # Envía el correo de manera síncrona. Si el SMTP falla, saltará al bloque except.
         send_mail(
             subject=asunto,
             message=mensaje_cuerpo,
             from_email=email_origen,
             recipient_list=email_destino,
-            fail_silently=False # Si se cae la conexión SMTP, levantará una excepción para avisarte
+            fail_silently=False 
         )
 
         return Response({
@@ -819,7 +826,6 @@ def recuperar_password(request):
         }, status=status.HTTP_200_OK)
 
     except Usuario.DoesNotExist:
-        # Mantenemos el mensaje genérico por seguridad contra ataques de enumeración de cuentas
         return Response({
             "error": "Si el correo está registrado en nuestro sistema, recibirás las instrucciones en tu bandeja de entrada."
         }, status=status.HTTP_404_NOT_FOUND)
