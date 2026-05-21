@@ -21,7 +21,9 @@ const OrdenesExtranet = () => {
     try {
       setCargando(true);
       // 🚀 INYECTAMOS EL FILTRO DE PRIVACIDAD EN LA URL
+      console.log("👤 OBJETO USER EN CONTEXTO:", user);
       const url = `http://127.0.0.1:8000/api/pedidos/?rol=${user.rol}&rfc=${user.rfc || ""}`;
+      console.log("🚀 URL REAL QUE SE ENVÍA A DJANGO:", url);
       const res = await fetch(url);
 
       if (res.ok) {
@@ -49,8 +51,10 @@ const OrdenesExtranet = () => {
 
   const actualizarEstatus = async (id_pedido, nuevoEstatus) => {
     try {
-      // 1. Actualizamos el estatus del pedido
-      const res = await fetch(`http://127.0.0.1:8000/api/pedidos/${id_pedido}/`, {
+      // 🔥 1. Actualizamos el estatus del pedido ENVIANDO CREDENCIALES (rol y rfc) EN LA URL
+      const urlPatch = `http://127.0.0.1:8000/api/pedidos/${id_pedido}/?rol=${user.rol}&rfc=${user.rfc || ""}`;
+      
+      const res = await fetch(urlPatch, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ estatus: nuevoEstatus }),
@@ -77,7 +81,8 @@ const OrdenesExtranet = () => {
             if (detalles.length > 0) {
               const promesasDeActivacion = detalles.map(detalle => {
                 const idProd = detalle.id_producto || detalle.producto_id || detalle.producto; 
-                return fetch(`http://127.0.0.1:8000/api/productos/${idProd}/`, {
+                // 🔥 Aseguramos que la actualización de stock también lleve permisos si el backend lo exige
+                return fetch(`http://127.0.0.1:8000/api/productos/${idProd}/?rol=${user.rol}&rfc=${user.rfc || ""}`, {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ stock: true, activo: true })
@@ -91,7 +96,7 @@ const OrdenesExtranet = () => {
 
       } else {
         const errorData = await res.json();
-        showMessage({ title: "Error", message: errorData.error, type: "error" });
+        showMessage({ title: "Error", message: errorData.error || "No tienes permiso para modificar este pedido.", type: "error" });
       }
     } catch (error) {
       console.error("Error de red:", error);

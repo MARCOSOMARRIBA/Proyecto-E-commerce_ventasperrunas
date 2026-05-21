@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useContext } from "react"; // 🔥 1. Importamos useContext
+import React, { useState, useEffect, useContext } from "react";
 import { FiBox, FiPlus, FiTrash2, FiSave, FiX } from "react-icons/fi";
 import { useMessage } from "../context/MessageContext";
-import { AuthContext } from "../context/AuthContext"; // 🔥 2. Importamos el contexto
+import { AuthContext } from "../context/AuthContext"; 
 
 const ProductosExtranet = () => {
   const { showMessage } = useMessage();
-  const { user } = useContext(AuthContext); // 🔥 3. Extraemos el usuario actual
+  const { user } = useContext(AuthContext); 
 
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -24,21 +24,21 @@ const ProductosExtranet = () => {
     id_categoria: "",
   });
 
-const subirImagenACloudinary = async (file) => {
-  const formData = new FormData();
-  formData.append("imagen", file);
-  try {
-    const res = await fetch("http://127.0.0.1:8000/api/subir-imagen/", {
-      method: "POST",
-      body: formData,
-    });
-    const data = await res.json();
-    return data.url; // Retorna la URL para guardarla en el estado
-  } catch (error) {
-    console.error("Error al subir:", error);
-    return null;
-  }
-};
+  const subirImagenACloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append("imagen", file);
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/subir-imagen/", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      return data.url; 
+    } catch (error) {
+      console.error("Error al subir:", error);
+      return null;
+    }
+  };
 
   const API_PRODUCTOS = "http://127.0.0.1:8000/api/productos/";
   const API_CATEGORIAS = "http://127.0.0.1:8000/api/categorias/";
@@ -46,15 +46,14 @@ const subirImagenACloudinary = async (file) => {
   useEffect(() => {
     cargarDatos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]); // 🔥 Se vuelve a ejecutar si el usuario cambia
+  }, [user]); 
 
   const cargarDatos = async () => {
-    if (!user) return; // Si no hay usuario, no cargamos nada todavía
+    if (!user) return; 
 
     try {
       setCargando(true);
 
-      // 🚀 4. INYECTAMOS ROL Y RFC EN LA URL PARA EL FILTRO DE SEGURIDAD
       const urlProductosFiltrada = `${API_PRODUCTOS}?rol=${user.rol}&rfc=${user.rfc || ""}`;
 
       const [resProds, resCat] = await Promise.all([
@@ -150,15 +149,28 @@ const subirImagenACloudinary = async (file) => {
 
     if (!validarProducto()) return;
 
+    // 🔥 BLOQUEO DE SEGURIDAD: Validamos que el RFC no esté vacío en caché
+    if (String(user?.rol) === "4" && !user?.rfc) {
+      showMessage({
+        title: "Error de Sesión",
+        message: "Tu cuenta no tiene un RFC asignado en la sesión. Por favor, cierra sesión y vuelve a entrar.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       const productoParaEnviar = {
         ...nuevoProducto,
         id_producto: Number(nuevoProducto.id_producto),
         precio: Number(nuevoProducto.precio),
         id_categoria: Number(nuevoProducto.id_categoria),
-        // 🚀 5. ETIQUETAMOS EL PRODUCTO CON EL RFC DEL PROVEEDOR
+        // 🚀 ENVIAMOS EL RFC EN AMBOS FORMATOS PARA QUE DJANGO NO FALLE
         rfc: user?.rfc, 
+        rfc_id: user?.rfc
       };
+
+      console.log("📦 PAYLOAD A DJANGO:", productoParaEnviar);
 
       const res = await fetch(API_PRODUCTOS, {
         method: "POST",
@@ -180,7 +192,6 @@ const subirImagenACloudinary = async (file) => {
         cargarDatos();
       } else {
         const errorData = await res.json();
-
         showMessage({
           title: "Error al guardar",
           message:
@@ -192,7 +203,6 @@ const subirImagenACloudinary = async (file) => {
       }
     } catch (error) {
       console.error("Error al enviar:", error);
-
       showMessage({
         title: "Error de conexión",
         message:
@@ -395,7 +405,6 @@ const subirImagenACloudinary = async (file) => {
 <div className="mb-3">
   <label className="small fw-bold text-dark">Imagen del Producto</label>
   
-  {/* Input donde se guardará la URL automáticamente */}
   <input 
     type="text" 
     className="form-control bg-light mb-2" 
@@ -404,7 +413,6 @@ const subirImagenACloudinary = async (file) => {
     value={nuevoProducto.imagen} 
   />
 
-  {/* Input de archivo para el usuario */}
   <input 
     type="file" 
     className="form-control" 
@@ -421,7 +429,6 @@ const subirImagenACloudinary = async (file) => {
     }} 
   />
   
-  {/* Vista previa pequeña para confirmar */}
   {nuevoProducto.imagen && (
     <img src={nuevoProducto.imagen} alt="preview" className="mt-2 rounded" style={{width: '60px', height: '60px', objectFit: 'cover'}} />
   )}

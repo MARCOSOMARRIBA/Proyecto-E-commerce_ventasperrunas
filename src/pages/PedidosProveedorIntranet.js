@@ -181,6 +181,11 @@ const PedidosProveedorIntranet = () => {
     }
   };
 
+  // 🔥 LÓGICA NUEVA: Filtramos los productos según el proveedor seleccionado en el modal
+  const productosDelProveedor = productosDisponibles.filter(
+    (producto) => producto.rfc === nuevaOrden.rfc_proveedor || producto.rfc_id === nuevaOrden.rfc_proveedor
+  );
+
   return (
     <div className="p-4 animate__animated animate__fadeIn">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -208,9 +213,22 @@ const PedidosProveedorIntranet = () => {
                 <div className="row g-3">
                   <div className="col-md-6">
                     <label className="small fw-bold">Proveedor</label>
-                    <select className="form-select bg-light" value={nuevaOrden.rfc_proveedor} onChange={(e) => setNuevaOrden({...nuevaOrden, rfc_proveedor: e.target.value})}>
+                    <select 
+                      className="form-select bg-light" 
+                      value={nuevaOrden.rfc_proveedor} 
+                      onChange={(e) => {
+                        // Limpiamos los productos al cambiar de proveedor
+                        setNuevaOrden({...nuevaOrden, rfc_proveedor: e.target.value});
+                        setItemActual({ id_producto: '', cantidad: 1, precio: 0 });
+                      }}
+                    >
                       <option value="">Selecciona Proveedor...</option>
-                      {proveedores.map(p => <option key={p.rfc} value={p.rfc}>{p.nombre} ({p.rfc})</option>)}
+                      {/* 🔥 CAMBIO APLICADO: Mostramos nombre_empresa */}
+                      {proveedores.map(p => (
+                        <option key={p.rfc} value={p.rfc}>
+                          {p.nombre_empresa || p.nombre}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="col-md-6">
@@ -225,9 +243,10 @@ const PedidosProveedorIntranet = () => {
                     <select 
                       className="form-select" 
                       value={itemActual.id_producto} 
+                      disabled={!nuevaOrden.rfc_proveedor} // 🔥 Se bloquea si no hay proveedor
                       onChange={(e) => {
                         const id = e.target.value;
-                        const productoEncontrado = productosDisponibles.find(p => p.id_producto === parseInt(id));
+                        const productoEncontrado = productosDelProveedor.find(p => String(p.id_producto) === String(id));
                         setItemActual({
                           ...itemActual, 
                           id_producto: id, 
@@ -235,20 +254,23 @@ const PedidosProveedorIntranet = () => {
                         });
                       }}
                     >
-                      <option value="">Elegir producto...</option>
-                      {productosDisponibles.map(p => <option key={p.id_producto} value={p.id_producto}>{p.nombre}</option>)}
+                      {/* 🔥 CAMBIO APLICADO: Aviso dinámico y lista filtrada */}
+                      <option value="">
+                        {!nuevaOrden.rfc_proveedor ? "Primero selecciona un proveedor" : "Elegir producto..."}
+                      </option>
+                      {productosDelProveedor.map(p => <option key={p.id_producto} value={p.id_producto}>{p.nombre}</option>)}
                     </select>
                   </div>
                   <div className="col-md-3">
                     <label className="small fw-bold">Cant.</label>
-                    <input type="number" className="form-control" value={itemActual.cantidad} onChange={(e) => setItemActual({...itemActual, cantidad: parseInt(e.target.value)})}/>
+                    <input type="number" className="form-control" value={itemActual.cantidad} onChange={(e) => setItemActual({...itemActual, cantidad: parseInt(e.target.value) || ''})}/>
                   </div>
                   <div className="col-md-3">
                     <label className="small fw-bold">Costo Unit.</label>
-                    <input type="number" className="form-control" value={itemActual.precio} onChange={(e) => setItemActual({...itemActual, precio: parseFloat(e.target.value)})}/>
+                    <input type="number" className="form-control" value={itemActual.precio} onChange={(e) => setItemActual({...itemActual, precio: parseFloat(e.target.value) || ''})}/>
                   </div>
                   <div className="col-md-1 d-flex align-items-end">
-                    <button className="btn btn-dark w-100" onClick={agregarProductoALista}><FiPlus/></button>
+                    <button className="btn btn-dark w-100" onClick={agregarProductoALista} disabled={!itemActual.id_producto}><FiPlus/></button>
                   </div>
 
                   <div className="col-12">

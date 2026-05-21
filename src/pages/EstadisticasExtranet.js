@@ -21,94 +21,120 @@ const EstadisticasExtranet = () => {
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
+    // Solo cargamos si el usuario ya está listo en el contexto
     if (user?.rfc) {
       cargarDatosCompletos();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const cargarDatosCompletos = async () => {
+const cargarDatosCompletos = async () => {
     try {
-      // 1. Traemos TODOS los pedidos y TODOS los productos del catálogo
+      setCargando(true);
+      const rfcSeguro = user?.rfc || ""; 
+const parametrosFiltro = `?rol=${user.rol}&rfc=${rfcSeguro}`;
+console.log("🔍 [DEBUG] URL de petición final:", `http://127.0.0.1:8000/api/pedidos/${parametrosFiltro}`);
+      
+      console.log("🔍 [DEBUG] Buscando datos con RFC:", user.rfc);
+
       const [resPedidos, resProductos] = await Promise.all([
-        fetch('http://127.0.0.1:8000/api/pedidos/'),
-        fetch('http://127.0.0.1:8000/api/productos/')
+        fetch(`http://127.0.0.1:8000/api/pedidos/${parametrosFiltro}`),
+        fetch(`http://127.0.0.1:8000/api/productos/${parametrosFiltro}`)
       ]);
 
-      if (!resPedidos.ok || !resProductos.ok) throw new Error("Fallo al cargar datos");
-
-      const pedidosBD = await resPedidos.json();
+      const misPedidos = await resPedidos.json();
       const productosBD = await resProductos.json();
 
-      // Diccionario para saber el nombre de cada producto rápido
-      const mapaProductos = {};
-      productosBD.forEach(p => { mapaProductos[p.id_producto] = p.nombre; });
+      console.log("📦 [DEBUG] Pedidos recibidos:", misPedidos);
+      console.log("📦 [DEBUG] Productos del catálogo:", productosBD);
 
-      // Filtramos solo los de este proveedor
-      const misPedidos = pedidosBD.filter(p => p.rfc === user.rfc);
+      if (misPedidos.length === 0) {
+        console.warn("⚠️ [DEBUG] No hay pedidos para este RFC en la respuesta de Django");
+        setCargando(false);
+        return;
+      }
 
-      // --- CÁLCULO DE TARJETAS SUPERIORES ---
+      // --- CÁLCULO ---
       let ingresos = 0, completados = 0, pendientes = 0;
-      const ventasPorFecha = {}; // Para la gráfica de líneas
+      const ventasPorFecha = {};
 
       misPedidos.forEach(ped => {
         const total = parseFloat(ped.total_compra || 0);
         ingresos += total;
         
-        if (ped.estatus === '4') completados++;
+        // Estatus 4 = Entregado
+        if (String(ped.estatus) === '4') completados++;
         else pendientes++;
 
-        // Agrupamos ventas por fecha
-        const fecha = ped.fecha_compra;
-        if (ventasPorFecha[fecha]) ventasPorFecha[fecha] += total;
-        else ventasPorFecha[fecha] = total;
+        const fecha = ped.fecha_compra ? ped.fecha_compra.split('T')[0] : 'Desconocido';
+        ventasPorFecha[fecha] = (ventasPorFecha[fecha] || 0) + total;
       });
 
-      setEstadisticas({
-        ingresosTotales: ingresos,
-        pedidosCompletados: completados,
-        pedidosPendientes: pendientes,
-        totalPedidos: misPedidos.length
-      });
+      setEstadisticas({ ingresosTotales: ingresos, pedidosCompletados: completados, pedidosPendientes: pendientes, totalPedidos: misPedidos.length });
+      setDatosVentas(Object.keys(ventasPorFecha).map(f => ({ fecha: f, Ingresos: ventasPorFecha[f] })));
 
-      // Convertimos el objeto de fechas a un Array para Recharts
-      const dataLinea = Object.keys(ventasPorFecha).sort().map(fecha => ({
-        fecha: fecha,
-        Ingresos: ventasPorFecha[fecha]
-      }));
-      setDatosVentas(dataLinea);
-
-      // --- CÁLCULO DE PRODUCTOS MÁS VENDIDOS (BARRAS) ---
-      // Traemos los detalles de todos los pedidos de este proveedor al mismo tiempo
+      // --- TOP PRODUCTOS ---
+      // Obtenemos detalles de TODOS los pedidos de una vez
       const promesasDetalles = misPedidos.map(ped => 
         fetch(`http://127.0.0.1:8000/api/pedidos/${ped.id_pedido}/detalles/`).then(r => r.json())
       );
       
       const arraysDeDetalles = await Promise.all(promesasDetalles);
-      const todosLosDetalles = arraysDeDetalles.flat(); // Juntamos todo en una sola lista
+      const todosLosDetalles = arraysDeDetalles.flat();
 
       const conteoProductos = {};
-      todosLosDetalles.forEach(detalle => {
-        const idProd = detalle.id_producto; // Podría ser id_producto_id dependiendo de tu Django
-        const cantidad = detalle.cantidad;
-        
-        if (conteoProductos[idProd]) conteoProductos[idProd] += cantidad;
-        else conteoProductos[idProd] = cantidad;
+      todosLosDetalles.forEach(d => {
+        // Buscamos ID, intentando varias llaves por si acaso
+        const idProd = d.id_producto || d.producto_id || d.id_producto_id;
+        if (idProd) {
+            conteoProductos[idProd] = (conteoProductos[idProd] || 0) + parseInt(d.cantidad || 0);
+        }
       });
 
-      // Convertimos a Array, le ponemos el nombre real y ordenamos de mayor a menor
       const dataBarras = Object.keys(conteoProductos).map(id => ({
-        nombre: mapaProductos[id] || `ID: ${id}`, // Si no encuentra el nombre, pone el ID
+        nombre: productosBD.find(p => String(p.id_producto) === String(id))?.nombre || `Prod ${id}`,
         Vendidos: conteoProductos[id]
-      })).sort((a, b) => b.Vendidos - a.Vendidos).slice(0, 5); // Tomamos el Top 5
+      })).sort((a, b) => b.Vendidos - a.Vendidos).slice(0, 5);
 
       setTopProductos(dataBarras);
-
     } catch (error) {
-      console.error("Error al procesar gráficas:", error);
+      console.error("Error crítico en estadísticas:", error);
     } finally {
       setCargando(false);
     }
   };
+
+// --- CÁLCULO DE TARJETAS SUPERIORES ---
+      let ingresos = 0, completados = 0, pendientes = 0;
+      const ventasPorFecha = {};
+
+      misPedidos.forEach(ped => {
+        const total = parseFloat(ped.total_compra || 0);
+        ingresos += total;
+        
+        // Convertimos a string para comparar sin importar si es número o texto
+        const estatus = String(ped.estatus);
+        if (estatus === '4') completados++;
+        else pendientes++;
+
+        // 🔥 Limpiamos la fecha para que siempre sea YYYY-MM-DD
+        const fecha = ped.fecha_compra ? ped.fecha_compra.split('T')[0] : 'Sin fecha';
+        ventasPorFecha[fecha] = (ventasPorFecha[fecha] || 0) + total;
+      });
+
+      // --- CÁLCULO DE PRODUCTOS MÁS VENDIDOS ---
+      const conteoProductos = {};
+      arraysDeDetalles.forEach(lista => {
+         lista.forEach(detalle => {
+            // 🔥 Buscamos el ID en cualquier variante posible
+            const idProd = detalle.id_producto || detalle.producto_id || detalle.id_producto_id;
+            const cantidad = parseInt(detalle.cantidad || 0);
+            
+            if (idProd) {
+               conteoProductos[idProd] = (conteoProductos[idProd] || 0) + cantidad;
+            }
+         });
+      });
 
   return (
     <div className="animate__animated animate__fadeIn">
