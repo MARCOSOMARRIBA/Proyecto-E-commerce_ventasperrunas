@@ -163,13 +163,17 @@ class Proveedor(models.Model):
 
     activo = models.BooleanField(default=True)
 
-id_usuario = models.ForeignKey(
-    'Usuario',
-    on_delete=models.SET_NULL,
-    null=True,
-    blank=True,
-    db_column='id_usuario'
-)
+    id_usuario = models.ForeignKey(
+        'Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='id_usuario'
+    )
+
+    class Meta:
+        managed = True
+        db_table = 'proveedor'
 
 
 class SeccionExtranet(models.Model):

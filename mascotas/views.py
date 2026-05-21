@@ -427,9 +427,9 @@ def login_usuario(request):
                 with connection.cursor() as cursor:
                     # Buscamos sin importar si la columna se llama id_usuario o id_usuario_id
                     cursor.execute("""
-                        SELECT rfc FROM proveedor 
-                        WHERE id_usuario = %s OR id_usuario_id = %s
-                    """, [usuario.id_usuario, usuario.id_usuario])
+SELECT rfc FROM proveedor 
+WHERE id_usuario = %s
+                    """, [usuario.id_usuario])
                     
                     fila = cursor.fetchone()
                     
