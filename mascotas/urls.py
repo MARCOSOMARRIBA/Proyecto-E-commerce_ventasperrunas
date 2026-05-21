@@ -28,7 +28,8 @@ from .views import (
     BannerPorPortalView,
     cancelar_orden,
     actualizar_estatus_orden,
-    recuperar_password
+    recuperar_password, 
+    cambiar_password
 )
 from django.conf import settings
 from django.conf.urls.static import static
@@ -69,6 +70,7 @@ urlpatterns = [
     path('cart/limpiar/<str:id_usuario>/', limpiar_carrito),
     path('cart/<str:id_usuario>/', obtener_carrito),
     path('usuarios/recuperar-password/', recuperar_password, name='recuperar-password'),
+    path('usuarios/cambiar-password/', cambiar_password, name='cambiar-password'),
     path('login-google/', login_google),
     
     # 🔥 5. RUTA DINÁMICA DE BANNERS POR ROL:

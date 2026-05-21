@@ -14,6 +14,10 @@ from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 from django.conf import settings
 import ssl
+from django.contrib.auth.hashers import check_password, make_password
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+import json
 
 # Parche temporal para correos en desarrollo (Quitar en producción)
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -836,3 +840,54 @@ def recuperar_password(request):
         return Response({
             "error": f"El usuario se actualizó, pero falló el envío del correo electrónico. Error: {str(e)}"
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@csrf_exempt    
+def cambiar_password(request):
+
+    if request.method != "PUT":
+        return JsonResponse(
+            {"error": "Método no permitido"},
+            status=405
+        )
+
+    try:
+
+        data = json.loads(request.body)
+
+        usuario = Usuario.objects.get(
+            id_usuario=data["id_usuario"]
+        )
+
+        if not check_password(
+            data["password_actual"],
+            usuario.contrasena
+        ):
+
+            return JsonResponse(
+                {"error": "Contraseña actual incorrecta"},
+                status=400
+            )
+
+        usuario.contrasena = make_password(
+            data["password_nueva"]
+        )
+
+        usuario.save()
+
+        return JsonResponse({
+            "message": "Contraseña actualizada"
+        })
+
+    except Usuario.DoesNotExist:
+
+        return JsonResponse(
+            {"error": "Usuario no encontrado"},
+            status=404
+        )
+
+    except Exception as e:
+
+        return JsonResponse(
+            {"error": str(e)},
+            status=500
+        )

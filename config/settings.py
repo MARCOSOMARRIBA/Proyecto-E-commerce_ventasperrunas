@@ -58,6 +58,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]
+
 
 ROOT_URLCONF = 'config.urls'
 
@@ -142,14 +146,14 @@ STATIC_URL = 'static/'
 # CONFIGURACIÓN PARA ENVÍO DE CORREOS REALES
 # ==============================================================================
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'                # Cambiar si usas otro proveedor
+EMAIL_HOST = 'smtp.gmail.com'                
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-# ⚠️ Reemplaza con tus datos reales
+
 EMAIL_HOST_USER = 'sans15cadena@gmail.com' 
-# ⚠️ Si usas Gmail, esta contraseña DEBE SER una "Contraseña de Aplicación" generada en tu cuenta de Google
+
 EMAIL_HOST_PASSWORD = 'fkni zfmj cplt mfhg' 
 
-# Nombre y correo que verá el cliente cuando reciba el mensaje
+
 DEFAULT_FROM_EMAIL = 'Ventas Perrunas <sans15cadena@gmail.com>'
