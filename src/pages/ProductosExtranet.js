@@ -24,6 +24,22 @@ const ProductosExtranet = () => {
     id_categoria: "",
   });
 
+const subirImagenACloudinary = async (file) => {
+  const formData = new FormData();
+  formData.append("imagen", file);
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/subir-imagen/", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json();
+    return data.url; // Retorna la URL para guardarla en el estado
+  } catch (error) {
+    console.error("Error al subir:", error);
+    return null;
+  }
+};
+
   const API_PRODUCTOS = "http://127.0.0.1:8000/api/productos/";
   const API_CATEGORIAS = "http://127.0.0.1:8000/api/categorias/";
 
@@ -376,23 +392,40 @@ const ProductosExtranet = () => {
                 />
               </div>
 
-              <div className="col-md-4">
-                <label className="fw-bold small text-muted">
-                  URL de la Imagen
-                </label>
-                <input
-                  type="url"
-                  className="form-control border-2"
-                  placeholder="https://..."
-                  value={nuevoProducto.imagen}
-                  onChange={(e) =>
-                    setNuevoProducto({
-                      ...nuevoProducto,
-                      imagen: e.target.value,
-                    })
-                  }
-                />
-              </div>
+<div className="mb-3">
+  <label className="small fw-bold text-dark">Imagen del Producto</label>
+  
+  {/* Input donde se guardará la URL automáticamente */}
+  <input 
+    type="text" 
+    className="form-control bg-light mb-2" 
+    readOnly 
+    placeholder="Sube una imagen para obtener la URL..." 
+    value={nuevoProducto.imagen} 
+  />
+
+  {/* Input de archivo para el usuario */}
+  <input 
+    type="file" 
+    className="form-control" 
+    onChange={async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const url = await subirImagenACloudinary(file);
+        if (url) {
+          setNuevoProducto({...nuevoProducto, imagen: url});
+        } else {
+          alert("Error al subir la imagen. Intenta de nuevo.");
+        }
+      }
+    }} 
+  />
+  
+  {/* Vista previa pequeña para confirmar */}
+  {nuevoProducto.imagen && (
+    <img src={nuevoProducto.imagen} alt="preview" className="mt-2 rounded" style={{width: '60px', height: '60px', objectFit: 'cover'}} />
+  )}
+</div>
 
               <div className="col-md-12 d-flex gap-4 mt-3">
                 <div className="form-check form-switch fs-6">

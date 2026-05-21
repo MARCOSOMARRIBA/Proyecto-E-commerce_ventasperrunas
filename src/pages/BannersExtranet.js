@@ -28,6 +28,32 @@ const BannersExtranet = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+const subirImagenACloudinary = async (file) => {
+  console.log("📸 Archivo seleccionado:", file); // <--- ¿Aparece esto en la consola?
+  
+  const formData = new FormData();
+  formData.append("imagen", file);
+
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/subir-imagen/", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    console.log("📩 Respuesta del servidor:", data); // <--- ¿Qué dice esto?
+
+    if (res.ok) {
+      setNuevoBanner(prev => ({ ...prev, imagen_banner: data.url }));
+      return data.url;
+    } else {
+      console.error("❌ Error de Django:", data);
+    }
+  } catch (error) {
+    console.error("❌ Error de red (¿está encendido el backend?):", error);
+  }
+};
+
   const cargarBanners = async () => {
     if (!user) return; // Esperamos a que el usuario exista
     try {
@@ -267,24 +293,24 @@ const BannersExtranet = () => {
                 />
               </div>
 
-              <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">
-                  URL DE LA IMAGEN
-                </label>
-                <input
-                  type="url"
-                  className="form-control border-2"
-                  required
-                  placeholder="https://..."
-                  value={nuevoBanner.imagen_banner}
-                  onChange={(e) =>
-                    setNuevoBanner({
-                      ...nuevoBanner,
-                      imagen_banner: e.target.value,
-                    })
-                  }
-                />
-              </div>
+<div className="col-md-6">
+  <label className="form-label fw-bold small text-muted">URL DE LA IMAGEN (Auto-generada)</label>
+  {/* Este input ahora es de tipo TEXTO para que veas que la URL ya se cargó */}
+  <input 
+    type="text" 
+    className="form-control border-2 bg-light" 
+    readOnly 
+    value={nuevoBanner.imagen_banner} 
+    placeholder="Espera a que cargue la imagen..." 
+  />
+  
+  <label className="mt-2 small text-muted">Subir nueva imagen:</label>
+  <input 
+    type="file" 
+    className="form-control"
+    onChange={(e) => subirImagenACloudinary(e.target.files[0])} 
+  />
+</div>
 
               <div className="col-md-12">
                 <label className="form-label fw-bold small text-muted">
