@@ -91,6 +91,8 @@ const Configuracion = () => {
     }
 
     try {
+      console.log("USER COMPLETO:", user);
+
       const response = await fetch(
         "http://localhost:8000/api/usuarios/cambiar-password/",
         {
@@ -98,6 +100,7 @@ const Configuracion = () => {
           headers: {
             "Content-Type": "application/json",
           },
+
           body: JSON.stringify({
             id_usuario: user.id,
             password_actual: passwordData.actual,

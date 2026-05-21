@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useMessage } from "../context/MessageContext";
-import { FiImage, FiPlus, FiTrash2, FiSend, FiLink, FiPower } from "react-icons/fi";
+import {
+  FiImage,
+  FiPlus,
+  FiTrash2,
+  FiSend,
+  FiLink,
+  FiPower,
+} from "react-icons/fi";
 
 const BannersIntranet = () => {
   const { user } = useContext(AuthContext);
@@ -20,31 +27,31 @@ const BannersIntranet = () => {
     estatus: true,
   });
 
-const subirImagenACloudinary = async (file) => {
-  console.log("📸 Archivo seleccionado:", file); // <--- ¿Aparece esto en la consola?
-  
-  const formData = new FormData();
-  formData.append("imagen", file);
+  const subirImagenACloudinary = async (file) => {
+    console.log("📸 Archivo seleccionado:", file); // <--- ¿Aparece esto en la consola?
 
-  try {
-    const res = await fetch("http://127.0.0.1:8000/api/subir-imagen/", {
-      method: "POST",
-      body: formData,
-    });
+    const formData = new FormData();
+    formData.append("imagen", file);
 
-    const data = await res.json();
-    console.log("📩 Respuesta del servidor:", data); // <--- ¿Qué dice esto?
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/subir-imagen/", {
+        method: "POST",
+        body: formData,
+      });
 
-    if (res.ok) {
-      setNuevoBanner(prev => ({ ...prev, imagen_banner: data.url }));
-      return data.url;
-    } else {
-      console.error("❌ Error de Django:", data);
+      const data = await res.json();
+      console.log("📩 Respuesta del servidor:", data); // <--- ¿Qué dice esto?
+
+      if (res.ok) {
+        setNuevoBanner((prev) => ({ ...prev, imagen_banner: data.url }));
+        return data.url;
+      } else {
+        console.error("❌ Error de Django:", data);
+      }
+    } catch (error) {
+      console.error("❌ Error de red (¿está encendido el backend?):", error);
     }
-  } catch (error) {
-    console.error("❌ Error de red (¿está encendido el backend?):", error);
-  }
-};
+  };
 
   const API_URL = "http://127.0.0.1:8000/api/secciones-extranet/";
 
@@ -71,8 +78,15 @@ const subirImagenACloudinary = async (file) => {
 
   const manejarEnvio = async (e) => {
     e.preventDefault();
-    if (!nuevoBanner.titulo_pagina.trim() || !nuevoBanner.imagen_banner.trim()) {
-      showMessage({ title: "Faltan datos", message: "Llena el título y la imagen.", type: "warning" });
+    if (
+      !nuevoBanner.titulo_pagina.trim() ||
+      !nuevoBanner.imagen_banner.trim()
+    ) {
+      showMessage({
+        title: "Faltan datos",
+        message: "Llena el título y la imagen.",
+        type: "warning",
+      });
       return;
     }
 
@@ -84,20 +98,34 @@ const subirImagenACloudinary = async (file) => {
           ...nuevoBanner,
           // 🔥 CORRECCIÓN: Usamos id_usuario para que Django no lo rechace
           id_usuario: user?.id_usuario || "ADM0000000001",
-          portal_destino: user?.rol || "3", 
+          portal_destino: user?.rol || "3",
         }),
       });
 
       if (res.ok || res.status === 201) {
         setMostrarFormulario(false);
-        setNuevoBanner({ titulo_pagina: "", imagen_banner: "", texto_bienvenida: "", url_destino: "", estatus: true });
+        setNuevoBanner({
+          titulo_pagina: "",
+          imagen_banner: "",
+          texto_bienvenida: "",
+          url_destino: "",
+          estatus: true,
+        });
         cargarBanners();
-        showMessage({ title: "Éxito", message: "Banner de Intranet creado.", type: "success" });
+        showMessage({
+          title: "Éxito",
+          message: "Banner de Intranet creado.",
+          type: "success",
+        });
       } else {
         // 🔥 MEJORA: Leer el error exacto de Django si falla (ej. URL muy larga)
         const errorData = await res.json();
         console.error("Django rechazó la creación:", JSON.stringify(errorData));
-        showMessage({ title: "Error del servidor", message: "No se pudo crear. Revisa la consola.", type: "error" });
+        showMessage({
+          title: "Error del servidor",
+          message: "No se pudo crear. Revisa la consola.",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Error al guardar:", error);
@@ -106,33 +134,65 @@ const subirImagenACloudinary = async (file) => {
 
   const toggleEstatusBanner = async (banner) => {
     const nuevoEstatus = !banner.estatus;
-    setBanners(banners.map(b => b.id_seccion === banner.id_seccion ? { ...b, estatus: nuevoEstatus } : b));
+    setBanners(
+      banners.map((b) =>
+        b.id_seccion === banner.id_seccion
+          ? { ...b, estatus: nuevoEstatus }
+          : b,
+      ),
+    );
     try {
-      const res = await fetch(`${API_URL}${banner.id_seccion}/`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estatus: nuevoEstatus }),
-      });
+      const res = await fetch(
+        `${API_URL}${banner.id_seccion}/?rol=${user?.rol}&id_usuario=${user?.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estatus: nuevoEstatus }),
+        },
+      );
       if (!res.ok) throw new Error("Fallo en la actualización");
     } catch (error) {
-      setBanners(banners.map(b => b.id_seccion === banner.id_seccion ? { ...b, estatus: banner.estatus } : b));
-      showMessage({ title: "Error", message: "No se pudo cambiar el estatus.", type: "error" });
+      setBanners(
+        banners.map((b) =>
+          b.id_seccion === banner.id_seccion
+            ? { ...b, estatus: banner.estatus }
+            : b,
+        ),
+      );
+      showMessage({
+        title: "Error",
+        message: "No se pudo cambiar el estatus.",
+        type: "error",
+      });
     }
   };
 
   const confirmarEliminacion = async () => {
     if (!bannerAEliminar) return;
     try {
-      const res = await fetch(`${API_URL}${bannerAEliminar.id_seccion}/`, { method: "DELETE" });
-      
+      const res = await fetch(
+        `${API_URL}${bannerAEliminar.id_seccion}/?rol=${user?.rol}&id_usuario=${user?.id}`,
+        { method: "DELETE" },
+      );
+
       // 🔥 CORRECCIÓN: Manejo correcto del código 204 para borrado exitoso
       if (res.ok || res.status === 204) {
-        setBanners(banners.filter((b) => b.id_seccion !== bannerAEliminar.id_seccion));
+        setBanners(
+          banners.filter((b) => b.id_seccion !== bannerAEliminar.id_seccion),
+        );
         setBannerAEliminar(null);
-        showMessage({ title: "Eliminado", message: "Banner eliminado correctamente.", type: "success" });
+        showMessage({
+          title: "Eliminado",
+          message: "Banner eliminado correctamente.",
+          type: "success",
+        });
       } else {
         console.error("Error devuelto por Django al intentar eliminar.");
-        showMessage({ title: "Error", message: "No se pudo eliminar el banner.", type: "error" });
+        showMessage({
+          title: "Error",
+          message: "No se pudo eliminar el banner.",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Error al eliminar:", error);
@@ -144,12 +204,24 @@ const subirImagenACloudinary = async (file) => {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="fw-bold m-0 d-flex align-items-center gap-2 text-dark">
-            <FiImage className="text-primary" /> Banners Administrativos (Intranet)
+            <FiImage className="text-primary" /> Banners Administrativos
+            (Intranet)
           </h2>
-          <p className="text-muted small m-0">Gestiona los banners exclusivos para administradores.</p>
+          <p className="text-muted small m-0">
+            Gestiona los banners exclusivos para administradores.
+          </p>
         </div>
-        <button onClick={() => setMostrarFormulario(!mostrarFormulario)} className="btn btn-primary fw-bold shadow-sm">
-          {mostrarFormulario ? "Cancelar" : <><FiPlus className="me-2" /> Nuevo Banner</>}
+        <button
+          onClick={() => setMostrarFormulario(!mostrarFormulario)}
+          className="btn btn-primary fw-bold shadow-sm"
+        >
+          {mostrarFormulario ? (
+            "Cancelar"
+          ) : (
+            <>
+              <FiPlus className="me-2" /> Nuevo Banner
+            </>
+          )}
         </button>
       </div>
 
@@ -159,47 +231,105 @@ const subirImagenACloudinary = async (file) => {
             <h5 className="fw-bold mb-3">Crear Nuevo Banner Admin</h5>
             <form onSubmit={manejarEnvio} className="row g-3">
               <div className="col-md-6">
-                <label className="form-label fw-bold small text-muted">TÍTULO</label>
-                <input type="text" className="form-control border-2" required value={nuevoBanner.titulo_pagina} onChange={(e) => setNuevoBanner({ ...nuevoBanner, titulo_pagina: e.target.value })} />
+                <label className="form-label fw-bold small text-muted">
+                  TÍTULO
+                </label>
+                <input
+                  type="text"
+                  className="form-control border-2"
+                  required
+                  value={nuevoBanner.titulo_pagina}
+                  onChange={(e) =>
+                    setNuevoBanner({
+                      ...nuevoBanner,
+                      titulo_pagina: e.target.value,
+                    })
+                  }
+                />
               </div>
-<div className="col-md-6">
-  <label className="form-label fw-bold small text-muted">URL DE LA IMAGEN (Auto-generada)</label>
-  {/* Este input ahora es de tipo TEXTO para que veas que la URL ya se cargó */}
-  <input 
-    type="text" 
-    className="form-control border-2 bg-light" 
-    readOnly 
-    value={nuevoBanner.imagen_banner} 
-    placeholder="Espera a que cargue la imagen..." 
-  />
-  
-  <label className="mt-2 small text-muted">Subir nueva imagen:</label>
-  <input 
-    type="file" 
-    className="form-control"
-    onChange={(e) => subirImagenACloudinary(e.target.files[0])} 
-  />
-</div>
+              <div className="col-md-6">
+                <label className="form-label fw-bold small text-muted">
+                  URL DE LA IMAGEN (Auto-generada)
+                </label>
+                {/* Este input ahora es de tipo TEXTO para que veas que la URL ya se cargó */}
+                <input
+                  type="text"
+                  className="form-control border-2 bg-light"
+                  readOnly
+                  value={nuevoBanner.imagen_banner}
+                  placeholder="Espera a que cargue la imagen..."
+                />
+
+                <label className="mt-2 small text-muted">
+                  Subir nueva imagen:
+                </label>
+                <input
+                  type="file"
+                  className="form-control"
+                  onChange={(e) => subirImagenACloudinary(e.target.files[0])}
+                />
+              </div>
 
               <div className="col-md-12">
-                <label className="form-label fw-bold small text-muted">TEXTO PROMOCIONAL</label>
-                <textarea className="form-control border-2" rows="2" value={nuevoBanner.texto_bienvenida} onChange={(e) => setNuevoBanner({ ...nuevoBanner, texto_bienvenida: e.target.value })} />
+                <label className="form-label fw-bold small text-muted">
+                  TEXTO PROMOCIONAL
+                </label>
+                <textarea
+                  className="form-control border-2"
+                  rows="2"
+                  value={nuevoBanner.texto_bienvenida}
+                  onChange={(e) =>
+                    setNuevoBanner({
+                      ...nuevoBanner,
+                      texto_bienvenida: e.target.value,
+                    })
+                  }
+                />
               </div>
               <div className="col-md-8">
-                <label className="form-label fw-bold small text-muted">ENLACE DE DESTINO</label>
+                <label className="form-label fw-bold small text-muted">
+                  ENLACE DE DESTINO
+                </label>
                 <div className="input-group">
-                  <span className="input-group-text bg-white border-2"><FiLink /></span>
-                  <input type="text" className="form-control border-2" value={nuevoBanner.url_destino} onChange={(e) => setNuevoBanner({ ...nuevoBanner, url_destino: e.target.value })} />
+                  <span className="input-group-text bg-white border-2">
+                    <FiLink />
+                  </span>
+                  <input
+                    type="text"
+                    className="form-control border-2"
+                    value={nuevoBanner.url_destino}
+                    onChange={(e) =>
+                      setNuevoBanner({
+                        ...nuevoBanner,
+                        url_destino: e.target.value,
+                      })
+                    }
+                  />
                 </div>
               </div>
               <div className="col-md-4 d-flex align-items-end">
                 <div className="form-check form-switch fs-5 mb-2">
-                  <input className="form-check-input cursor-pointer" type="checkbox" role="switch" checked={nuevoBanner.estatus} onChange={(e) => setNuevoBanner({ ...nuevoBanner, estatus: e.target.checked })} />
-                  <label className="form-check-label ms-2 fs-6 mt-1">Banner Activo</label>
+                  <input
+                    className="form-check-input cursor-pointer"
+                    type="checkbox"
+                    role="switch"
+                    checked={nuevoBanner.estatus}
+                    onChange={(e) =>
+                      setNuevoBanner({
+                        ...nuevoBanner,
+                        estatus: e.target.checked,
+                      })
+                    }
+                  />
+                  <label className="form-check-label ms-2 fs-6 mt-1">
+                    Banner Activo
+                  </label>
                 </div>
               </div>
               <div className="col-12 text-end mt-4">
-                <button type="submit" className="btn btn-success px-4 fw-bold"><FiSend className="me-2" /> Publicar Banner</button>
+                <button type="submit" className="btn btn-success px-4 fw-bold">
+                  <FiSend className="me-2" /> Publicar Banner
+                </button>
               </div>
             </form>
           </div>
@@ -218,17 +348,46 @@ const subirImagenACloudinary = async (file) => {
           {banners.map((banner) => (
             <div className="col-md-6 col-lg-4" key={banner.id_seccion}>
               <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
-                <div style={{ height: "180px", backgroundImage: `url(${banner.imagen_banner})`, backgroundSize: "cover", backgroundPosition: "center", backgroundColor: "#e9ecef", opacity: banner.estatus ? 1 : 0.5 }} className="w-100 position-relative">
-                  {!banner.estatus && <span className="position-absolute top-0 end-0 m-2 badge bg-danger"><FiPower /> Apagado</span>}
+                <div
+                  style={{
+                    height: "180px",
+                    backgroundImage: `url(${banner.imagen_banner})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundColor: "#e9ecef",
+                    opacity: banner.estatus ? 1 : 0.5,
+                  }}
+                  className="w-100 position-relative"
+                >
+                  {!banner.estatus && (
+                    <span className="position-absolute top-0 end-0 m-2 badge bg-danger">
+                      <FiPower /> Apagado
+                    </span>
+                  )}
                 </div>
                 <div className="card-body d-flex flex-column">
-                  <h5 className="fw-bold text-truncate">{banner.titulo_pagina}</h5>
+                  <h5 className="fw-bold text-truncate">
+                    {banner.titulo_pagina}
+                  </h5>
                   <div className="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
                     <div className="form-check form-switch m-0 p-0 d-flex align-items-center gap-2">
-                      <input className="form-check-input m-0 cursor-pointer shadow-none" type="checkbox" role="switch" checked={banner.estatus} onChange={() => toggleEstatusBanner(banner)} />
-                      <span className="small fw-bold text-muted">{banner.estatus ? 'Visible' : 'Oculto'}</span>
+                      <input
+                        className="form-check-input m-0 cursor-pointer shadow-none"
+                        type="checkbox"
+                        role="switch"
+                        checked={banner.estatus}
+                        onChange={() => toggleEstatusBanner(banner)}
+                      />
+                      <span className="small fw-bold text-muted">
+                        {banner.estatus ? "Visible" : "Oculto"}
+                      </span>
                     </div>
-                    <button onClick={() => setBannerAEliminar(banner)} className="btn btn-sm btn-outline-danger border-0"><FiTrash2 size={18} /></button>
+                    <button
+                      onClick={() => setBannerAEliminar(banner)}
+                      className="btn btn-sm btn-outline-danger border-0"
+                    >
+                      <FiTrash2 size={18} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -240,11 +399,25 @@ const subirImagenACloudinary = async (file) => {
       {bannerAEliminar && (
         <div className="custom-confirm-backdrop">
           <div className="custom-confirm-box">
-            <div className="custom-confirm-icon"><FiTrash2 /></div>
+            <div className="custom-confirm-icon">
+              <FiTrash2 />
+            </div>
             <h3>Eliminar banner</h3>
             <div className="custom-confirm-actions">
-              <button type="button" className="custom-confirm-cancel" onClick={() => setBannerAEliminar(null)}>Cancelar</button>
-              <button type="button" className="custom-confirm-delete" onClick={confirmarEliminacion}>Eliminar</button>
+              <button
+                type="button"
+                className="custom-confirm-cancel"
+                onClick={() => setBannerAEliminar(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="custom-confirm-delete"
+                onClick={confirmarEliminacion}
+              >
+                Eliminar
+              </button>
             </div>
           </div>
         </div>

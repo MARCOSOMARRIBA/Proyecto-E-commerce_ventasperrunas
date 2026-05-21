@@ -10,15 +10,15 @@ function SeccionesDinamicas() {
   const { user } = useContext(AuthContext);
 
   useEffect(() => {
-    if (user?.rol) {
-      obtenerSecciones();
-    }
+    obtenerSecciones();
   }, [user]);
 
   const obtenerSecciones = async () => {
     try {
+      const rol = user?.rol || "1";
+
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/banners/${user?.rol}/`,
+        `http://127.0.0.1:8000/api/secciones-extranet/?rol=${user?.rol}`,
       );
 
       const seccionesActivas = response.data.filter((sec) =>

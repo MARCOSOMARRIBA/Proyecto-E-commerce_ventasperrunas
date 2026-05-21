@@ -4,7 +4,14 @@ import { useMessage } from "../context/MessageContext";
 
 const CrearUsuarioAdmin = () => {
   const [nuevoRFC, setNuevoRFC] = useState("");
-  const [nuevoProveedor, setNuevoProveedor] = useState("");
+  const [nuevoProveedor, setNuevoProveedor] = useState({
+    rfc: "",
+    nombre_empresa: "",
+    telefono: "",
+    correo: "",
+    direccion: "",
+    activo: true,
+  });
   const { user } = useContext(AuthContext);
   const { showMessage } = useMessage();
   const [mostrarModalProveedor, setMostrarModalProveedor] = useState(false);
@@ -117,6 +124,74 @@ const CrearUsuarioAdmin = () => {
     }
   };
 
+  const guardarProveedor = async () => {
+    try {
+      console.log("PROVEEDOR:", nuevoProveedor);
+      console.log("RFC:", nuevoProveedor.rfc);
+      console.log("TIPO RFC:", typeof nuevoProveedor.rfc);
+
+      const res = await fetch("http://localhost:8000/api/proveedores/", {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          ...nuevoProveedor,
+          id_usuario: null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showMessage({
+          title: "Éxito",
+          message: "Proveedor creado correctamente",
+          type: "success",
+        });
+
+        setMostrarModalProveedor(false);
+
+        setNuevoProveedor({
+          rfc: "",
+          nombre_empresa: "",
+          telefono: "",
+          correo: "",
+          direccion: "",
+          activo: true,
+        });
+
+        // RECARGAMOS PROVEEDORES
+        const proveedoresRes = await fetch(
+          "http://localhost:8000/api/proveedores/",
+        );
+        const proveedoresData = await proveedoresRes.json();
+
+        setProveedores(proveedoresData);
+      } else {
+        console.log("ERROR DJANGO:", data);
+
+        showMessage({
+          title: "Error",
+          message: JSON.stringify(data),
+          type: "error",
+        });
+      }
+    } catch (error) {
+      console.error(error);
+
+      showMessage({
+        title: "Error",
+        message: "No se pudo crear el proveedor.",
+        type: "error",
+      });
+    }
+  };
+
+  console.log("PROVEEDORES:", proveedores);
+
   return (
     <div
       className="card shadow-sm border-0 rounded-4 p-4 mt-4 position-relative"
@@ -194,16 +269,15 @@ const CrearUsuarioAdmin = () => {
             </div>
 
             <select
-              className="form-select bg-light"
+              className="form-select"
               value={proveedorSeleccionado}
               onChange={(e) => setProveedorSeleccionado(e.target.value)}
-              required
             >
               <option value="">Seleccionar proveedor...</option>
 
               {proveedores.map((prov) => (
                 <option key={prov.rfc} value={prov.rfc}>
-                  {prov.nombre_empresa}
+                  {prov.nombre_empresa} ({prov.rfc})
                 </option>
               ))}
             </select>
@@ -242,96 +316,88 @@ const CrearUsuarioAdmin = () => {
 
             <input
               type="text"
-              className="form-control mb-3"
               placeholder="RFC"
-              value={nuevoRFC}
-              maxLength={13}
-              onChange={(e) => {
-                const valor = e.target.value
-                  .toUpperCase()
-                  .replace(/[^A-Z0-9Ñ&]/g, "");
-
-                setNuevoRFC(valor);
-              }}
+              className="form-control mb-3"
+              value={nuevoProveedor.rfc}
+              onChange={(e) =>
+                setNuevoProveedor({
+                  ...nuevoProveedor,
+                  rfc: e.target.value,
+                })
+              }
             />
 
             <input
               type="text"
-              className="form-control mb-3"
               placeholder="Nombre empresa"
-              value={nuevoProveedor}
-              onChange={(e) => setNuevoProveedor(e.target.value)}
+              className="form-control mb-3"
+              value={nuevoProveedor.nombre_empresa}
+              onChange={(e) =>
+                setNuevoProveedor({
+                  ...nuevoProveedor,
+                  nombre_empresa: e.target.value,
+                })
+              }
             />
+
+            <input
+              type="text"
+              placeholder="Teléfono"
+              className="form-control mb-3"
+              value={nuevoProveedor.telefono}
+              onChange={(e) =>
+                setNuevoProveedor({
+                  ...nuevoProveedor,
+                  telefono: e.target.value,
+                })
+              }
+            />
+
+            <input
+              type="email"
+              placeholder="Correo"
+              className="form-control mb-3"
+              value={nuevoProveedor.correo}
+              onChange={(e) =>
+                setNuevoProveedor({
+                  ...nuevoProveedor,
+                  correo: e.target.value,
+                })
+              }
+            />
+
+            <input
+              type="text"
+              placeholder="Dirección"
+              className="form-control mb-3"
+              value={nuevoProveedor.direccion}
+              onChange={(e) =>
+                setNuevoProveedor({
+                  ...nuevoProveedor,
+                  direccion: e.target.value,
+                })
+              }
+            />
+
+            <div className="form-check form-switch mb-3">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                checked={nuevoProveedor.activo}
+                onChange={(e) =>
+                  setNuevoProveedor({
+                    ...nuevoProveedor,
+                    activo: e.target.checked,
+                  })
+                }
+              />
+
+              <label className="form-check-label">Proveedor activo</label>
+            </div>
 
             <button
               className="btn btn-primary w-100"
-              onClick={async () => {
-                if (!validarRFC(nuevoRFC)) {
-                  showMessage({
-                    title: "RFC inválido",
-                    message:
-                      "El RFC debe tener un formato válido de persona física o moral.",
-                    type: "error",
-                  });
-
-                  return;
-                }
-
-                try {
-                  const res = await fetch(
-                    "http://localhost:8000/api/proveedores/",
-                    {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-
-                      body: JSON.stringify({
-                        rfc: nuevoRFC,
-                        nombre_empresa: nuevoProveedor,
-                      }),
-                    },
-                  );
-
-                  const data = await res.json();
-
-                  if (res.ok) {
-                    showMessage({
-                      title: "Proveedor creado",
-                      message: "Proveedor registrado correctamente.",
-                      type: "success",
-                    });
-
-                    setMostrarModalProveedor(false);
-
-                    setNuevoRFC("");
-                    setNuevoProveedor("");
-
-                    // RECARGAR PROVEEDORES
-                    const recarga = await fetch(
-                      "http://localhost:8000/api/proveedores/",
-                    );
-
-                    const nuevos = await recarga.json();
-
-                    setProveedores(nuevos);
-                  } else {
-                    showMessage({
-                      title: "Error",
-                      message: data.error || "No se pudo crear el proveedor.",
-                      type: "error",
-                    });
-                  }
-                } catch (error) {
-                  console.error(error);
-
-                  showMessage({
-                    title: "Error",
-                    message: "Error de conexión.",
-                    type: "error",
-                  });
-                }
-              }}
+              onClick={guardarProveedor}
             >
               Guardar proveedor
             </button>
