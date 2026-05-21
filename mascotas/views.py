@@ -128,10 +128,8 @@ class ProveedorViewSet(viewsets.ModelViewSet):
 class SeccionExtranetViewSet(viewsets.ModelViewSet):
     serializer_class = SeccionExtranetSerializer
 
-    # 🔑 1. CORRECCIÓN PARA ELIMINAR Y LISTAR SIN BLOQUEOS
     def get_queryset(self):
         user_rol = self.request.query_params.get('rol', None)
-        # 🔥 NUEVO: Atrapamos el ID exacto del usuario que está haciendo la petición
         usuario_id = self.request.query_params.get('id_usuario', None)
 
         # Limpiamos basura del frontend
@@ -151,12 +149,9 @@ class SeccionExtranetViewSet(viewsets.ModelViewSet):
             else:
                 return queryset.none() # Si no manda su ID, no le mostramos nada por seguridad
 
-        # 👤 Público General (1): Ve los activos
         return queryset.filter(estatus=True)
 
-    # 🚀 2. CORRECCIÓN PARA LA CREACIÓN (Generación de ID manual)
-    # 🚀 CORRECCIÓN DEFINITIVA PARA LA CREACIÓN DE BANNERS
-    # 🚀 CORRECCIÓN DEFINITIVA PARA LA CREACIÓN DE BANNERS
+
     def create(self, request, *args, **kwargs):
         data = request.data
         try:
@@ -325,23 +320,62 @@ def detalles_pedido(request, id_pedido):
 
 @api_view(['GET'])
 def movimientos_recientes(request):
-    movimientos = []
-    ultimos_pedidos = Pedido.objects.all().order_by('-id_pedido')[:20]
-    
-    for pedido in ultimos_pedidos:
-        tipo_alerta = "INFO"
-        if pedido.estatus == '1':
-            tipo_alerta = "ALERTA" 
-            
-        movimientos.append({
-            "fecha_hora": str(pedido.fecha_compra),
-            "usuario": str(pedido.id_usuario) if pedido.id_usuario else "Empleado del sistema",
-            "accion": "Solicitud de Resurtido B2B",
-            "tipo": tipo_alerta,
-            "detalle": f"Se generó la orden #{pedido.id_pedido} para el proveedor {pedido.rfc} por un total de ${pedido.total_compra}"
-        })
-    return Response(movimientos)
 
+    movimientos = []
+
+    ultimos_pedidos = Pedido.objects.all().order_by('-id_pedido')[:20]
+
+    accion = ""
+
+    for pedido in ultimos_pedidos:
+
+        tipo_alerta = "INFO"
+        accion = "Solicitud de Resurtido B2B"
+
+        if pedido.estatus == '1':
+
+            tipo_alerta = "WARNING"
+            accion = "Pedido pendiente"
+
+        elif pedido.estatus == '2':
+
+            tipo_alerta = "INFO"
+            accion = "Pedido enviado"
+
+        elif pedido.estatus == '3':
+
+            tipo_alerta = "SUCCESS"
+            accion = "Pedido entregado"
+
+        elif pedido.estatus == '4':
+
+            tipo_alerta = "ALERTA"
+            accion = "Pedido cancelado"
+
+        nombre_usuario = "Empleado del sistema"
+
+        if pedido.id_usuario:
+            nombre_usuario = (
+                f"{pedido.id_usuario.nombre_usuario} "
+                f"({pedido.id_usuario.id_usuario})"
+            )
+
+        movimientos.append({
+            "fecha_hora": pedido.fecha_compra.strftime("%Y-%m-%d %H:%M"),
+
+            "usuario": nombre_usuario,
+
+            "accion": accion,
+
+            "tipo": tipo_alerta,
+
+            "detalle":
+                f"Se generó la orden #{pedido.id_pedido} "
+                f"para el proveedor {pedido.rfc} "
+                f"por un total de ${pedido.total_compra}"
+        })
+
+    return Response(movimientos)
 @api_view(['POST'])
 def login_usuario(request):
     correo = request.data.get('correo')
@@ -352,8 +386,13 @@ def login_usuario(request):
         if check_password(contrasena, usuario.contrasena):
             rfc_asignado = None
             if usuario.rol == '4':
-                if usuario.id_usuario == 'EXT0000000001':
-                    rfc_asignado = 'DPG260401A1B'
+
+                proveedor = Proveedor.objects.filter(
+                    id_usuario=usuario
+                ).first()
+
+                if proveedor:
+                    rfc_asignado = proveedor.rfc
 
             return Response({
                 'id_usuario': usuario.id_usuario,
@@ -430,6 +469,7 @@ def crear_usuario_por_admin(request):
         nombre_recibido = request.data.get('nombre') 
         correo = request.data.get('correo')
         rol = request.data.get('rol') 
+        proveedor_rfc = request.data.get('proveedor_rfc')
 
         if not nombre_recibido or not correo or not rol:
             return Response({"error": "Faltan datos obligatorios (nombre, correo o rol)"}, status=400)
@@ -448,6 +488,12 @@ def crear_usuario_por_admin(request):
             contrasena=make_password(password_generada),             
             fecha_registro=timezone.now()         
         )
+
+        if rol == "4" and proveedor_rfc:
+            proveedor = Proveedor.objects.get(rfc=proveedor_rfc)
+
+            proveedor.id_usuario = nuevo_usuario
+            proveedor.save()
 
         return Response({
             "success": True, 
@@ -566,20 +612,25 @@ def detalle_orden(request, id_orden):
         from .models import Orden, DetalleOrden
         orden = Orden.objects.get(id_orden=id_orden)
         
-        # 🔥 Ahora tomamos la dirección DIRECTAMENTE de la orden
         datos_cliente = {
-            "nombre": orden.id_usuario.nombre_usuario, # Usamos el nombre que tienes
+            "nombre": orden.id_usuario.nombre_usuario, 
             "correo": orden.id_usuario.correo,
-            "telefono": "No registrado", # Necesitarías agregar este campo a tu modelo Usuario
-            "direccion": orden.direccion_envio, # 🔥 AQUÍ ESTÁ LA DIRECCIÓN QUE GUARDAS EN EL CHECKOUT
+            "telefono": "No registrado", 
+            "direccion": orden.direccion_envio, 
         }
         
         detalles = DetalleOrden.objects.filter(id_orden_id=id_orden)
         productos_data = [
-            {"producto": d.id_producto.nombre, "cantidad": d.cantidad} 
+            {
+                "producto": d.id_producto.nombre,
+                "cantidad": d.cantidad,
+                "precio": float(d.id_producto.precio),
+                "subtotal": float(
+                    d.cantidad * d.id_producto.precio
+                ),
+            }
             for d in detalles
         ]
-        
         return Response({"cliente": datos_cliente, "productos": productos_data})
     except Exception as e:
         return Response({"error": str(e)}, status=400)
@@ -745,10 +796,10 @@ def cancelar_orden(request, id_orden):
     try:
         orden = Orden.objects.get(id_orden=id_orden)
         
-        if str(orden.estatus) == "0":
+        if str(orden.estatus) == "4":
             return Response({"error": "Esta orden ya se encuentra cancelada."}, status=400)
             
-        orden.estatus = "0"
+        orden.estatus = "4"
         orden.save()
 
         return Response({
@@ -770,7 +821,7 @@ def actualizar_estatus_orden(request, id_orden):
         orden = Orden.objects.get(id_orden=id_orden)
         nuevo_estatus = str(request.data.get('estatus'))
 
-        if nuevo_estatus not in ["0", "1", "2", "3"]:
+        if nuevo_estatus not in ["1", "2", "3", "4"]:
             return Response({"error": "Estatus inválido."}, status=400)
 
         orden.estatus = nuevo_estatus

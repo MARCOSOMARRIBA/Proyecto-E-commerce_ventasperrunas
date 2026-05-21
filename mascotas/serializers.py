@@ -48,7 +48,14 @@ class UsuarioSerializer(serializers.ModelSerializer):
 class ProveedorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Proveedor
-        fields = '__all__'
+        fields = [
+            'rfc',
+            'nombre_empresa',
+            'telefono',
+            'correo',
+            'direccion',
+            'activo'
+]
 
 class SeccionExtranetSerializer(serializers.ModelSerializer):
     # Para que PostgreSQL genere el ID automático del banner

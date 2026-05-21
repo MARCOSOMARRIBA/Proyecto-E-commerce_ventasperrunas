@@ -27,7 +27,6 @@ from .views import (
     movimientos_recientes,
     actualizar_usuario,
     crear_usuario_por_admin,
-    # 🔥 1. IMPORTAMOS LA NUEVA VISTA DE BANNERS AQUÍ:
     BannerPorPortalView,
     cancelar_orden,
     actualizar_estatus_orden,
@@ -76,7 +75,7 @@ urlpatterns = [
     path('usuarios/cambiar-password/', cambiar_password, name='cambiar-password'),
     path('login-google/', login_google),
     
-    # 🔥 5. RUTA DINÁMICA DE BANNERS POR ROL:
+
     path('banners/<str:rol>/', BannerPorPortalView.as_view(), name='banners-portal'),
     path('subir-imagen/', subir_imagen_cloudinary, name='subir-imagen'),
     path('', include(router.urls)),
