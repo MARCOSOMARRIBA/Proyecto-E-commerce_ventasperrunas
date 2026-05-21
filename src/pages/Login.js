@@ -7,7 +7,8 @@ import { FaFacebookF, FaEnvelope, FaLock, FaPaw } from "react-icons/fa";
 import { AuthContext } from "../context/AuthContext";
 
 function Login() {
-  const { loginReal, loginGoogle, loginFacebook, user } = useContext(AuthContext);
+  const { loginReal, loginGoogle, loginFacebook, user, socialLoading } =
+    useContext(AuthContext);
 
   const navigate = useNavigate();
 
@@ -99,20 +100,32 @@ function Login() {
           {/* LOGIN SOCIAL */}
 
           <div className="social-login-container">
-            <button className="google-btn" onClick={loginGoogle}>
+            <button
+              className="google-btn"
+              onClick={loginGoogle}
+              disabled={socialLoading}
+            >
               <FcGoogle size={22} />
 
-              <span>Continuar con Google</span>
+              <span>
+                {socialLoading ? "Cargando..." : "Continuar con Google"}
+              </span>
             </button>
           </div>
 
           <div className="social-login-container">
-          <button className="facebook-btn" onClick={loginFacebook}>
-             <FaFacebookF size={22} /> 
+            <button
+              className="facebook-btn"
+              onClick={loginFacebook}
+              disabled={socialLoading}
+            >
+              <FaFacebookF size={22} />
 
-             <span>Continuar con Facebook</span>
-          </button>
-         </div>
+              <span>
+                {socialLoading ? "Cargando..." : "Continuar con Facebook"}
+              </span>
+            </button>
+          </div>
 
           <div className="divider">
             <span>o continúa con correo</span>

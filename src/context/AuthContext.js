@@ -3,7 +3,6 @@ import { api } from "../api/client";
 import { useMessage } from "./MessageContext";
 import { signInWithPopup } from "firebase/auth";
 
-// 🔥 1. Asegúrate de importar facebookProvider (lo creamos en el paso anterior en firebaseConfig)
 import { auth, googleProvider, facebookProvider } from "../firebaseConfig";
 
 export const AuthContext = createContext();
@@ -27,6 +26,7 @@ const mapBackendUser = (backendUser) => ({
 
 export const AuthProvider = ({ children }) => {
   const { showMessage } = useMessage();
+  const [socialLoading, setSocialLoading] = useState(false);
 
   const [user, setUser] = useState(() => {
     const savedUser =
@@ -81,19 +81,24 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginGoogle = async () => {
+    if (socialLoading) return;
+
     try {
-      // Firebase popup
+      setSocialLoading(true);
+
       const result = await signInWithPopup(auth, googleProvider);
+
       const userFirebase = result.user;
 
-      // Django busca/crea usuario (Reutilizamos la ruta, ya que solo pide nombre y correo)
       const backendUser = await api.auth.googleLogin({
         correo: userFirebase.email,
         nombre: userFirebase.displayName,
       });
 
       const loggedUser = mapBackendUser(backendUser);
+
       setUser(loggedUser);
+
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
 
       showMessage({
@@ -105,30 +110,38 @@ export const AuthProvider = ({ children }) => {
       return loggedUser;
     } catch (error) {
       console.error("Error login Google:", error);
+
       showMessage({
         title: "Error con Google",
         message: "No se pudo iniciar sesión.",
         type: "error",
       });
+
       return null;
+    } finally {
+      setSocialLoading(false);
     }
   };
 
-  // 🚀 2. NUEVA FUNCIÓN PARA FACEBOOK
   const loginFacebook = async () => {
+    if (socialLoading) return;
+
     try {
-      // Firebase popup para Facebook
+      setSocialLoading(true);
+
       const result = await signInWithPopup(auth, facebookProvider);
+
       const userFirebase = result.user;
 
-      // Django busca/crea usuario (Usamos el mismo endpoint porque la lógica de recibir correo es igual)
       const backendUser = await api.auth.googleLogin({
         correo: userFirebase.email,
         nombre: userFirebase.displayName,
       });
 
       const loggedUser = mapBackendUser(backendUser);
+
       setUser(loggedUser);
+
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedUser));
 
       showMessage({
@@ -140,12 +153,16 @@ export const AuthProvider = ({ children }) => {
       return loggedUser;
     } catch (error) {
       console.error("Error login Facebook:", error);
+
       showMessage({
         title: "Error con Facebook",
-        message: "No se pudo iniciar sesión. " + error.message,
+        message: "No se pudo iniciar sesión.",
         type: "error",
       });
+
       return null;
+    } finally {
+      setSocialLoading(false);
     }
   };
 
@@ -232,7 +249,8 @@ export const AuthProvider = ({ children }) => {
         user,
         loginReal,
         loginGoogle,
-        loginFacebook, // 🚀 3. EXPORTAMOS LA FUNCIÓN
+        loginFacebook,
+        socialLoading,
         logout,
         updateProfile,
         registroReal,

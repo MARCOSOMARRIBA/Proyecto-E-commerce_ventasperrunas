@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import {
   FiSettings,
   FiBell,
@@ -17,6 +17,11 @@ import { useAppearance } from "../context/AppearanceContext";
 
 const Configuracion = () => {
   const { user } = useContext(AuthContext);
+  const [passwordData, setPasswordData] = useState({
+    actual: "",
+    nueva: "",
+    confirmar: "",
+  });
   const { clearCart } = useContext(CartContext);
   const { showMessage } = useMessage();
   const {
@@ -58,6 +63,71 @@ const Configuracion = () => {
       message: "Se borró el carrito guardado de este navegador.",
       type: "info",
     });
+  };
+
+  const cambiarPassword = async () => {
+    if (
+      !passwordData.actual ||
+      !passwordData.nueva ||
+      !passwordData.confirmar
+    ) {
+      showMessage({
+        title: "Campos incompletos",
+        message: "Completa todos los campos.",
+        type: "error",
+      });
+
+      return;
+    }
+
+    if (passwordData.nueva !== passwordData.confirmar) {
+      showMessage({
+        title: "Contraseñas diferentes",
+        message: "La nueva contraseña no coincide.",
+        type: "error",
+      });
+
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/usuarios/cambiar-password/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id_usuario: user.id,
+            password_actual: passwordData.actual,
+            password_nueva: passwordData.nueva,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error();
+      }
+
+      showMessage({
+        title: "Contraseña actualizada",
+        message: "Tu contraseña fue cambiada correctamente.",
+        type: "success",
+      });
+
+      setPasswordData({
+        actual: "",
+        nueva: "",
+        confirmar: "",
+      });
+    } catch (error) {
+      showMessage({
+        title: "Error",
+        message: "No se pudo actualizar la contraseña.",
+        type: "error",
+      });
+    }
   };
 
   return (
@@ -142,51 +212,67 @@ const Configuracion = () => {
         <article className="config-card">
           <div className="config-card-header">
             <div className="config-icon">
-              <FiBell />
+              <FiSettings />
             </div>
+
             <div>
-              <h2>Notificaciones</h2>
-              <p>Controla qué avisos quieres mantener activos.</p>
+              <h2>Seguridad de la cuenta</h2>
+
+              <p>Cambia tu contraseña y protege el acceso a tu cuenta.</p>
             </div>
           </div>
 
-          <label className="config-switch-row">
-            <div>
-              <strong>Promociones y novedades</strong>
-              <span>
-                Recibir avisos visuales sobre ofertas o banners activos.
-              </span>
-            </div>
-
+          <div className="config-password-form">
             <input
-              type="checkbox"
-              checked={configuracion.notificacionesPromociones}
+              type="password"
+              placeholder="Contraseña actual"
+              value={passwordData.actual}
               onChange={(e) =>
-                actualizarConfiguracion(
-                  "notificacionesPromociones",
-                  e.target.checked,
-                )
+                setPasswordData({
+                  ...passwordData,
+                  actual: e.target.value,
+                })
               }
             />
-          </label>
-
-          <label className="config-switch-row">
-            <div>
-              <strong>Actualizaciones de pedidos</strong>
-              <span>Mostrar avisos cuando cambie el estado de una orden.</span>
-            </div>
 
             <input
-              type="checkbox"
-              checked={configuracion.notificacionesPedidos}
+              type="password"
+              placeholder="Nueva contraseña"
+              value={passwordData.nueva}
               onChange={(e) =>
-                actualizarConfiguracion(
-                  "notificacionesPedidos",
-                  e.target.checked,
-                )
+                setPasswordData({
+                  ...passwordData,
+                  nueva: e.target.value,
+                })
               }
             />
-          </label>
+
+            <input
+              type="password"
+              placeholder="Confirmar nueva contraseña"
+              value={passwordData.confirmar}
+              onChange={(e) =>
+                setPasswordData({
+                  ...passwordData,
+                  confirmar: e.target.value,
+                })
+              }
+            />
+
+            <small>
+              Si recuperaste tu cuenta mediante una contraseña temporal, te
+              recomendamos cambiarla inmediatamente.
+            </small>
+
+            <button
+              type="button"
+              className="config-save-btn"
+              onClick={cambiarPassword}
+            >
+              <FiSave />
+              Actualizar contraseña
+            </button>
+          </div>
         </article>
 
         <article className="config-card">
