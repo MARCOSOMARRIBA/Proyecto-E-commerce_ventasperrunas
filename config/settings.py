@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import cloudinary
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -153,3 +153,9 @@ EMAIL_HOST_PASSWORD = 'fkni zfmj cplt mfhg'
 
 # Nombre y correo que verá el cliente cuando reciba el mensaje
 DEFAULT_FROM_EMAIL = 'Ventas Perrunas <sans15cadena@gmail.com>'
+
+cloudinary.config(
+    cloud_name = 'dusyqmcav',
+    api_key = '114311678134825',
+    api_secret = 'R6YsHsf0F3NzfgrBH9pi6MIqvnQ'
+)
