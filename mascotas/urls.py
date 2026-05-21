@@ -1,5 +1,8 @@
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
+from .views import subir_imagen_cloudinary
 from .views import (
     CarritoViewSet,
     CategoriaViewSet,
@@ -75,11 +78,15 @@ urlpatterns = [
     
     # 🔥 5. RUTA DINÁMICA DE BANNERS POR ROL:
     path('banners/<str:rol>/', BannerPorPortalView.as_view(), name='banners-portal'),
-    
+    path('subir-imagen/', subir_imagen_cloudinary, name='subir-imagen'),
     path('', include(router.urls)),
+    
 ]
 
 urlpatterns += static(
     settings.MEDIA_URL,
     document_root=settings.MEDIA_ROOT
 )
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

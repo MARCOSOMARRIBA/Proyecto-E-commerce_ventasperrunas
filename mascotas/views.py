@@ -14,10 +14,14 @@ from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 from django.conf import settings
 import ssl
+
 from django.contrib.auth.hashers import check_password, make_password
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import json
+
+from django.views.decorators.csrf import csrf_exempt
+import cloudinary.uploader
 
 # Parche temporal para correos en desarrollo (Quitar en producción)
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -891,3 +895,16 @@ def cambiar_password(request):
             {"error": str(e)},
             status=500
         )
+
+    
+@csrf_exempt
+@api_view(['POST'])
+def subir_imagen_cloudinary(request):
+    try:
+        file = request.FILES['imagen']
+        # Subimos a Cloudinary
+        upload_data = cloudinary.uploader.upload(file)
+        return Response({"url": upload_data['secure_url']})
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
+
