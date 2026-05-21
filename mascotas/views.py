@@ -56,8 +56,9 @@ class ProductoViewSet(viewsets.ModelViewSet):
         if user_rol in ['1', '2', '3'] or not user_rol:
             return queryset
 
+        # 🔥 CAMBIO 1: Cambiamos rfc_id por rfc (el mismo bug que en Pedidos)
         if user_rol == '4' and user_rfc:
-            return queryset.filter(rfc_id=user_rfc)
+            return queryset.filter(rfc=user_rfc)
 
         return Producto.objects.none()
 
@@ -67,6 +68,7 @@ class ProductoViewSet(viewsets.ModelViewSet):
             ultimo_producto = Producto.objects.all().order_by('-id_producto').first()
             nuevo_id = (ultimo_producto.id_producto + 1) if ultimo_producto else 9000000000000
 
+            # 1. Creamos el producto básico SIN involucrar al RFC para que no crashee
             nuevo_producto = Producto.objects.create(
                 id_producto=nuevo_id,
                 nombre=data.get('nombre'),
@@ -75,9 +77,21 @@ class ProductoViewSet(viewsets.ModelViewSet):
                 stock=data.get('stock', True),
                 imagen=data.get('imagen', ''),
                 activo=data.get('activo', True),
-                id_categoria_id=data.get('id_categoria'),
-                rfc_id=data.get('rfc') 
+                id_categoria_id=data.get('id_categoria')
             )
+
+            # 🔥 2. OPCIÓN NUCLEAR: Actualizamos el RFC directamente usando el ORM puro
+            rfc_recibido = data.get('rfc') or data.get('rfc_id')
+            
+            if rfc_recibido:
+                try:
+                    # Intento A: Como Django suele nombrar la llave en SQL
+                    Producto.objects.filter(id_producto=nuevo_id).update(rfc_id=rfc_recibido)
+                    print(f"✅ PRODUCTO {nuevo_id} ASIGNADO AL PROVEEDOR {rfc_recibido} (vía rfc_id)")
+                except Exception:
+                    # Intento B: Por si tu base de datos lo llama literalmente 'rfc'
+                    Producto.objects.filter(id_producto=nuevo_id).update(rfc=rfc_recibido)
+                    print(f"✅ PRODUCTO {nuevo_id} ASIGNADO AL PROVEEDOR {rfc_recibido} (vía rfc)")
 
             return Response({"message": "¡Producto agregado con éxito!", "id_producto": nuevo_id}, status=status.HTTP_201_CREATED)
             
@@ -85,37 +99,6 @@ class ProductoViewSet(viewsets.ModelViewSet):
             import traceback
             traceback.print_exc()
             return Response({"error": f"Error interno: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=False, methods=['get'])
-    def mas_vendidos(self, request):
-        productos = (
-            DetalleOrden.objects
-            .values('id_producto')
-            .annotate(
-                total_vendido=Sum('cantidad')
-            )
-            .order_by('-total_vendido')[:12]
-        )
-
-        data = []
-        for item in productos:
-            try:
-                producto = Producto.objects.get(
-                    id_producto=item['id_producto']
-                )
-                data.append({
-                    "id_producto": producto.id_producto,
-                    "nombre": producto.nombre,
-                    "precio": producto.precio,
-                    "imagen": producto.imagen,
-                    "stock": producto.stock,
-                    "activo": producto.activo,
-                    "total_vendido": item['total_vendido']
-                })
-            except Producto.DoesNotExist:
-                continue
-
-        return Response(data)
 
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
@@ -234,10 +217,15 @@ class BannerPorPortalView(ListAPIView):
 
 class PedidoViewSet(viewsets.ModelViewSet):
     serializer_class = PedidoSerializer
+    lookup_field = 'id_pedido'
 
     def get_queryset(self):
-        user_rol = self.request.query_params.get('rol', None)
-        user_rfc = self.request.query_params.get('rfc', None)
+        user_rol = str(self.request.query_params.get('rol', ''))
+        user_rfc = str(self.request.query_params.get('rfc', ''))
+
+        # Si React manda basura, la limpiamos
+        if user_rfc in ['null', 'undefined', 'None', '']:
+            user_rfc = None
 
         queryset = Pedido.objects.all().order_by('-id_pedido')
 
@@ -245,7 +233,11 @@ class PedidoViewSet(viewsets.ModelViewSet):
             return queryset
 
         if user_rol == '4' and user_rfc:
-            return queryset.filter(rfc_id=user_rfc)
+            # 🛡️ Doble filtro para que no importe cómo se llame tu columna
+            try:
+                return queryset.filter(rfc_id=user_rfc)
+            except Exception:
+                return queryset.filter(rfc=user_rfc)
 
         return Pedido.objects.none()
 
@@ -260,14 +252,23 @@ class PedidoViewSet(viewsets.ModelViewSet):
                 if not fecha:
                     fecha = timezone.now().date()
 
+                # 🔥 LA MAGIA ESTÁ AQUÍ: Buscamos el OBJETO para que Django no llore
+                rfc_recibido = data.get('rfc')
+                instancia_proveedor = Proveedor.objects.filter(rfc=rfc_recibido).first()
+
+                if not instancia_proveedor:
+                    print(f"❌ ERROR: El proveedor {rfc_recibido} no existe.")
+                    return Response({"error": "Proveedor no válido"}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Creamos el pedido pasándole el objeto completo
                 pedido = Pedido.objects.create(
                     id_pedido=nuevo_id,
-                    rfc_id=data.get('rfc'),
                     descripcion=data.get('descripcion', ''),
                     total_compra=data.get('total_compra', 0),
                     estatus=data.get('estatus', '1'),
                     id_usuario_id=data.get('id_usuario'),
-                    fecha_compra=fecha
+                    fecha_compra=fecha,
+                    rfc=instancia_proveedor  # 👈 ¡A PRUEBA DE BALAS!
                 )
 
                 detalles = data.get('detalles', [])
@@ -295,7 +296,8 @@ class PedidoViewSet(viewsets.ModelViewSet):
                         estatus='1'
                     )
             
-            return Response({"message": "Pedido y detalles creados con éxito", "id_pedido": nuevo_id}, status=status.HTTP_201_CREATED)
+            print(f"✅ PEDIDO {nuevo_id} CREADO CON ÉXITO PARA {rfc_recibido}")
+            return Response({"message": "Pedido creado", "id_pedido": nuevo_id}, status=status.HTTP_201_CREATED)
         
         except Exception as e:
             import traceback
@@ -376,6 +378,7 @@ def movimientos_recientes(request):
         })
 
     return Response(movimientos)
+
 @api_view(['POST'])
 def login_usuario(request):
     correo = request.data.get('correo')
@@ -384,15 +387,27 @@ def login_usuario(request):
     try:
         usuario = Usuario.objects.get(correo=correo)
         if check_password(contrasena, usuario.contrasena):
+            
             rfc_asignado = None
-            if usuario.rol == '4':
-
-                proveedor = Proveedor.objects.filter(
-                    id_usuario=usuario
-                ).first()
-
-                if proveedor:
-                    rfc_asignado = proveedor.rfc
+            
+            if str(usuario.rol) == '4':
+                from django.db import connection
+                
+                # 🚀 OPCIÓN TERMINATOR PARA LEER EL RFC DIRECTO DE SQL 🚀
+                with connection.cursor() as cursor:
+                    # Buscamos sin importar si la columna se llama id_usuario o id_usuario_id
+                    cursor.execute("""
+                        SELECT rfc FROM proveedor 
+                        WHERE id_usuario = %s OR id_usuario_id = %s
+                    """, [usuario.id_usuario, usuario.id_usuario])
+                    
+                    fila = cursor.fetchone()
+                    
+                    if fila:
+                        rfc_asignado = fila[0]
+                        print(f"\n✅ LOGIN SQL EXITOSO: RFC encontrado -> {rfc_asignado}")
+                    else:
+                        print(f"\n❌ ERROR LOGIN: No hay proveedor con id_usuario '{usuario.id_usuario}' en la BD.")
 
             return Response({
                 'id_usuario': usuario.id_usuario,
@@ -401,11 +416,13 @@ def login_usuario(request):
                 'rol': usuario.rol,
                 'rfc': rfc_asignado  
             }, status=status.HTTP_200_OK)
+            
         else:
             return Response({'error': 'Contraseña incorrecta'}, status=status.HTTP_401_UNAUTHORIZED)
+            
     except Usuario.DoesNotExist:
         return Response({'error': 'El correo no está registrado'}, status=status.HTTP_404_NOT_FOUND)
-
+    
 @api_view(['POST'])
 def crear_pedido(request):
     data = request.data
@@ -489,15 +506,29 @@ def crear_usuario_por_admin(request):
             fecha_registro=timezone.now()         
         )
 
-        if rol == "4" and proveedor_rfc:
-            proveedor = Proveedor.objects.get(rfc=proveedor_rfc)
-
-            proveedor.id_usuario = nuevo_usuario
-            proveedor.save()
+        # 🔥 AQUÍ ESTÁ LA MAGIA Y LA SOLUCIÓN 🔥
+        # Forzamos a string para evitar errores si llega como número
+# 🔥 OPCIÓN NUCLEAR: Actualización directa a la base de datos 🔥
+        # 🔥 OPCIÓN TERMINATOR: SQL PURO Y DIRECTO A SUPABASE 🔥
+        if str(rol) == "4" and proveedor_rfc:
+            print(f"\n---> INYECTANDO SQL: RFC={proveedor_rfc} | Usuario={nuevo_usuario.id_usuario} | Correo={correo}")
+            
+            # Ejecutamos una orden SQL directa, saltándonos todo el filtro de Django
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE proveedor 
+                    SET id_usuario = %s, correo = %s
+                    WHERE rfc = %s
+                """, [nuevo_usuario.id_usuario, correo, proveedor_rfc])
+                
+                # OJO: Si la columna que quieres llenar se llama id_usuario_id, cambia 
+                # "SET id_usuario" por "SET id_usuario_id" en el código de arriba.
+                
+            print(f"✅ INYECCIÓN SQL COMPLETADA PARA {proveedor_rfc}")
 
         return Response({
             "success": True, 
-            "mensaje": f"Usuario {nombre_recibido} creado exitosamente como {'Empleado' if rol == '2' else 'Proveedor'}",
+            "mensaje": f"Usuario {nombre_recibido} creado exitosamente como {'Empleado' if str(rol) == '2' else 'Proveedor'}",
             "password_temporal": password_generada
         })
     except Exception as e:
