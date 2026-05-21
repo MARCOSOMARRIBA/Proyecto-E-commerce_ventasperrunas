@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useContext } from 'react'; // 🔥 1. Agregado useContext
-import { FiEye, FiShoppingBag, FiX } from 'react-icons/fi';
-import { AuthContext } from '../context/AuthContext'; // 🔥 2. Importado el AuthContext
+import React, { useState, useEffect, useContext } from 'react'; 
+// 🔥 Agregamos íconos de contacto para la tarjeta del cliente
+import { FiEye, FiShoppingBag, FiX, FiUser, FiMapPin, FiPhone, FiMail } from 'react-icons/fi';
+import { AuthContext } from '../context/AuthContext'; 
 
 const OrdenesClientesIntranet = () => {
-  const { user } = useContext(AuthContext); // 🔥 3. Extraemos el usuario activo
+  const { user } = useContext(AuthContext); 
   const [ordenes, setOrdenes] = useState([]);
   const [cargando, setCargando] = useState(true);
 
@@ -11,15 +12,14 @@ const OrdenesClientesIntranet = () => {
   const [modalDetalle, setModalDetalle] = useState(false);
   const [ordenSeleccionada, setOrdenSeleccionada] = useState(null);
   const [detallesOrden, setDetallesOrden] = useState([]);
+  const [clienteOrden, setClienteOrden] = useState(null); // 🔥 Nuevo estado para el cliente
   const [cargandoDetalles, setCargandoDetalles] = useState(false);
 
   useEffect(() => {
     const fetchOrdenes = async () => {
-      // Si el usuario no ha cargado, no hacemos la petición
       if (!user) return; 
 
       try {
-        // 🚀 4. APLICAMOS EL FILTRO EN LA URL PARA EL DATA ISOLATION
         const url = `http://127.0.0.1:8000/api/ordenes/?rol=${user.rol}&id_usuario=${user.id}`;
         const res = await fetch(url);
         
@@ -34,10 +34,9 @@ const OrdenesClientesIntranet = () => {
       }
     };
     fetchOrdenes();
-  }, [user]); // 🔥 Agregamos `user` como dependencia del useEffect
+  }, [user]); 
 
   const actualizarEstatus = async (id_orden, nuevoEstatus) => {
-    // Actualización visual rápida en el frontend
     setOrdenes(ordenes.map(orden => 
       orden.id_orden === id_orden ? { ...orden, estatus: nuevoEstatus } : orden
     ));
@@ -55,7 +54,6 @@ const OrdenesClientesIntranet = () => {
     }
   };
 
-  // 🎨 Asignamos colores incluyendo la regla del CANCELADO (0)
   const getColorPorEstado = (estado) => {
     switch (String(estado)) {
       case '0': return 'text-danger fw-bold';  // Cancelado
@@ -70,14 +68,18 @@ const OrdenesClientesIntranet = () => {
     setOrdenSeleccionada(orden);
     setModalDetalle(true);
     setCargandoDetalles(true);
+    setClienteOrden(null); // Limpiamos datos anteriores
 
     try {
       const res = await fetch(`http://127.0.0.1:8000/api/detalle-orden/${orden.id_orden}/`);
       if (res.ok) {
         const data = await res.json();
-        setDetallesOrden(data);
+        // 🔥 Ahora leemos la nueva estructura que manda Django
+        setDetallesOrden(data.productos || []);
+        setClienteOrden(data.cliente || null);
       } else {
         setDetallesOrden([]);
+        setClienteOrden(null);
       }
     } catch (error) {
       console.error("Error cargando detalles:", error);
@@ -124,7 +126,6 @@ const OrdenesClientesIntranet = () => {
                     </td>
                     
                     <td>
-                      {/* 🔥 SELECTOR CON LA OPCIÓN DE CANCELADO INCLUIDA */}
                       <select 
                         className={`form-select form-select-sm fw-bold ${getColorPorEstado(orden.estatus)}`}
                         style={{ width: '130px', backgroundColor: '#f8f9fa', border: 'none' }}
@@ -171,28 +172,56 @@ const OrdenesClientesIntranet = () => {
                 </div>
                 <button type="button" className="btn text-white fs-4" onClick={() => setModalDetalle(false)}><FiX /></button>
               </div>
+              
               <div className="modal-body p-4 bg-light">
                 {cargandoDetalles ? (
-                  <div className="text-center py-5 text-muted">Cargando productos a empacar...</div>
-                ) : detallesOrden.length === 0 ? (
-                  <div className="text-center py-5 text-muted bg-white rounded-3 shadow-sm">No se encontraron productos en esta orden.</div>
+                  <div className="text-center py-5 text-muted">Cargando información...</div>
                 ) : (
-                  <div className="row g-3">
-                    {detallesOrden.map((detalle, idx) => (
-                      <div className="col-md-6" key={idx}>
-                        <div className="card border-0 shadow-sm h-100 rounded-3">
-                          <div className="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                              <h6 className="fw-bold m-0 text-dark mb-2">{detalle.producto}</h6>
-                              <span className="badge bg-primary rounded-pill px-3 py-2 fs-6">
-                                {detalle.cantidad} Unidades
-                              </span>
+                  <>
+                    {/* 🔥 NUEVA SECCIÓN: DATOS DEL CLIENTE */}
+                    {clienteOrden && (
+                      <div className="card border-0 shadow-sm rounded-4 mb-4">
+                        <div className="card-body bg-white rounded-4 p-4">
+                          <h6 className="fw-bold text-primary mb-3 border-bottom pb-2">
+                            <FiMapPin className="me-2"/> Datos de Envío y Contacto
+                          </h6>
+                          <div className="row g-3 text-muted">
+                            <div className="col-md-6">
+                              <p className="mb-2"><FiUser className="me-2 text-dark"/> <strong className="text-dark">Nombre:</strong> {clienteOrden.nombre}</p>
+                              <p className="mb-2"><FiMail className="me-2 text-dark"/> <strong className="text-dark">Correo:</strong> {clienteOrden.correo}</p>
+                            </div>
+                            <div className="col-md-6">
+                              <p className="mb-2"><FiPhone className="me-2 text-dark"/> <strong className="text-dark">Teléfono:</strong> {clienteOrden.telefono}</p>
+                              <p className="mb-2"><FiMapPin className="me-2 text-dark"/> <strong className="text-dark">Dirección:</strong> {clienteOrden.direccion}</p>
                             </div>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    )}
+
+                    {/* SECCIÓN ORIGINAL: PRODUCTOS */}
+                    <h6 className="fw-bold text-secondary mb-3 ms-1">Productos a empacar:</h6>
+                    {detallesOrden.length === 0 ? (
+                      <div className="text-center py-4 text-muted bg-white rounded-3 shadow-sm">No se encontraron productos en esta orden.</div>
+                    ) : (
+                      <div className="row g-3">
+                        {detallesOrden.map((detalle, idx) => (
+                          <div className="col-md-6" key={idx}>
+                            <div className="card border-0 shadow-sm h-100 rounded-3">
+                              <div className="card-body d-flex justify-content-between align-items-center">
+                                <div>
+                                  <h6 className="fw-bold m-0 text-dark mb-2">{detalle.producto}</h6>
+                                  <span className="badge bg-primary rounded-pill px-3 py-2 fs-6">
+                                    {detalle.cantidad} Unidades
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

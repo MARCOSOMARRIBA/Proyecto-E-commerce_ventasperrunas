@@ -25,13 +25,15 @@ const BannersExtranet = () => {
 
   useEffect(() => {
     cargarBanners();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const cargarBanners = async () => {
+    if (!user) return; // Esperamos a que el usuario exista
     try {
       setCargando(true);
-      const res = await fetch(API_URL);
-
+      // 🔥 MAGIA 1: Le mandamos el rol y el ID exacto del proveedor para que vea SOLO los suyos
+      const res = await fetch(`${API_URL}?rol=${user.rol}&id_usuario=${user.id}`);
       if (res.ok) {
         const data = await res.json();
         setBanners(data);
@@ -83,11 +85,15 @@ const BannersExtranet = () => {
         },
         body: JSON.stringify({
           ...nuevoBanner,
-          id_usuario: user?.id || "ADM0000000001",
+          // 🔥 MAGIA 2: Envío correcto de credenciales a Django
+          // ✅ Lo correcto: Toma el ID real de tu AuthContext
+          id_usuario: user?.id,
+          portal_destino: user?.rol || "4",
         }),
       });
 
-      if (res.ok) {
+      // 🔥 MAGIA 3: Soporte para código 201 (Created)
+      if (res.ok || res.status === 201) {
         setMostrarFormulario(false);
         setNuevoBanner({
           titulo_pagina: "",
@@ -105,10 +111,12 @@ const BannersExtranet = () => {
           type: "success",
         });
       } else {
+        // 🔥 Leer el error exacto si la imagen es muy larga u otro fallo
         const errorData = await res.json();
+        console.error("Django rechazó la creación:", JSON.stringify(errorData));
         showMessage({
-          title: "Error de Django",
-          message: JSON.stringify(errorData, null, 2),
+          title: "Error de Servidor",
+          message: "Revisa la consola para ver qué dato rechazó la base de datos.",
           type: "error",
         });
       }
@@ -122,13 +130,8 @@ const BannersExtranet = () => {
     }
   };
 
-  // =================================================================
-  // NUEVA FUNCIÓN: Activar o Desactivar Banner con PATCH
-  // =================================================================
   const toggleEstatusBanner = async (banner) => {
-    const nuevoEstatus = !banner.estatus; // Invertimos el valor actual
-
-    // Actualización optimista en la interfaz para que se sienta súper rápido
+    const nuevoEstatus = !banner.estatus;
     setBanners(banners.map(b => b.id_seccion === banner.id_seccion ? { ...b, estatus: nuevoEstatus } : b));
 
     try {
@@ -141,7 +144,6 @@ const BannersExtranet = () => {
       });
 
       if (!res.ok) {
-        // Si falla el servidor, regresamos el switch a su estado original
         setBanners(banners.map(b => b.id_seccion === banner.id_seccion ? { ...b, estatus: banner.estatus } : b));
         showMessage({
           title: "Error al actualizar",
@@ -182,7 +184,8 @@ const BannersExtranet = () => {
         method: "DELETE",
       });
 
-      if (res.ok) {
+      // 🔥 MAGIA 4: Manejo de código 204 (No Content) para eliminación limpia
+      if (res.ok || res.status === 204) {
         setBanners((prevBanners) =>
           prevBanners.filter(
             (b) => b.id_seccion !== bannerAEliminar.id_seccion,
@@ -375,7 +378,7 @@ const BannersExtranet = () => {
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     backgroundColor: "#e9ecef",
-                    opacity: banner.estatus ? 1 : 0.5, // Hacemos la imagen un poco opaca si está apagado
+                    opacity: banner.estatus ? 1 : 0.5,
                     transition: "opacity 0.3s ease"
                   }}
                   className="w-100 position-relative"
@@ -405,7 +408,6 @@ const BannersExtranet = () => {
                   </p>
 
                   <div className="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
-                    {/* EL NUEVO INTERRUPTOR DE ESTADO */}
                     <div className="form-check form-switch m-0 p-0 d-flex align-items-center gap-2" title="Encender/Apagar en la tienda">
                       <input
                         className="form-check-input m-0 cursor-pointer shadow-none"

@@ -56,16 +56,22 @@ const BannersEmpleado = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...nuevoBanner,
-          id_usuario: user?.id || "ADM0000000001",
-          portal_destino: user?.rol || "3", // 🚀 Sella el banner con el rol
+          // 🔥 CORRECCIÓN: Usamos id_usuario en lugar de id
+          id_usuario: user?.id_usuario || "ADM0000000001",
+          portal_destino: user?.rol || "3", 
         }),
       });
 
-      if (res.ok) {
+      if (res.ok || res.status === 201) {
         setMostrarFormulario(false);
         setNuevoBanner({ titulo_pagina: "", imagen_banner: "", texto_bienvenida: "", url_destino: "", estatus: true });
         cargarBanners();
         showMessage({ title: "Éxito", message: "Banner de Intranet creado.", type: "success" });
+      } else {
+        // 🔥 MEJORA: Leer el error exacto de Django si falla
+        const errorData = await res.json();
+        console.error("Django rechazó la creación:", errorData);
+        showMessage({ title: "Error del servidor", message: "No se pudo crear. Revisa la consola.", type: "error" });
       }
     } catch (error) {
       console.error("Error al guardar:", error);
@@ -76,13 +82,16 @@ const BannersEmpleado = () => {
     const nuevoEstatus = !banner.estatus;
     setBanners(banners.map(b => b.id_seccion === banner.id_seccion ? { ...b, estatus: nuevoEstatus } : b));
     try {
-      await fetch(`${API_URL}${banner.id_seccion}/`, {
+      const res = await fetch(`${API_URL}${banner.id_seccion}/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ estatus: nuevoEstatus }),
       });
+      if (!res.ok) throw new Error("Fallo en la actualización");
     } catch (error) {
+      // Si falla, revertimos el botón visualmente
       setBanners(banners.map(b => b.id_seccion === banner.id_seccion ? { ...b, estatus: banner.estatus } : b));
+      showMessage({ title: "Error", message: "No se pudo cambiar el estatus.", type: "error" });
     }
   };
 
@@ -90,10 +99,15 @@ const BannersEmpleado = () => {
     if (!bannerAEliminar) return;
     try {
       const res = await fetch(`${API_URL}${bannerAEliminar.id_seccion}/`, { method: "DELETE" });
-      if (res.ok) {
+      
+      // 🔥 CORRECCIÓN: Django REST Framework devuelve 204 (No Content) en los DELETE exitosos
+      if (res.ok || res.status === 204) {
         setBanners(banners.filter((b) => b.id_seccion !== bannerAEliminar.id_seccion));
         setBannerAEliminar(null);
         showMessage({ title: "Eliminado", message: "Banner eliminado correctamente.", type: "success" });
+      } else {
+        console.error("Error devuelto por Django al intentar eliminar.");
+        showMessage({ title: "Error", message: "No se pudo eliminar el banner.", type: "error" });
       }
     } catch (error) {
       console.error("Error al eliminar:", error);
