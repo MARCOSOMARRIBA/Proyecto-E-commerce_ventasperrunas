@@ -2,22 +2,27 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Container, Row, Col } from "react-bootstrap";
 import axios from "axios";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 
 function SeccionesDinamicas() {
   const [secciones, setSecciones] = useState([]);
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
-    obtenerSecciones();
-  }, []);
+    if (user?.rol) {
+      obtenerSecciones();
+    }
+  }, [user]);
 
   const obtenerSecciones = async () => {
     try {
       const response = await axios.get(
-        "http://127.0.0.1:8000/api/extranet/banners/",
+        `http://127.0.0.1:8000/api/banners/${user?.rol}/`,
       );
 
-      const seccionesActivas = response.data.filter(
-        (sec) => sec.estatus === true,
+      const seccionesActivas = response.data.filter((sec) =>
+        Boolean(sec.estatus),
       );
 
       setSecciones(seccionesActivas);

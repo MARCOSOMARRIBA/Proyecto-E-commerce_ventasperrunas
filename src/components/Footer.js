@@ -52,12 +52,14 @@ function Footer() {
           <div className="col-md-3 mb-4 mb-md-0">
             <h5 className="text-uppercase mb-3">Contacto</h5>
             <p>
-              123 Calle Perruna
+              Lopez Mateos #21
               <br />
-              Colonia Mascotas, Veracruz
+              Colonia Lopez Arias 91820
+              <br />
+              Veracruz, Veracruz
             </p>
             <p>info@ventasperrunas.mx</p>
-            <p>(+52) 123-456-7890</p>
+            <p>2293503297</p>
           </div>
 
           {/* Columna 4: Redes Sociales */}
@@ -65,21 +67,21 @@ function Footer() {
             <h5 className="text-uppercase mb-3">Síguenos</h5>
             <div className="d-flex justify-content-md-end gap-3 social-icons">
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/marco.aurelio.somarriba"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <FaFacebook />
               </a>
               <a
-                href="https://twitter.com"
+                href="https://x.com/pyrox456"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <FaTwitter />
               </a>
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/auresoma_/"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -99,7 +101,8 @@ function Footer() {
         {/* Línea divisoria y Copyright */}
         <div className="row mt-4 pt-3 border-top text-center text-muted copyright">
           <div className="col">
-            &copy; 2026 Ventas Perrunas Online. Todos los derechos reservados.
+            &copy; 2026 Ventas Perrunas Online. Todos los derechos reservados a
+            Jesus Alvarado Hernandez y Marco Aurelio Somarriba Cadena.
           </div>
         </div>
       </div>

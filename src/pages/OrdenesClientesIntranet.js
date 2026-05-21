@@ -1,10 +1,18 @@
-import React, { useState, useEffect, useContext } from 'react'; 
+import React, { useState, useEffect, useContext } from "react";
 // 🔥 Agregamos íconos de contacto para la tarjeta del cliente
-import { FiEye, FiShoppingBag, FiX, FiUser, FiMapPin, FiPhone, FiMail } from 'react-icons/fi';
-import { AuthContext } from '../context/AuthContext'; 
+import {
+  FiEye,
+  FiShoppingBag,
+  FiX,
+  FiUser,
+  FiMapPin,
+  FiPhone,
+  FiMail,
+} from "react-icons/fi";
+import { AuthContext } from "../context/AuthContext";
 
 const OrdenesClientesIntranet = () => {
-  const { user } = useContext(AuthContext); 
+  const { user } = useContext(AuthContext);
   const [ordenes, setOrdenes] = useState([]);
   const [cargando, setCargando] = useState(true);
 
@@ -17,12 +25,12 @@ const OrdenesClientesIntranet = () => {
 
   useEffect(() => {
     const fetchOrdenes = async () => {
-      if (!user) return; 
+      if (!user) return;
 
       try {
         const url = `http://127.0.0.1:8000/api/ordenes/?rol=${user.rol}&id_usuario=${user.id}`;
         const res = await fetch(url);
-        
+
         if (res.ok) {
           const data = await res.json();
           setOrdenes(data);
@@ -34,19 +42,26 @@ const OrdenesClientesIntranet = () => {
       }
     };
     fetchOrdenes();
-  }, [user]); 
+  }, [user]);
 
   const actualizarEstatus = async (id_orden, nuevoEstatus) => {
-    setOrdenes(ordenes.map(orden => 
-      orden.id_orden === id_orden ? { ...orden, estatus: nuevoEstatus } : orden
-    ));
+    setOrdenes(
+      ordenes.map((orden) =>
+        orden.id_orden === id_orden
+          ? { ...orden, estatus: nuevoEstatus }
+          : orden,
+      ),
+    );
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/ordenes/actualizar-estatus/${id_orden}/`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estatus: nuevoEstatus })
-      });
+      const res = await fetch(
+        `http://127.0.0.1:8000/api/ordenes/actualizar-estatus/${id_orden}/`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estatus: nuevoEstatus }),
+        },
+      );
       if (!res.ok) throw new Error("Error en servidor al actualizar estatus");
     } catch (error) {
       console.error("Error:", error);
@@ -56,11 +71,16 @@ const OrdenesClientesIntranet = () => {
 
   const getColorPorEstado = (estado) => {
     switch (String(estado)) {
-      case '0': return 'text-danger fw-bold';  // Cancelado
-      case '1': return 'text-warning fw-bold'; // Pendiente
-      case '2': return 'text-info fw-bold';    // Enviado
-      case '3': return 'text-success fw-bold'; // Recibido
-      default: return 'text-secondary';
+      case "1":
+        return "text-warning fw-bold"; // Pendiente
+      case "2":
+        return "text-info fw-bold"; // Enviado
+      case "3":
+        return "text-success fw-bold"; // Recibido
+      case "4":
+        return "text-danger fw-bold"; // Cancelado
+      default:
+        return "text-secondary";
     }
   };
 
@@ -71,7 +91,9 @@ const OrdenesClientesIntranet = () => {
     setClienteOrden(null); // Limpiamos datos anteriores
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/detalle-orden/${orden.id_orden}/`);
+      const res = await fetch(
+        `http://127.0.0.1:8000/api/detalle-orden/${orden.id_orden}/`,
+      );
       if (res.ok) {
         const data = await res.json();
         // 🔥 Ahora leemos la nueva estructura que manda Django
@@ -93,7 +115,9 @@ const OrdenesClientesIntranet = () => {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="fw-bold m-0 text-primary">Órdenes de Clientes</h2>
-          <p className="text-muted">Gestiona los pedidos y prepara los paquetes.</p>
+          <p className="text-muted">
+            Gestiona los pedidos y prepara los paquetes.
+          </p>
         </div>
       </div>
 
@@ -112,37 +136,59 @@ const OrdenesClientesIntranet = () => {
             </thead>
             <tbody>
               {cargando ? (
-                <tr><td colSpan="6" className="text-center py-4 text-muted">Cargando órdenes...</td></tr>
+                <tr>
+                  <td colSpan="6" className="text-center py-4 text-muted">
+                    Cargando órdenes...
+                  </td>
+                </tr>
               ) : ordenes.length > 0 ? (
                 ordenes.map((orden) => (
                   <tr key={orden.id_orden}>
-                    <td className="ps-4 fw-bold text-secondary">#{orden.id_orden}</td>
+                    <td className="ps-4 fw-bold text-secondary">
+                      #{orden.id_orden}
+                    </td>
                     <td className="fw-medium text-dark">{orden.id_usuario}</td>
                     <td className="text-muted small">
-                      {orden.fecha_creacion ? new Date(orden.fecha_creacion).toLocaleDateString() : 'N/A'}
+                      {orden.fecha_creacion
+                        ? new Date(orden.fecha_creacion).toLocaleDateString()
+                        : "N/A"}
                     </td>
                     <td className="fw-bold text-success">
                       ${parseFloat(orden.total_orden || 0).toLocaleString()}
                     </td>
-                    
+
                     <td>
-                      <select 
+                      <select
                         className={`form-select form-select-sm fw-bold ${getColorPorEstado(orden.estatus)}`}
-                        style={{ width: '130px', backgroundColor: '#f8f9fa', border: 'none' }}
+                        style={{
+                          width: "130px",
+                          backgroundColor: "#f8f9fa",
+                          border: "none",
+                        }}
                         value={String(orden.estatus || "1")}
-                        onChange={(e) => actualizarEstatus(orden.id_orden, e.target.value)}
+                        onChange={(e) =>
+                          actualizarEstatus(orden.id_orden, e.target.value)
+                        }
                       >
-                        <option value="1" className="text-dark">Pendiente</option>
-                        <option value="2" className="text-dark">Enviado</option>
-                        <option value="3" className="text-dark">Recibido</option>
-                        <option value="0" className="text-danger fw-bold">Cancelado</option>
+                        <option value="1" className="text-dark">
+                          Pendiente
+                        </option>
+                        <option value="2" className="text-dark">
+                          Enviado
+                        </option>
+                        <option value="3" className="text-dark">
+                          Recibido
+                        </option>
+                        <option value="4" className="text-dark">
+                          Cancelado
+                        </option>
                       </select>
                     </td>
 
                     <td className="text-center pe-4">
-                      <button 
+                      <button
                         onClick={() => abrirDetalles(orden)}
-                        className="btn btn-sm btn-outline-primary border-0 rounded-circle shadow-sm" 
+                        className="btn btn-sm btn-outline-primary border-0 rounded-circle shadow-sm"
                         title="Ver Detalles de Empaque"
                       >
                         <FiEye size={20} />
@@ -151,7 +197,11 @@ const OrdenesClientesIntranet = () => {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="6" className="text-center py-5 text-muted">No hay órdenes registradas.</td></tr>
+                <tr>
+                  <td colSpan="6" className="text-center py-5 text-muted">
+                    No hay órdenes registradas.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
@@ -160,22 +210,39 @@ const OrdenesClientesIntranet = () => {
 
       {/* MODAL DE DETALLES */}
       {modalDetalle && ordenSeleccionada && (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)' }}>
+        <div
+          className="modal show d-block"
+          style={{
+            backgroundColor: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(3px)",
+          }}
+        >
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
               <div className="modal-header border-0 bg-primary text-white p-4">
                 <div>
                   <h4 className="modal-title fw-bold mb-1 d-flex align-items-center gap-2">
-                    <FiShoppingBag /> Empaque - Orden #{ordenSeleccionada.id_orden}
+                    <FiShoppingBag /> Empaque - Orden #
+                    {ordenSeleccionada.id_orden}
                   </h4>
-                  <small className="opacity-75">Cliente ID: {ordenSeleccionada.id_usuario}</small>
+                  <small className="opacity-75">
+                    Cliente ID: {ordenSeleccionada.id_usuario}
+                  </small>
                 </div>
-                <button type="button" className="btn text-white fs-4" onClick={() => setModalDetalle(false)}><FiX /></button>
+                <button
+                  type="button"
+                  className="btn text-white fs-4"
+                  onClick={() => setModalDetalle(false)}
+                >
+                  <FiX />
+                </button>
               </div>
-              
+
               <div className="modal-body p-4 bg-light">
                 {cargandoDetalles ? (
-                  <div className="text-center py-5 text-muted">Cargando información...</div>
+                  <div className="text-center py-5 text-muted">
+                    Cargando información...
+                  </div>
                 ) : (
                   <>
                     {/* 🔥 NUEVA SECCIÓN: DATOS DEL CLIENTE */}
@@ -183,16 +250,30 @@ const OrdenesClientesIntranet = () => {
                       <div className="card border-0 shadow-sm rounded-4 mb-4">
                         <div className="card-body bg-white rounded-4 p-4">
                           <h6 className="fw-bold text-primary mb-3 border-bottom pb-2">
-                            <FiMapPin className="me-2"/> Datos de Envío y Contacto
+                            <FiMapPin className="me-2" /> Datos de Envío y
+                            Contacto
                           </h6>
                           <div className="row g-3 text-muted">
                             <div className="col-md-6">
-                              <p className="mb-2"><FiUser className="me-2 text-dark"/> <strong className="text-dark">Nombre:</strong> {clienteOrden.nombre}</p>
-                              <p className="mb-2"><FiMail className="me-2 text-dark"/> <strong className="text-dark">Correo:</strong> {clienteOrden.correo}</p>
+                              <p className="mb-2">
+                                <FiUser className="me-2 text-dark" />{" "}
+                                <strong className="text-dark">Nombre:</strong>{" "}
+                                {clienteOrden.nombre}
+                              </p>
+                              <p className="mb-2">
+                                <FiMail className="me-2 text-dark" />{" "}
+                                <strong className="text-dark">Correo:</strong>{" "}
+                                {clienteOrden.correo}
+                              </p>
                             </div>
                             <div className="col-md-6">
-                              <p className="mb-2"><FiPhone className="me-2 text-dark"/> <strong className="text-dark">Teléfono:</strong> {clienteOrden.telefono}</p>
-                              <p className="mb-2"><FiMapPin className="me-2 text-dark"/> <strong className="text-dark">Dirección:</strong> {clienteOrden.direccion}</p>
+                              <p className="mb-2">
+                                <FiMapPin className="me-2 text-dark" />{" "}
+                                <strong className="text-dark">
+                                  Dirección:
+                                </strong>{" "}
+                                {clienteOrden.direccion}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -200,9 +281,13 @@ const OrdenesClientesIntranet = () => {
                     )}
 
                     {/* SECCIÓN ORIGINAL: PRODUCTOS */}
-                    <h6 className="fw-bold text-secondary mb-3 ms-1">Productos a empacar:</h6>
+                    <h6 className="fw-bold text-secondary mb-3 ms-1">
+                      Productos a empacar:
+                    </h6>
                     {detallesOrden.length === 0 ? (
-                      <div className="text-center py-4 text-muted bg-white rounded-3 shadow-sm">No se encontraron productos en esta orden.</div>
+                      <div className="text-center py-4 text-muted bg-white rounded-3 shadow-sm">
+                        No se encontraron productos en esta orden.
+                      </div>
                     ) : (
                       <div className="row g-3">
                         {detallesOrden.map((detalle, idx) => (
@@ -210,7 +295,9 @@ const OrdenesClientesIntranet = () => {
                             <div className="card border-0 shadow-sm h-100 rounded-3">
                               <div className="card-body d-flex justify-content-between align-items-center">
                                 <div>
-                                  <h6 className="fw-bold m-0 text-dark mb-2">{detalle.producto}</h6>
+                                  <h6 className="fw-bold m-0 text-dark mb-2">
+                                    {detalle.producto}
+                                  </h6>
                                   <span className="badge bg-primary rounded-pill px-3 py-2 fs-6">
                                     {detalle.cantidad} Unidades
                                   </span>

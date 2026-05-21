@@ -28,11 +28,6 @@ function Carrito() {
             y segura.
           </p>
         </div>
-
-        <img
-          src="https://images.vexels.com/media/users/3/298815/isolated/preview/a108df1e0dbb3a2cd7de385317b9b1e7-golden-retriever-dog-sitting-character.png"
-          alt="Mascotas"
-        />
       </div>
 
       <div className="cart-container">

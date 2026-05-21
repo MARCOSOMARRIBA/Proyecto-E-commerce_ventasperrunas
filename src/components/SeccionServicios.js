@@ -1,10 +1,6 @@
 import React from "react";
 
 const WHATSAPP_NUMERO = "5212941694667";
-// Cambia este número por el real.
-// Formato recomendado para México:
-// 52 + 1 + lada + número
-// Ejemplo Veracruz: 5212291234567
 
 const servicios = [
   {

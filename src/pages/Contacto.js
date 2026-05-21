@@ -14,9 +14,6 @@ import {
 import { useMessage } from "../context/MessageContext";
 
 const WHATSAPP_NUMERO = "5212291234567";
-// Cambia este número por el real.
-// Formato: 52 + 1 + lada + número.
-// Ejemplo Veracruz: 5212291234567
 
 const Contacto = () => {
   const { showMessage } = useMessage();
@@ -112,7 +109,7 @@ const Contacto = () => {
 
               <div>
                 <h3>Dirección</h3>
-                <p>123 Calle Perruna, Colonia Mascotas, Veracruz</p>
+                <p>Lopez Mateos #21 Colonia Lopez Arias C.P 91820, Veracruz</p>
               </div>
             </div>
 
@@ -123,7 +120,7 @@ const Contacto = () => {
 
               <div>
                 <h3>Teléfono</h3>
-                <p>(+52) 123-456-7890</p>
+                <p>2293503297</p>
               </div>
             </div>
 
@@ -165,15 +162,23 @@ const Contacto = () => {
           </div>
 
           <div className="contacto-redes">
-            <a href="https://facebook.com" target="_blank" rel="noreferrer">
+            <a
+              href="https://www.facebook.com/marco.aurelio.somarriba"
+              target="_blank"
+              rel="noreferrer"
+            >
               <FaFacebook />
             </a>
 
-            <a href="https://instagram.com" target="_blank" rel="noreferrer">
+            <a
+              href="https://www.instagram.com/auresoma_/"
+              target="_blank"
+              rel="noreferrer"
+            >
               <FaInstagram />
             </a>
 
-            <a href="https://twitter.com" target="_blank" rel="noreferrer">
+            <a href="https://x.com/pyrox456" target="_blank" rel="noreferrer">
               <FaTwitter />
             </a>
           </div>
@@ -266,7 +271,7 @@ const Contacto = () => {
           <div>
             <FaMapMarkerAlt />
             <h3>Ventas Perrunas</h3>
-            <p>123 Calle Perruna, Colonia Mascotas, Veracruz</p>
+            <p>Lopez Mateos #21 Colonia Lopez Arias C.P 91820, Veracruz</p>
           </div>
         </div>
       </section>
