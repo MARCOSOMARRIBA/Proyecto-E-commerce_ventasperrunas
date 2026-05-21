@@ -31,7 +31,8 @@ from .views import (
     cancelar_orden,
     actualizar_estatus_orden,
     recuperar_password, 
-    cambiar_password
+    cambiar_password,
+    productos_mas_vendidos
 )
 from django.conf import settings
 from django.conf.urls.static import static
@@ -78,6 +79,11 @@ urlpatterns = [
 
     path('banners/<str:rol>/', BannerPorPortalView.as_view(), name='banners-portal'),
     path('subir-imagen/', subir_imagen_cloudinary, name='subir-imagen'),
+        path(
+        'productos/mas_vendidos/',
+        productos_mas_vendidos,
+        name='productos_mas_vendidos'
+    ),
     path('', include(router.urls)),
     
 ]

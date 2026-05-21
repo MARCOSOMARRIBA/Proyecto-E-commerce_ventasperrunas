@@ -54,8 +54,13 @@ class ProveedorSerializer(serializers.ModelSerializer):
             'telefono',
             'correo',
             'direccion',
-            'activo'
-]
+            'activo',
+            'id_usuario'
+        ]
+
+        extra_kwargs = {
+            'id_usuario': {'required': False}
+        }
 
 class SeccionExtranetSerializer(serializers.ModelSerializer):
     # Para que PostgreSQL genere el ID automático del banner

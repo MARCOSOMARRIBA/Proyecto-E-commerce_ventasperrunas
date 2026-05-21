@@ -131,29 +131,44 @@ class Producto(models.Model):
 
 
 class Proveedor(models.Model):
-    rfc = models.CharField(primary_key=True, max_length=13, validators=[
-    MinLengthValidator(12),
-    MaxLengthValidator(13)
-])
+
+    rfc = models.CharField(
+        primary_key=True,
+        max_length=13,
+        validators=[
+            MinLengthValidator(12),
+            MaxLengthValidator(13)
+        ]
+    )
+
     nombre_empresa = models.CharField(max_length=100)
-    telefono = models.CharField(max_length=15, blank=True, null=True)
+
+    telefono = models.CharField(
+        max_length=15,
+        blank=True,
+        null=True
+    )
+
     correo = models.CharField(
-    max_length=150,
-    blank=True,
-    null=True
-)
-    direccion = models.CharField(max_length=150, blank=True, null=True)
+        max_length=150,
+        blank=True,
+        null=True
+    )
+
+    direccion = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True
+    )
+
     activo = models.BooleanField(default=True)
 
-    class Meta:
-        managed = True
-        db_table = 'proveedor'
-
-    id_usuario = models.ForeignKey(
+id_usuario = models.ForeignKey(
     'Usuario',
     on_delete=models.SET_NULL,
     null=True,
-    blank=True
+    blank=True,
+    db_column='id_usuario'
 )
 
 

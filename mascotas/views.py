@@ -105,33 +105,63 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     serializer_class = UsuarioSerializer
 
 class ProveedorViewSet(viewsets.ModelViewSet):
-    queryset = Proveedor.objects.all()
+
+    queryset = Proveedor.objects.all().order_by('nombre_empresa')
     serializer_class = ProveedorSerializer
+
+    def create(self, request, *args, **kwargs):
+
+        try:
+
+            data = request.data
+
+            proveedor = Proveedor.objects.create(
+                rfc=str(data.get('rfc', '')).strip().upper(),
+                nombre_empresa=str(data.get('nombre_empresa', '')).strip(),
+                telefono=str(data.get('telefono', '')).strip(),
+                correo=str(data.get('correo', '')).strip(),
+                direccion=str(data.get('direccion', '')).strip(),
+                activo=bool(data.get('activo', True))
+            )
+
+            serializer = self.get_serializer(proveedor)
+
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+
+            import traceback
+            traceback.print_exc()
+
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class SeccionExtranetViewSet(viewsets.ModelViewSet):
     serializer_class = SeccionExtranetSerializer
+    lookup_field = 'id_seccion'
 
     def get_queryset(self):
         user_rol = self.request.query_params.get('rol', None)
         usuario_id = self.request.query_params.get('id_usuario', None)
 
-        # Limpiamos basura del frontend
-        if str(user_rol).lower() in ['undefined', 'null', '', 'none']:
-            user_rol = None
-
         queryset = SeccionExtranet.objects.all().order_by('-id_seccion')
 
-        # 👑 👷 Admin (3) y Empleado (2): Ellos sí pueden ver todos los banners del sistema
+        # ADMIN Y EMPLEADOS
         if user_rol in ['2', '3']:
             return queryset
 
-        # 📦 PROVEEDOR (4): Aislamiento total. SOLO ve los banners donde él sea el autor
+        # PROVEEDORES
         if user_rol == '4':
             if usuario_id:
                 return queryset.filter(id_usuario=usuario_id)
-            else:
-                return queryset.none() # Si no manda su ID, no le mostramos nada por seguridad
+            return queryset.none()
 
+        # CLIENTES PUBLICOS
         return queryset.filter(estatus=True)
 
 
@@ -940,9 +970,21 @@ def cambiar_password(request):
 
         data = json.loads(request.body)
 
+        print("DATA:", data)
+
         usuario = Usuario.objects.get(
             id_usuario=data["id_usuario"]
         )
+
+        print("USUARIO ENCONTRADO:", usuario.id_usuario)
+        print("HASH EN BD:", usuario.contrasena)
+
+        resultado = check_password(
+            data["password_actual"],
+            usuario.contrasena
+        )
+
+        print("CHECK PASSWORD:", resultado)
 
         if not check_password(
             data["password_actual"],
@@ -990,3 +1032,25 @@ def subir_imagen_cloudinary(request):
     except Exception as e:
         return Response({"error": str(e)}, status=400)
 
+@api_view(['GET'])
+def productos_mas_vendidos(request):
+
+    try:
+
+        productos = Producto.objects.filter(
+            activo=True
+        ).order_by('-id_producto')[:10]
+
+        serializer = ProductoSerializer(
+            productos,
+            many=True
+        )
+
+        return Response(serializer.data)
+
+    except Exception as e:
+
+        return Response(
+            {"error": str(e)},
+            status=500
+        )
