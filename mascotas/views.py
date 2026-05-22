@@ -54,26 +54,22 @@ class ProductoViewSet(viewsets.ModelViewSet):
         if user_rfc in ['null', 'undefined', 'None', '']:
             user_rfc = None
 
-        queryset = Producto.objects.all().order_by('-id_producto')
+        # 🔥 CAMBIO AQUÍ: Filtramos para traer SOLAMENTE los activos
+        queryset = Producto.objects.filter(activo=True).order_by('-id_producto')
 
         if user_rol in ['1', '2', '3'] or not user_rol:
             return queryset
 
         if user_rol == '4' and user_rfc:
             user_rfc_limpio = user_rfc.strip()
-            # 🚀 OPCIÓN TERMINATOR: Si Django no reconoce la columna, usamos SQL puro
             from django.db import connection
             try:
                 with connection.cursor() as cursor:
-                    # Buscamos qué IDs le pertenecen a este RFC directo en Supabase
                     cursor.execute("SELECT id_producto FROM producto WHERE rfc = %s", [user_rfc_limpio])
                     resultados = cursor.fetchall()
                     ids_permitidos = [fila[0] for fila in resultados]
-                    
-                # Ya con los IDs seguros, le decimos a Django que devuelva solo esos
                 return queryset.filter(id_producto__in=ids_permitidos)
             except Exception as e:
-                # Intento de rescate si la columna en BD se llamara rfc_id
                 try:
                     with connection.cursor() as cursor:
                         cursor.execute("SELECT id_producto FROM producto WHERE rfc_id = %s", [user_rfc_limpio])
@@ -86,6 +82,7 @@ class ProductoViewSet(viewsets.ModelViewSet):
 
         return Producto.objects.none()
 
+    # ... tu método create() se queda exactamente igual ...
     def create(self, request, *args, **kwargs):
         data = request.data
         try:
@@ -259,14 +256,26 @@ class PedidoViewSet(viewsets.ModelViewSet):
     serializer_class = PedidoSerializer
     lookup_field = 'id_pedido'
 
+    # 🔥 BLOQUE NUEVO: Interceptamos el DELETE para hacer borrado lógico
+    def destroy(self, request, *args, **kwargs):
+        pedido = self.get_object()
+        pedido.estatus = 'C'  # 'C' de Completado (Se va al historial)
+        pedido.save()
+        return Response({"message": "Pedido completado y enviado al historial"}, status=status.HTTP_200_OK)
+
     def get_queryset(self):
         user_rol = str(self.request.query_params.get('rol', ''))
         user_rfc = str(self.request.query_params.get('rfc', ''))
+        estatus_filtro = str(self.request.query_params.get('estatus', '')) # 🔥 NUEVO FILTRO PARA EL HISTORIAL
 
         if user_rfc in ['null', 'undefined', 'None', '']:
             user_rfc = None
 
         queryset = Pedido.objects.all().order_by('-id_pedido')
+
+        # 🔥 SI EL FRONTEND PIDE UN ESTATUS EN ESPECÍFICO, LO APLICAMOS
+        if estatus_filtro:
+            queryset = queryset.filter(estatus=estatus_filtro)
 
         if user_rol in ['2', '3']:
             return queryset
@@ -291,6 +300,8 @@ class PedidoViewSet(viewsets.ModelViewSet):
                     return Pedido.objects.none()
 
         return Pedido.objects.none()
+
+    # ... tu método create() se queda exactamente igual ...
 
     def create(self, request, *args, **kwargs):
         data = request.data
