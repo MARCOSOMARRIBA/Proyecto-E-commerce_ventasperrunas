@@ -48,17 +48,41 @@ class ProductoViewSet(viewsets.ModelViewSet):
     serializer_class = ProductoSerializer
 
     def get_queryset(self):
-        user_rol = self.request.query_params.get('rol', None)
-        user_rfc = self.request.query_params.get('rfc', None)
+        user_rol = str(self.request.query_params.get('rol', ''))
+        user_rfc = str(self.request.query_params.get('rfc', ''))
+
+        if user_rfc in ['null', 'undefined', 'None', '']:
+            user_rfc = None
 
         queryset = Producto.objects.all().order_by('-id_producto')
 
         if user_rol in ['1', '2', '3'] or not user_rol:
             return queryset
 
-        # 🔥 CAMBIO 1: Cambiamos rfc_id por rfc (el mismo bug que en Pedidos)
         if user_rol == '4' and user_rfc:
-            return queryset.filter(rfc=user_rfc)
+            user_rfc_limpio = user_rfc.strip()
+            # 🚀 OPCIÓN TERMINATOR: Si Django no reconoce la columna, usamos SQL puro
+            from django.db import connection
+            try:
+                with connection.cursor() as cursor:
+                    # Buscamos qué IDs le pertenecen a este RFC directo en Supabase
+                    cursor.execute("SELECT id_producto FROM producto WHERE rfc = %s", [user_rfc_limpio])
+                    resultados = cursor.fetchall()
+                    ids_permitidos = [fila[0] for fila in resultados]
+                    
+                # Ya con los IDs seguros, le decimos a Django que devuelva solo esos
+                return queryset.filter(id_producto__in=ids_permitidos)
+            except Exception as e:
+                # Intento de rescate si la columna en BD se llamara rfc_id
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT id_producto FROM producto WHERE rfc_id = %s", [user_rfc_limpio])
+                        resultados = cursor.fetchall()
+                        ids_permitidos = [fila[0] for fila in resultados]
+                    return queryset.filter(id_producto__in=ids_permitidos)
+                except Exception as inner_e:
+                    print("❌ Error crítico en BD al buscar productos:", inner_e)
+                    return Producto.objects.none()
 
         return Producto.objects.none()
 
@@ -68,7 +92,7 @@ class ProductoViewSet(viewsets.ModelViewSet):
             ultimo_producto = Producto.objects.all().order_by('-id_producto').first()
             nuevo_id = (ultimo_producto.id_producto + 1) if ultimo_producto else 9000000000000
 
-            # 1. Creamos el producto básico SIN involucrar al RFC para que no crashee
+            # 1. Creamos el producto básico SIN el RFC
             nuevo_producto = Producto.objects.create(
                 id_producto=nuevo_id,
                 nombre=data.get('nombre'),
@@ -80,18 +104,18 @@ class ProductoViewSet(viewsets.ModelViewSet):
                 id_categoria_id=data.get('id_categoria')
             )
 
-            # 🔥 2. OPCIÓN NUCLEAR: Actualizamos el RFC directamente usando el ORM puro
+            # 🔥 2. SQL DIRECTO PARA ASIGNAR EL RFC Y EVITAR CRASHEOS DEL ORM
             rfc_recibido = data.get('rfc') or data.get('rfc_id')
             
             if rfc_recibido:
-                try:
-                    # Intento A: Como Django suele nombrar la llave en SQL
-                    Producto.objects.filter(id_producto=nuevo_id).update(rfc_id=rfc_recibido)
-                    print(f"✅ PRODUCTO {nuevo_id} ASIGNADO AL PROVEEDOR {rfc_recibido} (vía rfc_id)")
-                except Exception:
-                    # Intento B: Por si tu base de datos lo llama literalmente 'rfc'
-                    Producto.objects.filter(id_producto=nuevo_id).update(rfc=rfc_recibido)
-                    print(f"✅ PRODUCTO {nuevo_id} ASIGNADO AL PROVEEDOR {rfc_recibido} (vía rfc)")
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    try:
+                        cursor.execute("UPDATE producto SET rfc = %s WHERE id_producto = %s", [rfc_recibido, nuevo_id])
+                        print(f"✅ PRODUCTO {nuevo_id} ASIGNADO AL PROVEEDOR {rfc_recibido} (vía rfc)")
+                    except Exception:
+                        cursor.execute("UPDATE producto SET rfc_id = %s WHERE id_producto = %s", [rfc_recibido, nuevo_id])
+                        print(f"✅ PRODUCTO {nuevo_id} ASIGNADO AL PROVEEDOR {rfc_recibido} (vía rfc_id)")
 
             return Response({"message": "¡Producto agregado con éxito!", "id_producto": nuevo_id}, status=status.HTTP_201_CREATED)
             
@@ -110,11 +134,8 @@ class ProveedorViewSet(viewsets.ModelViewSet):
     serializer_class = ProveedorSerializer
 
     def create(self, request, *args, **kwargs):
-
         try:
-
             data = request.data
-
             proveedor = Proveedor.objects.create(
                 rfc=str(data.get('rfc', '')).strip().upper(),
                 nombre_empresa=str(data.get('nombre_empresa', '')).strip(),
@@ -125,21 +146,12 @@ class ProveedorViewSet(viewsets.ModelViewSet):
             )
 
             serializer = self.get_serializer(proveedor)
-
-            return Response(
-                serializer.data,
-                status=status.HTTP_201_CREATED
-            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-
             import traceback
             traceback.print_exc()
-
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class SeccionExtranetViewSet(viewsets.ModelViewSet):
     serializer_class = SeccionExtranetSerializer
@@ -164,23 +176,18 @@ class SeccionExtranetViewSet(viewsets.ModelViewSet):
         # CLIENTES PUBLICOS
         return queryset.filter(estatus=True)
 
-
     def create(self, request, *args, **kwargs):
         data = request.data
         try:
-            # 1. Buscamos el ID más alto actual en la tabla y le sumamos 1
             max_seccion = SeccionExtranet.objects.aggregate(Max('id_seccion'))['id_seccion__max']
             nuevo_id = (max_seccion or 0) + 1
 
-            # 2. Capturamos el ID de texto que manda React
             usuario_creador = data.get('id_usuario')
             if not usuario_creador:
                 usuario_creador = "ADM0000000001"
 
-            # 3. 🔥 Buscamos el OBJETO COMPLETO del Usuario en la BD
             instancia_usuario = Usuario.objects.filter(id_usuario=usuario_creador).first()
 
-            # 4. Creamos el registro en la BD
             nueva_seccion = SeccionExtranet.objects.create(
                 id_seccion=nuevo_id,
                 titulo_pagina=data.get('titulo_pagina'),
@@ -189,8 +196,6 @@ class SeccionExtranetViewSet(viewsets.ModelViewSet):
                 url_destino=data.get('url_destino', ''),
                 estatus=data.get('estatus', True),
                 portal_destino=data.get('portal_destino', '1'),
-                
-                # 🔥 Le entregamos la instancia completa para complacer a Django
                 id_usuario=instancia_usuario 
             )
 
@@ -234,12 +239,17 @@ class BannerPorPortalView(ListAPIView):
     serializer_class = SeccionExtranetSerializer
 
     def get_queryset(self):
-        # 🔥 CARRUSEL UNIVERSAL: Ignoramos los roles y los portales.
-        # Traemos ABSOLUTAMENTE TODOS los banners que estén activos.
-        # Así, logueados o no logueados verán exactamente lo mismo.
         return SeccionExtranet.objects.filter(
             estatus=True
         ).order_by('-id_seccion')
+
+# ==========================================
+# VIEWSET DE PEDIDOS
+# ==========================================
+
+# ==========================================
+# VIEWSET DE PEDIDOS
+# ==========================================
 
 # ==========================================
 # VIEWSET DE PEDIDOS
@@ -253,7 +263,6 @@ class PedidoViewSet(viewsets.ModelViewSet):
         user_rol = str(self.request.query_params.get('rol', ''))
         user_rfc = str(self.request.query_params.get('rfc', ''))
 
-        # Si React manda basura, la limpiamos
         if user_rfc in ['null', 'undefined', 'None', '']:
             user_rfc = None
 
@@ -263,11 +272,23 @@ class PedidoViewSet(viewsets.ModelViewSet):
             return queryset
 
         if user_rol == '4' and user_rfc:
-            # 🛡️ Doble filtro para que no importe cómo se llame tu columna
+            user_rfc_limpio = user_rfc.strip()
+            from django.db import connection
             try:
-                return queryset.filter(rfc_id=user_rfc)
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT id_pedido FROM pedido WHERE rfc = %s", [user_rfc_limpio])
+                    resultados = cursor.fetchall()
+                    ids_permitidos = [fila[0] for fila in resultados]
+                return queryset.filter(id_pedido__in=ids_permitidos)
             except Exception:
-                return queryset.filter(rfc=user_rfc)
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT id_pedido FROM pedido WHERE rfc_id = %s", [user_rfc_limpio])
+                        resultados = cursor.fetchall()
+                        ids_permitidos = [fila[0] for fila in resultados]
+                    return queryset.filter(id_pedido__in=ids_permitidos)
+                except Exception as inner_e:
+                    return Pedido.objects.none()
 
         return Pedido.objects.none()
 
@@ -275,22 +296,26 @@ class PedidoViewSet(viewsets.ModelViewSet):
         data = request.data
         try:
             with transaction.atomic():
-                ultimo_pedido = Pedido.objects.all().order_by('-id_pedido').first()
-                nuevo_id = (ultimo_pedido.id_pedido + 1) if ultimo_pedido else 1
-
                 fecha = data.get('fecha_compra')
                 if not fecha:
                     fecha = timezone.now().date()
+                
+                # 🔥 SOLUCIÓN AL TRIGGER: Generamos un ID que empiece con el año (Ej. 2026000001)
+                year_str = str(fecha)[:4]
+                base_id = int(year_str) * 1000000
+                
+                # Buscamos el ID más alto solo de este año
+                max_pedido = Pedido.objects.filter(id_pedido__gte=base_id, id_pedido__lt=base_id + 1000000).aggregate(Max('id_pedido'))['id_pedido__max']
+                nuevo_id = (max_pedido or base_id) + 1
 
-                # 🔥 LA MAGIA ESTÁ AQUÍ: Buscamos el OBJETO para que Django no llore
-                rfc_recibido = data.get('rfc')
+                # Soporte extra por si el frontend manda la variable con otro nombre
+                rfc_recibido = data.get('rfc') or data.get('proveedor') or data.get('rfc_id')
                 instancia_proveedor = Proveedor.objects.filter(rfc=rfc_recibido).first()
 
                 if not instancia_proveedor:
                     print(f"❌ ERROR: El proveedor {rfc_recibido} no existe.")
                     return Response({"error": "Proveedor no válido"}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Creamos el pedido pasándole el objeto completo
                 pedido = Pedido.objects.create(
                     id_pedido=nuevo_id,
                     descripcion=data.get('descripcion', ''),
@@ -298,14 +323,14 @@ class PedidoViewSet(viewsets.ModelViewSet):
                     estatus=data.get('estatus', '1'),
                     id_usuario_id=data.get('id_usuario'),
                     fecha_compra=fecha,
-                    rfc=instancia_proveedor  # 👈 ¡A PRUEBA DE BALAS!
+                    rfc=instancia_proveedor  
                 )
 
                 detalles = data.get('detalles', [])
                 detalles_limpios = {}
                 
                 for d in detalles:
-                    prod_id = str(d['id_producto'])
+                    prod_id = str(d.get('id_producto') or d.get('producto'))
                     if prod_id in detalles_limpios:
                         detalles_limpios[prod_id]['cantidad'] += int(d.get('cantidad', 1))
                         detalles_limpios[prod_id]['precio_subtotal'] += float(d.get('precio_subtotal', 0))
@@ -317,7 +342,11 @@ class PedidoViewSet(viewsets.ModelViewSet):
                         }
 
                 for prod_id, info in detalles_limpios.items():
+                    max_detalle = DetallePedido.objects.aggregate(Max('pk'))['pk__max']
+                    nuevo_id_detalle = (max_detalle or 0) + 1
+
                     DetallePedido.objects.create(
+                        id=nuevo_id_detalle, 
                         id_pedido_id=nuevo_id,
                         id_producto_id=prod_id,
                         cantidad=info['cantidad'],
@@ -326,7 +355,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
                         estatus='1'
                     )
             
-            print(f"✅ PEDIDO {nuevo_id} CREADO CON ÉXITO PARA {rfc_recibido}")
+            print(f"✅ PEDIDO {nuevo_id} CREADO CON ÉXITO")
             return Response({"message": "Pedido creado", "id_pedido": nuevo_id}, status=status.HTTP_201_CREATED)
         
         except Exception as e:
@@ -354,33 +383,23 @@ def detalles_pedido(request, id_pedido):
 def movimientos_recientes(request):
 
     movimientos = []
-
     ultimos_pedidos = Pedido.objects.all().order_by('-id_pedido')[:20]
-
     accion = ""
 
     for pedido in ultimos_pedidos:
-
         tipo_alerta = "INFO"
         accion = "Solicitud de Resurtido B2B"
 
         if pedido.estatus == '1':
-
             tipo_alerta = "WARNING"
             accion = "Pedido pendiente"
-
         elif pedido.estatus == '2':
-
             tipo_alerta = "INFO"
             accion = "Pedido enviado"
-
         elif pedido.estatus == '3':
-
             tipo_alerta = "SUCCESS"
             accion = "Pedido entregado"
-
         elif pedido.estatus == '4':
-
             tipo_alerta = "ALERTA"
             accion = "Pedido cancelado"
 
@@ -394,13 +413,9 @@ def movimientos_recientes(request):
 
         movimientos.append({
             "fecha_hora": pedido.fecha_compra.strftime("%Y-%m-%d %H:%M"),
-
             "usuario": nombre_usuario,
-
             "accion": accion,
-
             "tipo": tipo_alerta,
-
             "detalle":
                 f"Se generó la orden #{pedido.id_pedido} "
                 f"para el proveedor {pedido.rfc} "
@@ -421,18 +436,22 @@ def login_usuario(request):
             rfc_asignado = None
             
             if str(usuario.rol) == '4':
+                # 🚀 OPCIÓN TERMINATOR RESTAURADA: Verifica ambas posibles columnas para que nunca falle
                 from django.db import connection
-                
-                # 🚀 OPCIÓN TERMINATOR PARA LEER EL RFC DIRECTO DE SQL 🚀
                 with connection.cursor() as cursor:
-                    # Buscamos sin importar si la columna se llama id_usuario o id_usuario_id
-                    cursor.execute("""
-SELECT rfc FROM proveedor 
-WHERE id_usuario = %s
-                    """, [usuario.id_usuario])
-                    
-                    fila = cursor.fetchone()
-                    
+                    try:
+                        cursor.execute("SELECT rfc FROM proveedor WHERE id_usuario_id = %s", [usuario.id_usuario])
+                        fila = cursor.fetchone()
+                    except Exception:
+                        fila = None
+                        
+                    if not fila:
+                        try:
+                            cursor.execute("SELECT rfc FROM proveedor WHERE id_usuario = %s", [usuario.id_usuario])
+                            fila = cursor.fetchone()
+                        except Exception:
+                            fila = None
+
                     if fila:
                         rfc_asignado = fila[0]
                         print(f"\n✅ LOGIN SQL EXITOSO: RFC encontrado -> {rfc_asignado}")
@@ -536,23 +555,15 @@ def crear_usuario_por_admin(request):
             fecha_registro=timezone.now()         
         )
 
-        # 🔥 AQUÍ ESTÁ LA MAGIA Y LA SOLUCIÓN 🔥
-        # Forzamos a string para evitar errores si llega como número
-# 🔥 OPCIÓN NUCLEAR: Actualización directa a la base de datos 🔥
-        # 🔥 OPCIÓN TERMINATOR: SQL PURO Y DIRECTO A SUPABASE 🔥
         if str(rol) == "4" and proveedor_rfc:
             print(f"\n---> INYECTANDO SQL: RFC={proveedor_rfc} | Usuario={nuevo_usuario.id_usuario} | Correo={correo}")
             
-            # Ejecutamos una orden SQL directa, saltándonos todo el filtro de Django
             with connection.cursor() as cursor:
                 cursor.execute("""
                     UPDATE proveedor 
                     SET id_usuario = %s, correo = %s
                     WHERE rfc = %s
                 """, [nuevo_usuario.id_usuario, correo, proveedor_rfc])
-                
-                # OJO: Si la columna que quieres llenar se llama id_usuario_id, cambia 
-                # "SET id_usuario" por "SET id_usuario_id" en el código de arriba.
                 
             print(f"✅ INYECCIÓN SQL COMPLETADA PARA {proveedor_rfc}")
 
@@ -588,6 +599,9 @@ def crear_orden_completa(request):
             descontar_stock = True
 
         with transaction.atomic():
+            base_id = 2026000000
+            max_orden = Orden.objects.filter(id_orden__gte=base_id).aggregate(Max('id_orden'))['id_orden__max']
+            nuevo_id_orden = (max_orden or base_id) + 1
             total_orden = 0
             productos_db = []
 
@@ -605,8 +619,12 @@ def crear_orden_completa(request):
             if not productos_db:
                 return Response({"error": "Carrito vacío"}, status=400)
 
-            max_orden = Orden.objects.aggregate(Max('id_orden'))['id_orden__max']
-            nuevo_id_orden = (max_orden or 0) + 1
+            # 🔥 SOLUCIÓN AL TRIGGER DE LA ORDEN
+            current_year = timezone.now().year
+            base_id = current_year * 1000000
+            
+            max_orden = Orden.objects.filter(id_orden__gte=base_id, id_orden__lt=base_id + 1000000).aggregate(Max('id_orden'))['id_orden__max']
+            nuevo_id_orden = (max_orden or base_id) + 1
 
             nueva_orden = Orden.objects.create(
                 id_orden=nuevo_id_orden,
@@ -633,8 +651,9 @@ def crear_orden_completa(request):
 
             referencia = f"REF-{int(timezone.now().timestamp())}"
             
-            max_cobro = Cobro.objects.aggregate(Max('id_cobro'))['id_cobro__max']
-            nuevo_id_cobro = (max_cobro or 0) + 1
+            # Aplicamos la misma lógica para evitar que el cobro choque
+            max_cobro = Cobro.objects.filter(id_cobro__gte=base_id, id_cobro__lt=base_id + 1000000).aggregate(Max('id_cobro'))['id_cobro__max']
+            nuevo_id_cobro = (max_cobro or base_id) + 1
             
             Cobro.objects.create(
                 id_cobro=nuevo_id_cobro,
