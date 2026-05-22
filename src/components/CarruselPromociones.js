@@ -8,7 +8,7 @@ const CarruselPromociones = () => {
       try {
         // 🔥 AQUI ESTÁ LA MAGIA: Apuntamos a la ruta blindada para el público (Rol 1)
         const res = await fetch(
-          "http://127.0.0.1:8000/api/banners/1/"
+          "https://proyecto-e-commerce-ventasperrunas.onrender.com//api/banners/1/"
         );
         if (res.ok) {
           const data = await res.json();

@@ -28,8 +28,8 @@ const cargarDatosCompletos = async () => {
       const parametrosFiltro = `?rol=${user.rol}&rfc=${user.rfc}`;
       
       const [resPedidos, resProductos] = await Promise.all([
-        fetch(`http://127.0.0.1:8000/api/pedidos/${parametrosFiltro}`),
-        fetch(`http://127.0.0.1:8000/api/productos/${parametrosFiltro}`)
+        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com//api/pedidos/${parametrosFiltro}`),
+        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com//api/productos/${parametrosFiltro}`)
       ]);
 
       if (!resPedidos.ok || !resProductos.ok) throw new Error("Fallo al cargar datos");
@@ -89,7 +89,7 @@ const cargarDatosCompletos = async () => {
       // --- CÁLCULO DE TOP PRODUCTOS ---
       // Obtenemos los detalles solo de "misPedidos" para que el top sea real
       const promesasDetalles = misPedidos.map(ped => 
-        fetch(`http://127.0.0.1:8000/api/pedidos/${ped.id_pedido}/detalles/`).then(r => r.json())
+        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com//api/pedidos/${ped.id_pedido}/detalles/`).then(r => r.json())
       );
       const arraysDeDetalles = await Promise.all(promesasDetalles);
       const todosLosDetalles = arraysDeDetalles.flat();

@@ -14,7 +14,7 @@ const AuditoriaEmpleados = () => {
     try {
       // Conectamos con la ruta que ya tienes en tu urls.py
       const res = await fetch(
-        "http://127.0.0.1:8000/api/pedidos/movimientos-recientes/",
+        "https://proyecto-e-commerce-ventasperrunas.onrender.com//api/pedidos/movimientos-recientes/",
       );
       if (res.ok) {
         const data = await res.json();

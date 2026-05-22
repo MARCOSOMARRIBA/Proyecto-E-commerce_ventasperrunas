@@ -22,7 +22,7 @@ const OrdenesExtranet = () => {
       setCargando(true);
       // 🚀 INYECTAMOS EL FILTRO DE PRIVACIDAD EN LA URL
       const rfcSeguro = user?.rfc || "";
-      const url = `http://127.0.0.1:8000/api/pedidos/?rol=${user.rol}&rfc=${rfcSeguro}`;
+      const url = `https://proyecto-e-commerce-ventasperrunas.onrender.com//api/pedidos/?rol=${user.rol}&rfc=${rfcSeguro}`;
       
       const res = await fetch(url);
 
@@ -53,7 +53,7 @@ const OrdenesExtranet = () => {
     try {
       // 🔥 Actualizamos el estatus del pedido ENVIANDO CREDENCIALES en la URL para evitar el 404
       const rfcSeguro = user?.rfc || "";
-      const urlPatch = `http://127.0.0.1:8000/api/pedidos/${id_pedido}/?rol=${user.rol}&rfc=${rfcSeguro}`;
+      const urlPatch = `https://proyecto-e-commerce-ventasperrunas.onrender.com//api/pedidos/${id_pedido}/?rol=${user.rol}&rfc=${rfcSeguro}`;
       
       const res = await fetch(urlPatch, {
         method: "PATCH",
@@ -74,7 +74,7 @@ const OrdenesExtranet = () => {
 
         // 🚀 AUTOMATIZACIÓN SILENCIOSA 🚀
         if (String(nuevoEstatus) === "4") {
-          const resDetalles = await fetch(`http://127.0.0.1:8000/api/pedidos/${id_pedido}/detalles/`);
+          const resDetalles = await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com//api/pedidos/${id_pedido}/detalles/`);
           
           if (resDetalles.ok) {
             const detalles = await resDetalles.json();
@@ -83,7 +83,7 @@ const OrdenesExtranet = () => {
               const promesasDeActivacion = detalles.map(detalle => {
                 const idProd = detalle.id_producto || detalle.producto_id || detalle.producto; 
                 // Aseguramos que la actualización de stock también lleve permisos
-                return fetch(`http://127.0.0.1:8000/api/productos/${idProd}/?rol=${user.rol}&rfc=${rfcSeguro}`, {
+                return fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com//api/productos/${idProd}/?rol=${user.rol}&rfc=${rfcSeguro}`, {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ stock: true, activo: true })
