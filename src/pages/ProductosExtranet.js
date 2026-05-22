@@ -224,35 +224,40 @@ const ProductosExtranet = () => {
       const res = await fetch(
         `${API_PRODUCTOS}${productoAEliminar.id_producto}/`,
         {
-          method: "DELETE",
+          method: "PATCH", // Cambiamos DELETE por PATCH
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ activo: false }), // Lo ocultamos
         }
       );
 
       if (res.ok) {
+        // Lo quitamos de la vista actual
         setProductos((prevProductos) =>
           prevProductos.filter((p) => p.id_producto !== productoAEliminar.id_producto)
         );
 
         showMessage({
-          title: "Producto eliminado",
-          message: "El producto fue eliminado correctamente.",
+          title: "Producto desactivado",
+          message: "El producto fue retirado del catálogo, pero se mantiene en el historial de pedidos.",
           type: "success",
         });
 
         setProductoAEliminar(null);
       } else {
         showMessage({
-          title: "No se puede eliminar",
-          message: "No se puede eliminar porque el producto puede estar asociado a un carrito, orden o pedido.",
-          type: "warning",
+          title: "Error",
+          message: "No se pudo actualizar el estado del producto.",
+          type: "error",
         });
       }
     } catch (error) {
-      console.error("Error al eliminar:", error);
+      console.error("Error al eliminar (desactivar):", error);
 
       showMessage({
         title: "Error de conexión",
-        message: "No se pudo conectar con el servidor para eliminar el producto.",
+        message: "No se pudo conectar con el servidor.",
         type: "error",
       });
     }
