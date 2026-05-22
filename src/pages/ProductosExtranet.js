@@ -54,7 +54,9 @@ const ProductosExtranet = () => {
     try {
       setCargando(true);
 
-      const urlProductosFiltrada = `${API_PRODUCTOS}?rol=${user.rol}&rfc=${user.rfc || ""}`;
+      // 🚀 INYECTAMOS ROL Y RFC DE MANERA SEGURA PARA EL FILTRO
+      const rfcSeguro = user?.rfc || "";
+      const urlProductosFiltrada = `${API_PRODUCTOS}?rol=${user.rol}&rfc=${rfcSeguro}`;
 
       const [resProds, resCat] = await Promise.all([
         fetch(urlProductosFiltrada),
@@ -79,9 +81,7 @@ const ProductosExtranet = () => {
 
       showMessage({
         title: "Error al cargar datos",
-        message:
-          error.message ||
-          "No se pudieron cargar los productos o categorías desde el servidor.",
+        message: error.message || "No se pudieron cargar los productos o categorías desde el servidor.",
         type: "error",
       });
     } finally {
@@ -160,14 +160,15 @@ const ProductosExtranet = () => {
     }
 
     try {
+      const rfcSeguro = user?.rfc || "";
       const productoParaEnviar = {
         ...nuevoProducto,
         id_producto: Number(nuevoProducto.id_producto),
         precio: Number(nuevoProducto.precio),
         id_categoria: Number(nuevoProducto.id_categoria),
         // 🚀 ENVIAMOS EL RFC EN AMBOS FORMATOS PARA QUE DJANGO NO FALLE
-        rfc: user?.rfc, 
-        rfc_id: user?.rfc
+        rfc: rfcSeguro, 
+        rfc_id: rfcSeguro
       };
 
       console.log("📦 PAYLOAD A DJANGO:", productoParaEnviar);
@@ -194,10 +195,7 @@ const ProductosExtranet = () => {
         const errorData = await res.json();
         showMessage({
           title: "Error al guardar",
-          message:
-            errorData.error ||
-            errorData.detail ||
-            JSON.stringify(errorData, null, 2),
+          message: errorData.error || errorData.detail || JSON.stringify(errorData, null, 2),
           type: "error",
         });
       }
@@ -205,8 +203,7 @@ const ProductosExtranet = () => {
       console.error("Error al enviar:", error);
       showMessage({
         title: "Error de conexión",
-        message:
-          "No se pudo conectar con el servidor para guardar el producto.",
+        message: "No se pudo conectar con el servidor para guardar el producto.",
         type: "error",
       });
     }
@@ -228,14 +225,12 @@ const ProductosExtranet = () => {
         `${API_PRODUCTOS}${productoAEliminar.id_producto}/`,
         {
           method: "DELETE",
-        },
+        }
       );
 
       if (res.ok) {
         setProductos((prevProductos) =>
-          prevProductos.filter(
-            (p) => p.id_producto !== productoAEliminar.id_producto,
-          ),
+          prevProductos.filter((p) => p.id_producto !== productoAEliminar.id_producto)
         );
 
         showMessage({
@@ -248,8 +243,7 @@ const ProductosExtranet = () => {
       } else {
         showMessage({
           title: "No se puede eliminar",
-          message:
-            "No se puede eliminar porque el producto puede estar asociado a un carrito, orden o pedido.",
+          message: "No se puede eliminar porque el producto puede estar asociado a un carrito, orden o pedido.",
           type: "warning",
         });
       }
@@ -258,18 +252,14 @@ const ProductosExtranet = () => {
 
       showMessage({
         title: "Error de conexión",
-        message:
-          "No se pudo conectar con el servidor para eliminar el producto.",
+        message: "No se pudo conectar con el servidor para eliminar el producto.",
         type: "error",
       });
     }
   };
 
   const obtenerNombreCategoria = (idCat) => {
-    const categoria = categorias.find(
-      (c) => String(c.id_categoria) === String(idCat),
-    );
-
+    const categoria = categorias.find((c) => String(c.id_categoria) === String(idCat));
     return categoria ? categoria.nombre : "Sin Categoría";
   };
 
@@ -328,9 +318,7 @@ const ProductosExtranet = () => {
               </div>
 
               <div className="col-md-5">
-                <label className="fw-bold small text-muted">
-                  Nombre del Producto
-                </label>
+                <label className="fw-bold small text-muted">Nombre del Producto</label>
                 <input
                   type="text"
                   className="form-control border-2"
@@ -386,9 +374,7 @@ const ProductosExtranet = () => {
               </div>
 
               <div className="col-md-8">
-                <label className="fw-bold small text-muted">
-                  Descripción Corta
-                </label>
+                <label className="fw-bold small text-muted">Descripción Corta</label>
                 <input
                   type="text"
                   className="form-control border-2"
@@ -402,37 +388,37 @@ const ProductosExtranet = () => {
                 />
               </div>
 
-<div className="mb-3">
-  <label className="small fw-bold text-dark">Imagen del Producto</label>
-  
-  <input 
-    type="text" 
-    className="form-control bg-light mb-2" 
-    readOnly 
-    placeholder="Sube una imagen para obtener la URL..." 
-    value={nuevoProducto.imagen} 
-  />
+              <div className="mb-3">
+                <label className="small fw-bold text-dark">Imagen del Producto</label>
+                
+                <input 
+                  type="text" 
+                  className="form-control bg-light mb-2" 
+                  readOnly 
+                  placeholder="Sube una imagen para obtener la URL..." 
+                  value={nuevoProducto.imagen} 
+                />
 
-  <input 
-    type="file" 
-    className="form-control" 
-    onChange={async (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const url = await subirImagenACloudinary(file);
-        if (url) {
-          setNuevoProducto({...nuevoProducto, imagen: url});
-        } else {
-          alert("Error al subir la imagen. Intenta de nuevo.");
-        }
-      }
-    }} 
-  />
-  
-  {nuevoProducto.imagen && (
-    <img src={nuevoProducto.imagen} alt="preview" className="mt-2 rounded" style={{width: '60px', height: '60px', objectFit: 'cover'}} />
-  )}
-</div>
+                <input 
+                  type="file" 
+                  className="form-control" 
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const url = await subirImagenACloudinary(file);
+                      if (url) {
+                        setNuevoProducto({...nuevoProducto, imagen: url});
+                      } else {
+                        alert("Error al subir la imagen. Intenta de nuevo.");
+                      }
+                    }
+                  }} 
+                />
+                
+                {nuevoProducto.imagen && (
+                  <img src={nuevoProducto.imagen} alt="preview" className="mt-2 rounded" style={{width: '60px', height: '60px', objectFit: 'cover'}} />
+                )}
+              </div>
 
               <div className="col-md-12 d-flex gap-4 mt-3">
                 <div className="form-check form-switch fs-6">
@@ -482,111 +468,117 @@ const ProductosExtranet = () => {
 
       <div className="card border-0 shadow-sm rounded-4">
         <div className="card-body p-0 overflow-auto">
-          <table className="table table-hover align-middle mb-0 bg-white">
-            <thead className="bg-dark text-white small">
-              <tr>
-                <th className="ps-4 py-3">ID</th>
-                <th>PRODUCTO</th>
-                <th>CATEGORÍA</th>
-                <th>PRECIO</th>
-                <th>ESTADO</th>
-                <th className="text-center pe-4">ACCIONES</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {cargando ? (
+          
+          {/* 🔥 ENVOLTURA RESPONSIVA PARA CELULARES */}
+          <div className="table-responsive">
+            <table className="table table-hover align-middle mb-0 bg-white" style={{ minWidth: "800px" }}>
+              <thead className="bg-dark text-white small">
                 <tr>
-                  <td colSpan="6" className="text-center py-5">
-                    Sincronizando inventario...
-                  </td>
+                  <th className="ps-4 py-3">ID</th>
+                  <th>PRODUCTO</th>
+                  <th>CATEGORÍA</th>
+                  <th>PRECIO</th>
+                  <th>ESTADO</th>
+                  <th className="text-center pe-4">ACCIONES</th>
                 </tr>
-              ) : productos.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="text-center py-5 text-muted">
-                    No hay productos registrados en la base de datos.
-                  </td>
-                </tr>
-              ) : (
-                productos.map((prod) => (
-                  <tr key={prod.id_producto}>
-                    <td className="ps-4 text-muted small">
-                      #{prod.id_producto}
-                    </td>
+              </thead>
 
-                    <td>
-                      <div className="d-flex align-items-center gap-3">
-                        {prod.imagen ? (
-                          <img
-                            src={prod.imagen}
-                            alt={prod.nombre}
-                            style={{
-                              width: "40px",
-                              height: "40px",
-                              objectFit: "cover",
-                              borderRadius: "8px",
-                            }}
-                          />
-                        ) : (
-                          <div
-                            className="bg-light d-flex align-items-center justify-content-center text-muted"
-                            style={{
-                              width: "40px",
-                              height: "40px",
-                              borderRadius: "8px",
-                            }}
-                          >
-                            <FiBox />
-                          </div>
-                        )}
-
-                        <div>
-                          <strong className="d-block text-dark">
-                            {prod.nombre}
-                          </strong>
-                          <span className="text-muted small">
-                            {prod.descripcion || "Sin descripción"}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td>
-                      <span className="badge bg-secondary rounded-pill">
-                        {obtenerNombreCategoria(prod.id_categoria)}
-                      </span>
-                    </td>
-
-                    <td className="fw-bold text-success">
-                      ${parseFloat(prod.precio || 0).toLocaleString()}
-                    </td>
-
-                    <td>
-                      {prod.stock ? (
-                        <span className="text-primary fw-bold small">
-                          <span className="text-success">●</span> En Stock
-                        </span>
-                      ) : (
-                        <span className="text-danger fw-bold small">
-                          ● Agotado
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="text-center pe-4">
-                      <button
-                        onClick={() => pedirConfirmacionEliminar(prod)}
-                        className="btn btn-sm btn-outline-danger border-0"
-                        title="Eliminar producto"
-                      >
-                        <FiTrash2 />
-                      </button>
+              <tbody>
+                {cargando ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-5">
+                      Sincronizando inventario...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : productos.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-5 text-muted">
+                      No hay productos registrados en la base de datos.
+                    </td>
+                  </tr>
+                ) : (
+                  productos.map((prod) => (
+                    <tr key={prod.id_producto}>
+                      <td className="ps-4 text-muted small">
+                        #{prod.id_producto}
+                      </td>
+
+                      <td>
+                        <div className="d-flex align-items-center gap-3">
+                          {prod.imagen ? (
+                            <img
+                              src={prod.imagen}
+                              alt={prod.nombre}
+                              style={{
+                                width: "40px",
+                                height: "40px",
+                                objectFit: "cover",
+                                borderRadius: "8px",
+                              }}
+                            />
+                          ) : (
+                            <div
+                              className="bg-light d-flex align-items-center justify-content-center text-muted"
+                              style={{
+                                width: "40px",
+                                height: "40px",
+                                borderRadius: "8px",
+                              }}
+                            >
+                              <FiBox />
+                            </div>
+                          )}
+
+                          <div>
+                            <strong className="d-block text-dark">
+                              {prod.nombre}
+                            </strong>
+                            <span className="text-muted small">
+                              {prod.descripcion || "Sin descripción"}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td>
+                        <span className="badge bg-secondary rounded-pill">
+                          {obtenerNombreCategoria(prod.id_categoria)}
+                        </span>
+                      </td>
+
+                      <td className="fw-bold text-success">
+                        ${parseFloat(prod.precio || 0).toLocaleString()}
+                      </td>
+
+                      <td>
+                        {prod.stock ? (
+                          <span className="text-primary fw-bold small">
+                            <span className="text-success">●</span> En Stock
+                          </span>
+                        ) : (
+                          <span className="text-danger fw-bold small">
+                            ● Agotado
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="text-center pe-4">
+                        <button
+                          onClick={() => pedirConfirmacionEliminar(prod)}
+                          className="btn btn-sm btn-outline-danger border-0"
+                          title="Eliminar producto"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* 🔥 FIN ENVOLTURA RESPONSIVA */}
+          
         </div>
       </div>
 

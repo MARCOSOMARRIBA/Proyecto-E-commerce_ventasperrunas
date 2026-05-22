@@ -6939,3 +6939,411 @@ body[data-theme="oscuro"] .checkout-address-helper {
   font-size: 13px;
   line-height: 1.5;
 }
+
+
+/* ============================================================
+   RESPONSIVE MOBILE - Agregado para soporte en celulares
+   Breakpoints: 768px (tablet/móvil) y 480px (móvil pequeño)
+   ============================================================ */
+
+/* ---- NAVBAR ---- */
+@media (max-width: 768px) {
+  .navbar-modern {
+    padding: 10px 16px !important;
+  }
+
+  .logo-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.3rem;
+  }
+
+  .brand-title {
+    font-size: 1rem;
+  }
+
+  .brand-subtitle {
+    font-size: 0.65rem;
+  }
+
+  .nav-modern-link {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+
+  .modern-user-name,
+  .modern-user-role {
+    display: none; /* Oculta texto del usuario en móvil, queda solo el avatar */
+  }
+
+  .modern-user-btn {
+    padding: 6px 8px;
+    gap: 0;
+  }
+
+  .modern-divider {
+    display: none;
+  }
+
+  .modern-search-panel {
+    width: calc(100vw - 32px);
+    right: 0;
+    left: 0;
+    margin: 0 16px;
+  }
+
+  .modern-dropdown {
+    width: calc(100vw - 32px);
+    right: 0;
+  }
+}
+
+/* ---- HERO / CARRUSEL ---- */
+@media (max-width: 768px) {
+  .hero-section {
+    height: 60vh;
+  }
+
+  .hero-content {
+    padding-left: 5%;
+    padding-right: 5%;
+    max-width: 100%;
+  }
+
+  .hero-content h1 {
+    font-size: 2.2rem;
+  }
+
+  .hero-content h4 {
+    font-size: 1rem;
+  }
+
+  .hero-content p {
+    font-size: 0.95rem;
+  }
+
+  .btn-cyan {
+    padding: 12px 24px;
+    font-size: 0.95rem;
+  }
+
+  .carousel-custom .carousel-item {
+    height: 60vh;
+  }
+
+  .carousel-caption-custom {
+    left: 5%;
+    right: 5%;
+    padding: 18px;
+  }
+
+  .carousel-caption-custom h1 {
+    font-size: 1.8rem;
+  }
+
+  .carousel-caption-custom h4 {
+    font-size: 0.95rem;
+  }
+
+  .carousel-caption-custom p {
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+  }
+}
+
+/* ---- LOGIN ---- */
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+  }
+
+  .login-left {
+    padding: 40px 24px;
+    min-height: auto;
+  }
+
+  .login-left h1 {
+    font-size: 2rem;
+  }
+
+  .login-left h3 {
+    font-size: 1.1rem;
+  }
+
+  .login-left p {
+    font-size: 0.95rem;
+  }
+
+  .login-right {
+    padding: 24px 16px;
+  }
+
+  .login-card {
+    padding: 28px 20px;
+    border-radius: 20px;
+  }
+
+  .login-card h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+  }
+
+  .social-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-google,
+  .btn-social-icon {
+    flex: auto;
+    width: 100%;
+  }
+}
+
+/* ---- REGISTRO ---- */
+@media (max-width: 768px) {
+  .register-wrapper {
+    background: linear-gradient(to bottom, #0084ff 40%, #ffffff 60%);
+  }
+
+  .register-container {
+    flex-direction: column;
+  }
+
+  .register-left {
+    min-height: auto;
+    padding: 30px 20px;
+  }
+
+  .register-text h1 {
+    font-size: 2.5rem;
+    letter-spacing: -1px;
+  }
+
+  .register-text p {
+    font-size: 1rem;
+    margin-bottom: 25px;
+  }
+
+  .register-stats {
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .stat-box {
+    width: 100px;
+    height: 100px;
+  }
+
+  .stat-box h3 {
+    font-size: 1.5rem;
+  }
+
+  .register-dogs {
+    display: none; /* Las imágenes de perros se ocultan en móvil para no ocupar espacio */
+  }
+
+  .register-right {
+    padding: 24px 16px;
+  }
+
+  .row-inputs {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+/* ---- PERFIL ---- */
+@media (max-width: 768px) {
+  .profile-wrapper {
+    padding: 30px 0;
+  }
+
+  .profile-sidebar {
+    padding: 40px 20px;
+  }
+
+  .profile-avatar {
+    width: 120px;
+    height: 120px;
+  }
+
+  .profile-avatar-placeholder {
+    width: 90px;
+    height: 90px;
+    font-size: 2.2rem;
+  }
+}
+
+/* ---- CARRITO ---- */
+@media (max-width: 576px) {
+  .cart-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 36px 20px;
+    min-height: auto;
+  }
+
+  .cart-banner h2 {
+    font-size: 1.7rem;
+  }
+
+  .cart-banner p {
+    font-size: 0.95rem;
+  }
+
+  .cart-banner img {
+    width: 180px;
+    margin-top: 20px;
+  }
+
+  .cart-header {
+    padding: 20px 22px;
+  }
+
+  .cart-header h2 {
+    font-size: 1.4rem;
+  }
+
+  .cart-body {
+    padding: 18px 14px;
+  }
+
+  .cart-item {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 16px;
+  }
+
+  .cart-item img {
+    width: 90px;
+    height: 90px;
+    margin-right: 0;
+    margin-bottom: 12px;
+  }
+
+  .cart-labels {
+    display: none; /* Las etiquetas de columna no tienen sentido en vista apilada */
+  }
+
+  .cart-footer {
+    padding: 24px 16px;
+  }
+
+  .cart-footer h4 {
+    font-size: 1.5rem;
+  }
+
+  .btn-pagar {
+    width: 100%;
+    padding: 14px 20px;
+  }
+
+  .empty-cart {
+    padding: 50px 16px;
+  }
+
+  .empty-cart h3 {
+    font-size: 1.5rem;
+  }
+}
+
+/* ---- PRODUCTOS / CATEGORÍAS ---- */
+@media (max-width: 576px) {
+  h2.section-title {
+    font-size: 1.8rem;
+    margin-bottom: 28px;
+    text-align: center;
+  }
+
+  .category-card img {
+    height: 180px;
+  }
+
+  .product-card img {
+    height: 160px;
+  }
+
+  .product-card h5 {
+    font-size: 0.9rem;
+  }
+
+  .price-final {
+    font-size: 1.05rem;
+  }
+}
+
+/* ---- CHECKOUT ---- */
+@media (max-width: 576px) {
+  .checkout-address-form {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  .checkout-input,
+  .checkout-textarea {
+    padding: 0.8rem 0.9rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* ---- FOOTER ---- */
+@media (max-width: 768px) {
+  .footer-custom {
+    text-align: center;
+  }
+
+  .footer-custom a:hover {
+    padding-left: 0; /* El efecto de padding no se ve bien centrado en móvil */
+  }
+
+  .social-icons {
+    font-size: 1.8rem; /* Un poco más grande para tap en móvil */
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+  }
+}
+
+/* ---- FORM GENERAL ---- */
+@media (max-width: 576px) {
+  .form-control-custom {
+    height: 54px;
+    font-size: 0.95rem;
+  }
+
+  .btn-login-main {
+    height: 56px;
+    font-size: 1rem;
+  }
+}
+
+/* ---- PANTALLAS MUY PEQUEÑAS (< 400px) ---- */
+@media (max-width: 400px) {
+  .hero-content h1 {
+    font-size: 1.7rem;
+  }
+
+  .carousel-caption-custom h1 {
+    font-size: 1.4rem;
+  }
+
+  .register-text h1 {
+    font-size: 2rem;
+  }
+
+  .login-card h2 {
+    font-size: 1.7rem;
+  }
+
+  .cart-banner h2 {
+    font-size: 1.4rem;
+  }
+
+  .modern-icon-btn {
+    width: 38px;
+    height: 38px;
+  }
+}

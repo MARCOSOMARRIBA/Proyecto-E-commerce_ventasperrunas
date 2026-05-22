@@ -21,9 +21,9 @@ const OrdenesExtranet = () => {
     try {
       setCargando(true);
       // 🚀 INYECTAMOS EL FILTRO DE PRIVACIDAD EN LA URL
-      console.log("👤 OBJETO USER EN CONTEXTO:", user);
-      const url = `http://127.0.0.1:8000/api/pedidos/?rol=${user.rol}&rfc=${user.rfc || ""}`;
-      console.log("🚀 URL REAL QUE SE ENVÍA A DJANGO:", url);
+      const rfcSeguro = user?.rfc || "";
+      const url = `http://127.0.0.1:8000/api/pedidos/?rol=${user.rol}&rfc=${rfcSeguro}`;
+      
       const res = await fetch(url);
 
       if (res.ok) {
@@ -51,8 +51,9 @@ const OrdenesExtranet = () => {
 
   const actualizarEstatus = async (id_pedido, nuevoEstatus) => {
     try {
-      // 🔥 1. Actualizamos el estatus del pedido ENVIANDO CREDENCIALES (rol y rfc) EN LA URL
-      const urlPatch = `http://127.0.0.1:8000/api/pedidos/${id_pedido}/?rol=${user.rol}&rfc=${user.rfc || ""}`;
+      // 🔥 Actualizamos el estatus del pedido ENVIANDO CREDENCIALES en la URL para evitar el 404
+      const rfcSeguro = user?.rfc || "";
+      const urlPatch = `http://127.0.0.1:8000/api/pedidos/${id_pedido}/?rol=${user.rol}&rfc=${rfcSeguro}`;
       
       const res = await fetch(urlPatch, {
         method: "PATCH",
@@ -81,8 +82,8 @@ const OrdenesExtranet = () => {
             if (detalles.length > 0) {
               const promesasDeActivacion = detalles.map(detalle => {
                 const idProd = detalle.id_producto || detalle.producto_id || detalle.producto; 
-                // 🔥 Aseguramos que la actualización de stock también lleve permisos si el backend lo exige
-                return fetch(`http://127.0.0.1:8000/api/productos/${idProd}/?rol=${user.rol}&rfc=${user.rfc || ""}`, {
+                // Aseguramos que la actualización de stock también lleve permisos
+                return fetch(`http://127.0.0.1:8000/api/productos/${idProd}/?rol=${user.rol}&rfc=${rfcSeguro}`, {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ stock: true, activo: true })
@@ -129,57 +130,62 @@ const OrdenesExtranet = () => {
 
       <div className="card shadow-sm border-0">
         <div className="card-body p-0">
-          <table className="table table-hover align-middle mb-0 bg-white">
-            <thead className="bg-dark text-white small">
-              <tr>
-                <th className="ps-4 py-3">FOLIO</th>
-                <th>FECHA</th>
-                <th>CLIENTE</th>
-                <th>TOTAL A COBRAR</th>
-                <th>ESTATUS ACTUAL</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {cargando ? (
+          
+          {/* 🔥 ENVOLTURA RESPONSIVA PARA CELULARES AGREGADA */}
+          <div className="table-responsive">
+            <table className="table table-hover align-middle mb-0 bg-white" style={{ minWidth: "800px" }}>
+              <thead className="bg-dark text-white small">
                 <tr>
-                  <td colSpan="5" className="text-center py-4">Sincronizando con PostgreSQL...</td>
+                  <th className="ps-4 py-3">FOLIO</th>
+                  <th>FECHA</th>
+                  <th>CLIENTE</th>
+                  <th>TOTAL A COBRAR</th>
+                  <th>ESTATUS ACTUAL</th>
                 </tr>
-              ) : pedidos.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="text-center py-5 text-muted">No hay órdenes pendientes para tu RFC.</td>
-                </tr>
-              ) : (
-                pedidos.map((pedido) => (
-                  <tr key={pedido.id_pedido}>
-                    <td className="ps-4 fw-bold">#{pedido.id_pedido}</td>
+              </thead>
 
-                    <td>{new Date(pedido.fecha_compra).toLocaleDateString()}</td>
-
-                    <td className="fw-bold text-dark">Pet Market Local (Central)</td>
-
-                    <td className="text-success fw-bold">
-                      ${parseFloat(pedido.total_compra || 0).toLocaleString()}
-                    </td>
-
-                    <td style={{ width: "250px" }}>
-                      {/* 🔥 OPCIONES DE ESTATUS SINCRONIZADAS */}
-                      <select
-                        className={`form-select form-select-sm fw-bold border-2 ${getEstiloEstatus(pedido.estatus)}`}
-                        value={String(pedido.estatus)}
-                        onChange={(e) => actualizarEstatus(pedido.id_pedido, e.target.value)}
-                      >
-                        <option value="1">1 - Solicitado</option>
-                        <option value="2">2 - En Proceso</option>
-                        <option value="3">3 - Cancelado / Rechazado</option>
-                        <option value="4">4 - Entregado</option>
-                      </select>
-                    </td>
+              <tbody>
+                {cargando ? (
+                  <tr>
+                    <td colSpan="5" className="text-center py-4">Sincronizando con PostgreSQL...</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : pedidos.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="text-center py-5 text-muted">No hay órdenes pendientes para tu RFC.</td>
+                  </tr>
+                ) : (
+                  pedidos.map((pedido) => (
+                    <tr key={pedido.id_pedido}>
+                      <td className="ps-4 fw-bold">#{pedido.id_pedido}</td>
+
+                      <td>{new Date(pedido.fecha_compra).toLocaleDateString()}</td>
+
+                      <td className="fw-bold text-dark">Pet Market Local (Central)</td>
+
+                      <td className="text-success fw-bold">
+                        ${parseFloat(pedido.total_compra || 0).toLocaleString()}
+                      </td>
+
+                      <td style={{ width: "250px" }}>
+                        <select
+                          className={`form-select form-select-sm fw-bold border-2 ${getEstiloEstatus(pedido.estatus)}`}
+                          value={String(pedido.estatus)}
+                          onChange={(e) => actualizarEstatus(pedido.id_pedido, e.target.value)}
+                        >
+                          <option value="1">1 - Solicitado</option>
+                          <option value="2">2 - En Proceso</option>
+                          <option value="3">3 - Cancelado / Rechazado</option>
+                          <option value="4">4 - Entregado</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* 🔥 FIN ENVOLTURA RESPONSIVA */}
+
         </div>
       </div>
     </div>

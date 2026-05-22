@@ -22,11 +22,14 @@ const DashboardOverview = () => {
     if (user?.rfc) cargarDatosCompletos();
   }, [user]);
 
-  const cargarDatosCompletos = async () => {
+const cargarDatosCompletos = async () => {
     try {
+      // 1. Fetch de datos: Le pasamos los parámetros exactos a la URL para que Django no bloquee
+      const parametrosFiltro = `?rol=${user.rol}&rfc=${user.rfc}`;
+      
       const [resPedidos, resProductos] = await Promise.all([
-        fetch('http://127.0.0.1:8000/api/pedidos/'),
-        fetch('http://127.0.0.1:8000/api/productos/')
+        fetch(`http://127.0.0.1:8000/api/pedidos/${parametrosFiltro}`),
+        fetch(`http://127.0.0.1:8000/api/productos/${parametrosFiltro}`)
       ]);
 
       if (!resPedidos.ok || !resProductos.ok) throw new Error("Fallo al cargar datos");
@@ -34,11 +37,29 @@ const DashboardOverview = () => {
       const pedidosBD = await resPedidos.json();
       const productosBD = await resProductos.json();
 
+      // 2. Diagnóstico: ¿Qué estamos comparando exactamente?
+      const rfcUser = String(user.rfc).trim().toUpperCase();
+      console.log("RFC Buscado (Usuario):", rfcUser);
+
+      // 3. Filtrado Robusto
+      const misPedidos = pedidosBD.filter(p => {
+        const rfcPedido = String(p.rfc).trim().toUpperCase();
+        return rfcPedido === rfcUser;
+      });
+
+      console.log("Pedidos encontrados tras filtrar:", misPedidos);
+
+      if (misPedidos.length === 0) {
+        console.warn("⚠️ Filtro devolvió 0 pedidos. Revisa si el RFC en BD coincide con:", rfcUser);
+        setCargando(false);
+        return;
+      }
+
+      // 4. Mapeo de productos
       const mapaProductos = {};
       productosBD.forEach(p => { mapaProductos[p.id_producto] = p.nombre; });
 
-      const misPedidos = pedidosBD.filter(p => p.rfc === user.rfc);
-
+      // 5. Cálculos (usando misPedidos)
       let ingresos = 0, completados = 0, pendientes = 0;
       const ventasPorFecha = {}; 
 
@@ -46,12 +67,13 @@ const DashboardOverview = () => {
         const total = parseFloat(ped.total_compra || 0);
         ingresos += total;
         
-        if (String(ped.estatus) === '4') completados++;
-        else if (String(ped.estatus) === '1' || String(ped.estatus) === '2') pendientes++;
+        const estatus = String(ped.estatus);
+        // Estatus 4 es entregado, 1 o 2 son pendientes (ajusta si tus estatus son diferentes)
+        if (estatus === '4') completados++;
+        else if (estatus === '1' || estatus === '2') pendientes++;
 
-        const fecha = ped.fecha_compra;
-        if (ventasPorFecha[fecha]) ventasPorFecha[fecha] += total;
-        else ventasPorFecha[fecha] = total;
+        const fecha = ped.fecha_compra || 'Sin fecha';
+        ventasPorFecha[fecha] = (ventasPorFecha[fecha] || 0) + total;
       });
 
       setStats({
@@ -61,33 +83,38 @@ const DashboardOverview = () => {
         pedidosCompletados: completados
       });
 
-      const dataLinea = Object.keys(ventasPorFecha).sort().map(fecha => ({ fecha: fecha, Ingresos: ventasPorFecha[fecha] }));
+      const dataLinea = Object.keys(ventasPorFecha).sort().map(f => ({ fecha: f, Ingresos: ventasPorFecha[f] }));
       setDatosVentas(dataLinea);
 
-      const promesasDetalles = misPedidos.map(ped => fetch(`http://127.0.0.1:8000/api/pedidos/${ped.id_pedido}/detalles/`).then(r => r.json()));
+      // --- CÁLCULO DE TOP PRODUCTOS ---
+      // Obtenemos los detalles solo de "misPedidos" para que el top sea real
+      const promesasDetalles = misPedidos.map(ped => 
+        fetch(`http://127.0.0.1:8000/api/pedidos/${ped.id_pedido}/detalles/`).then(r => r.json())
+      );
       const arraysDeDetalles = await Promise.all(promesasDetalles);
       const todosLosDetalles = arraysDeDetalles.flat();
 
       const conteoProductos = {};
       todosLosDetalles.forEach(detalle => {
         const idProd = detalle.id_producto;
-        if (conteoProductos[idProd]) conteoProductos[idProd] += detalle.cantidad;
-        else conteoProductos[idProd] = detalle.cantidad;
+        if (conteoProductos[idProd]) conteoProductos[idProd] += parseInt(detalle.cantidad || 0);
+        else conteoProductos[idProd] = parseInt(detalle.cantidad || 0);
       });
 
       const dataBarras = Object.keys(conteoProductos).map(id => ({
-        nombre: mapaProductos[id] || `ID: ${id}`, 
+        nombre: mapaProductos[id] || `Producto ${id}`, 
         Vendidos: conteoProductos[id]
       })).sort((a, b) => b.Vendidos - a.Vendidos).slice(0, 5);
 
       setTopProductos(dataBarras);
+      
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error crítico:", error);
     } finally {
       setCargando(false);
     }
   };
-
+  
   // 📄 FUNCIÓN MÁGICA: GENERAR PDF PROFESIONAL
   const exportarPDF = () => {
     const doc = new jsPDF();
