@@ -28,7 +28,7 @@ const ProductosExtranet = () => {
     const formData = new FormData();
     formData.append("imagen", file);
     try {
-      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com//api/subir-imagen/", {
+      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/subir-imagen/", {
         method: "POST",
         body: formData,
       });
@@ -40,8 +40,8 @@ const ProductosExtranet = () => {
     }
   };
 
-  const API_PRODUCTOS = "https://proyecto-e-commerce-ventasperrunas.onrender.com//api/productos/";
-  const API_CATEGORIAS = "https://proyecto-e-commerce-ventasperrunas.onrender.com//api/categorias/";
+  const API_PRODUCTOS = "https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/";
+  const API_CATEGORIAS = "https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/";
 
   useEffect(() => {
     cargarDatos();

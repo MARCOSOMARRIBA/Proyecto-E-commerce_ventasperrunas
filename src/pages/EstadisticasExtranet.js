@@ -8,7 +8,7 @@ const EstadisticasExtranet = () => {
   useEffect(() => {
     if (user && user.rfc) {
       // Usamos el RFC del usuario logueado
-      fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com//api/pedidos/?rol=4&rfc=${user.rfc}`)
+      fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/pedidos/?rol=4&rfc=${user.rfc}`)
         .then(res => res.json())
         .then(json => {
           console.log("🔥 JSON RECIBIDO:", json);

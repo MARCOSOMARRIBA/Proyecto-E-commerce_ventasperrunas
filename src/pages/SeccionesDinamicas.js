@@ -18,7 +18,7 @@ function SeccionesDinamicas() {
       const rol = user?.rol || "1";
 
       const response = await axios.get(
-        `https://proyecto-e-commerce-ventasperrunas.onrender.com//api/secciones-extranet/?rol=${user?.rol}`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/secciones-extranet/?rol=${user?.rol}`,
       );
 
       const seccionesActivas = response.data.filter((sec) =>

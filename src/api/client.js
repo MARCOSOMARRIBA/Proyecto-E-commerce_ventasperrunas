@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "https://proyecto-e-commerce-ventasperrunas.onrender.com//api";
+  process.env.REACT_APP_API_URL || "https://proyecto-e-commerce-ventasperrunas.onrender.com/api";
 
 const buildUrl = (path) => {
   const normalizedBase = API_BASE_URL.replace(/\/+$/, "");

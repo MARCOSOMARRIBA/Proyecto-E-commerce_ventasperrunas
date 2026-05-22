@@ -28,7 +28,7 @@ const OrdenesClientesIntranet = () => {
       if (!user) return;
 
       try {
-        const url = `https://proyecto-e-commerce-ventasperrunas.onrender.com//api/ordenes/?rol=${user.rol}&id_usuario=${user.id}`;
+        const url = `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/ordenes/?rol=${user.rol}&id_usuario=${user.id}`;
         const res = await fetch(url);
 
         if (res.ok) {
@@ -55,7 +55,7 @@ const OrdenesClientesIntranet = () => {
 
     try {
       const res = await fetch(
-        `https://proyecto-e-commerce-ventasperrunas.onrender.com//api/ordenes/actualizar-estatus/${id_orden}/`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/ordenes/actualizar-estatus/${id_orden}/`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -92,7 +92,7 @@ const OrdenesClientesIntranet = () => {
 
     try {
       const res = await fetch(
-        `https://proyecto-e-commerce-ventasperrunas.onrender.com//api/detalle-orden/${orden.id_orden}/`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/detalle-orden/${orden.id_orden}/`,
       );
       if (res.ok) {
         const data = await res.json();

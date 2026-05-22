@@ -37,9 +37,9 @@ const PedidosProveedorIntranet = () => {
   const cargarCatalogos = async () => {
     try {
       const [resProv, resProd] = await Promise.all([
-        fetch('https://proyecto-e-commerce-ventasperrunas.onrender.com//api/proveedores/'),
+        fetch('https://proyecto-e-commerce-ventasperrunas.onrender.com/api/proveedores/'),
         // 🚀 INYECTAMOS ROL PARA QUE EL ADMIN VEA TODOS LOS PRODUCTOS
-        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com//api/productos/?rol=${user.rol}&rfc=${user.rfc || ''}`)
+        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/?rol=${user.rol}&rfc=${user.rfc || ''}`)
       ]);
       if (resProv.ok) setProveedores(await resProv.json());
       if (resProd.ok) setProductosDisponibles(await resProd.json());
@@ -49,7 +49,7 @@ const PedidosProveedorIntranet = () => {
   const cargarHistorialPedidos = async () => {
     try {
       // 🚀 INYECTAMOS ROL PARA QUE EL ADMIN VEA TODOS LOS PEDIDOS
-      const res = await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com//api/pedidos/?rol=${user.rol}&rfc=${user.rfc || ''}`);
+      const res = await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/pedidos/?rol=${user.rol}&rfc=${user.rfc || ''}`);
       if (res.ok) setPedidosBD(await res.json());
     } catch (error) { console.error("Error historial:", error); }
   };
@@ -122,7 +122,7 @@ const PedidosProveedorIntranet = () => {
     };
 
     try {
-      const res = await fetch('https://proyecto-e-commerce-ventasperrunas.onrender.com//api/pedidos/', {
+      const res = await fetch('https://proyecto-e-commerce-ventasperrunas.onrender.com/api/pedidos/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -166,7 +166,7 @@ const PedidosProveedorIntranet = () => {
     setModalDetalle(true);
     setCargandoDetalles(true);
     try {
-      const res = await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com//api/pedidos/${pedido.id_pedido}/detalles/`);
+      const res = await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/pedidos/${pedido.id_pedido}/detalles/`);
       setDetallesPedido(res.ok ? await res.json() : []);
     } catch (error) { console.error(error); } finally { setCargandoDetalles(false); }
   };

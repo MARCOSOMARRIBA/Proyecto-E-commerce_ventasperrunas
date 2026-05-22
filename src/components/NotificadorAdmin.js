@@ -12,7 +12,7 @@ const NotificadorAdmin = () => {
       try {
         // Consultamos pedidos que ya no estén en estatus '1' (Solicitado) 
         // y que hayan tenido movimientos recientes
-        const res = await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com//api/pedidos/movimientos-recientes/`);
+        const res = await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/pedidos/movimientos-recientes/`);
         if (res.ok) {
           const data = await res.json();
           setNotificaciones(data.nuevos_movimientos);

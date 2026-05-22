@@ -34,7 +34,7 @@ const BannersIntranet = () => {
     formData.append("imagen", file);
 
     try {
-      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com//api/subir-imagen/", {
+      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/subir-imagen/", {
         method: "POST",
         body: formData,
       });
@@ -53,7 +53,7 @@ const BannersIntranet = () => {
     }
   };
 
-  const API_URL = "https://proyecto-e-commerce-ventasperrunas.onrender.com//api/secciones-extranet/";
+  const API_URL = "https://proyecto-e-commerce-ventasperrunas.onrender.com/api/secciones-extranet/";
 
   useEffect(() => {
     cargarBanners();

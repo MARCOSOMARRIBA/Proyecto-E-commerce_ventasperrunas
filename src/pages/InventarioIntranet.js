@@ -36,7 +36,7 @@ const InventarioIntranet = () => {
     const formData = new FormData();
     formData.append("imagen", file);
     try {
-      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com//api/subir-imagen/", {
+      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/subir-imagen/", {
         method: "POST",
         body: formData,
       });
@@ -56,8 +56,8 @@ const InventarioIntranet = () => {
     try {
       // Cargamos productos y categorías al mismo tiempo
       const [resProd, resCat] = await Promise.all([
-        fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com//api/productos/"),
-        fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com//api/categorias/"),
+        fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/"),
+        fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/"),
       ]);
 
       if (resProd.ok) setProductos(await resProd.json());
@@ -79,7 +79,7 @@ const InventarioIntranet = () => {
 
     try {
       const res = await fetch(
-        `https://proyecto-e-commerce-ventasperrunas.onrender.com//api/productos/${id_producto}/`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${id_producto}/`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -107,7 +107,7 @@ const InventarioIntranet = () => {
 
     try {
       const res = await fetch(
-        `https://proyecto-e-commerce-ventasperrunas.onrender.com//api/productos/${id_producto}/`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${id_producto}/`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -128,7 +128,7 @@ const InventarioIntranet = () => {
   const guardarProducto = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com//api/productos/", {
+      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nuevoProducto),
@@ -165,7 +165,7 @@ const InventarioIntranet = () => {
     e.preventDefault();
 
     try {
-      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com//api/categorias/", {
+      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
