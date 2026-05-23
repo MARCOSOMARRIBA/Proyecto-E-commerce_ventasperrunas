@@ -125,23 +125,21 @@ STATIC_URL = 'static/'
 
 # settings.py
 
+# ==============================================================================
+# CONFIGURACIÓN PARA ENVÍO DE CORREOS REALES
+# ==============================================================================
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-# OJO AQUÍ: El usuario es literalmente la palabra 'apikey'
-EMAIL_HOST_USER = 'apikey' 
 
-# Leemos la variable de entorno
-SENDGRID_KEY = os.environ.get('SENDGRID_API_KEY')
+# 🔥 CAMBIO CRÍTICO: Usamos puerto 465 y SSL para evitar que se congele
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False  # Apagamos TLS porque ahora usamos SSL
 
-# Si Render no la encuentra, imprimimos una alerta gigante en los logs
-if not SENDGRID_KEY:
-    print("🚨 ¡ALERTA CRÍTICA! RENDER NO ESTÁ LEYENDO LA VARIABLE 'SENDGRID_API_KEY' 🚨")
-    
-EMAIL_HOST_PASSWORD = SENDGRID_KEY
-
-DEFAULT_FROM_EMAIL = 'sans15cadena@gmail.com' # El mismo que verificaste en el paso 2
+EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL = 'sans15cadena@gmail.com'
 
 # 🔥 CORRECCIÓN: Claves de Cloudinary directas para que suban las imágenes
 cloudinary.config(
