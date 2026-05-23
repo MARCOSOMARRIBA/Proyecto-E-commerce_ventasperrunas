@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 import random
 import time
+import threading
 from django.db.models import Max, Sum, Q
 from rest_framework.generics import ListAPIView
 from rest_framework.decorators import action
@@ -922,40 +923,75 @@ def actualizar_estatus_orden(request, id_orden):
     
 logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
+
+def enviar_correo_background(asunto, mensaje, destinatario):
+    """
+    Esta función corre en segundo plano para no bloquear al usuario.
+    """
+    try:
+        send_mail(
+            subject=asunto,
+            message=mensaje,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[destinatario],
+            fail_silently=False
+        )
+    except Exception as e:
+        logger.error(f"Error crítico en hilo de correo: {str(e)}")
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def recuperar_password(request):
     correo = request.data.get('correo')
+    
     if not correo:
         return Response({"error": "Correo requerido"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
+        # 1. Buscamos al usuario
         usuario = Usuario.objects.get(correo=correo)
+        
+        # 2. Generamos contraseña
         password_temporal = get_random_string(length=8)
         usuario.contrasena = make_password(password_temporal)
         usuario.save()
 
-        # Enviar correo con fail_silently=True para que NO tire el servidor aunque falle SendGrid
-        exito = send_mail(
-            subject='Recuperación de contraseña',
-            message=f"Tu nueva contraseña es: {password_temporal}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[usuario.correo],
-            fail_silently=True 
+        # 3. Preparamos el mensaje
+        asunto = 'Recuperación de contraseña - Ventas Perrunas'
+        mensaje = (
+            f"Hola {usuario.nombre_usuario},\n\n"
+            f"Hemos recibido una solicitud para restablecer tu contraseña.\n"
+            f"Tu nueva contraseña temporal es: {password_temporal}\n\n"
+            f"Te recomendamos cambiarla al iniciar sesión por seguridad."
         )
+        
+        # 4. Lanzamos el envío en un HILO separado (esto evita que tarde en responder)
+        hilo = threading.Thread(
+            target=enviar_correo_background, 
+            args=(asunto, mensaje, usuario.correo)
+        )
+        hilo.start()
 
-        if exito:
-            return Response({"success": True, "mensaje": "Correo enviado"}, status=status.HTTP_200_OK)
-        else:
-            # Esto significa que el correo no salió, pero el servidor SIGUE VIVO
-            return Response({"error": "No se pudo enviar el correo, pero la contraseña se cambió."}, status=status.HTTP_200_OK)
+        # 5. Respondemos INMEDIATAMENTE al frontend
+        return Response({
+            "success": True, 
+            "mensaje": "Si el correo está registrado, recibirás las instrucciones en breve."
+        }, status=status.HTTP_200_OK)
 
     except Usuario.DoesNotExist:
-        return Response({"error": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+        # Por seguridad, no decimos que el usuario no existe (evita enumeración de usuarios)
+        return Response({
+            "success": True, 
+            "mensaje": "Si el correo está registrado, recibirás las instrucciones en breve."
+        }, status=status.HTTP_200_OK)
         
     except Exception as e:
-        # Esto captura cualquier error sin que el servidor se caiga
-        return Response({"error": "Error interno del servidor"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.error(f"Error general en recuperar_password: {str(e)}")
+        return Response({
+            "error": "Error interno al procesar la solicitud."
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 
 @csrf_exempt    
 def cambiar_password(request):
