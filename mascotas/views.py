@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.db import transaction, connection
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
+import urllib.request
 import random
 import time
 import threading
@@ -956,31 +957,46 @@ def recuperar_password(request):
         usuario.contrasena = make_password(password_temporal)
         usuario.save()
 
-        # ==========================================
-        # PRUEBA FORZADA SIN HILOS (BLOQUEANTE)
-        # ==========================================
-        print(f"DEBUG 1: Intentando enviar de {settings.DEFAULT_FROM_EMAIL} a {usuario.correo} SIN HILOS...")
+        print("DEBUG: Iniciando envío por API HTTP (Bypass de SMTP)...")
         
-        # Validamos que la contraseña exista antes de enviarla
-        api_key_actual = settings.EMAIL_HOST_PASSWORD
-        print(f"DEBUG 2: ¿Existe la API KEY? {'SÍ' if api_key_actual else 'NO'}")
+        # --- BYPASS: USAMOS LA API REST DE SENDGRID ---
+        url = "https://api.sendgrid.com/v3/mail/send"
+        api_key = settings.EMAIL_HOST_PASSWORD # Aquí está tu llave SG...
         
-        send_mail(
-            subject='Recuperación de contraseña - Ventas Perrunas',
-            message=f"Tu nueva contraseña es: {password_temporal}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[usuario.correo],
-            fail_silently=False  # Si explota, que explote con ruido
-        )
-        print("DEBUG 3: ¡ÉXITO TOTAL! SENDGRID RECIBIÓ EL CORREO.")
+        # Cabeceras de seguridad
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        # Estructura del correo requerida por SendGrid
+        data = {
+            "personalizations": [{"to": [{"email": usuario.correo}]}],
+            "from": {"email": settings.DEFAULT_FROM_EMAIL},
+            "subject": "Recuperación de contraseña - Ventas Perrunas",
+            "content": [{"type": "text/plain", "value": f"Tu nueva contraseña es: {password_temporal}"}]
+        }
+        
+        # Empaquetamos y disparamos la petición
+        req = urllib.request.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers, method='POST')
+        
+        with urllib.request.urlopen(req) as response:
+            # Si llegamos aquí, SendGrid aceptó el correo al instante
+            print(f"DEBUG: ¡ÉXITO TOTAL! SendGrid API respondió: {response.status}")
 
-        return Response({"success": True, "mensaje": "Correo enviado"}, status=status.HTTP_200_OK)
+        return Response({"success": True, "mensaje": "Correo enviado con éxito."}, status=status.HTTP_200_OK)
 
     except Usuario.DoesNotExist:
         return Response({"success": True, "mensaje": "Si existe, llegará."}, status=status.HTTP_200_OK)
         
+    except urllib.error.URLError as e:
+        # Si SendGrid nos rechaza (ej. la llave está mal o el remitente no está verificado)
+        error_body = e.read().decode('utf-8') if hasattr(e, 'read') else str(e)
+        print(f"DEBUG 🚨 ERROR SENDGRID API: {error_body}")
+        return Response({"error": "Error de permisos en el servidor de correos."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
     except Exception as e:
-        print(f"DEBUG 3: 🚨 ERROR EXPLOSIVO AL CONECTAR 🚨: {str(e)}")
+        print(f"DEBUG 🚨 ERROR GENERAL: {str(e)}")
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
