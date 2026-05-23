@@ -168,4 +168,5 @@ cloudinary.config(
     api_secret = os.environ.get('R6YsHsf0F3NzfgrBH9pi6MIqvnQ')
 )
 
-CORS_ALLOW_ALL_ORIGINS = False  
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
