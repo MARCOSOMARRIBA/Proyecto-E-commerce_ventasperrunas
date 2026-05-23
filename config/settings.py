@@ -131,8 +131,16 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 # OJO AQUÍ: El usuario es literalmente la palabra 'apikey'
 EMAIL_HOST_USER = 'apikey' 
-# Aquí pega la clave larga que empieza con SG.
-EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY')
+
+# Leemos la variable de entorno
+SENDGRID_KEY = os.environ.get('SENDGRID_API_KEY')
+
+# Si Render no la encuentra, imprimimos una alerta gigante en los logs
+if not SENDGRID_KEY:
+    print("🚨 ¡ALERTA CRÍTICA! RENDER NO ESTÁ LEYENDO LA VARIABLE 'SENDGRID_API_KEY' 🚨")
+    
+EMAIL_HOST_PASSWORD = SENDGRID_KEY
+
 DEFAULT_FROM_EMAIL = 'sans15cadena@gmail.com' # El mismo que verificaste en el paso 2
 
 # 🔥 CORRECCIÓN: Claves de Cloudinary directas para que suban las imágenes
