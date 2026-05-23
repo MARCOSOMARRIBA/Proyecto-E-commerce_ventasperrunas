@@ -307,24 +307,18 @@ class PedidoViewSet(viewsets.ModelViewSet):
         data = request.data
         try:
             with transaction.atomic():
-                fecha = data.get('fecha_compra')
-                if not fecha:
-                    fecha = timezone.now().date()
+                fecha = data.get('fecha_compra') or timezone.now().date()
                 
-                # 🔥 SOLUCIÓN AL TRIGGER: Generamos un ID que empiece con el año (Ej. 2026000001)
+                # Generación de ID para Pedido (esto sí mantenlo si quieres tu formato especial)
                 year_str = str(fecha)[:4]
                 base_id = int(year_str) * 1000000
-                
-                # Buscamos el ID más alto solo de este año
                 max_pedido = Pedido.objects.filter(id_pedido__gte=base_id, id_pedido__lt=base_id + 1000000).aggregate(Max('id_pedido'))['id_pedido__max']
                 nuevo_id = (max_pedido or base_id) + 1
-
-                # Soporte extra por si el frontend manda la variable con otro nombre
+                
                 rfc_recibido = data.get('rfc') or data.get('proveedor') or data.get('rfc_id')
                 instancia_proveedor = Proveedor.objects.filter(rfc=rfc_recibido).first()
 
                 if not instancia_proveedor:
-                    print(f"❌ ERROR: El proveedor {rfc_recibido} no existe.")
                     return Response({"error": "Proveedor no válido"}, status=status.HTTP_400_BAD_REQUEST)
 
                 pedido = Pedido.objects.create(
@@ -353,12 +347,9 @@ class PedidoViewSet(viewsets.ModelViewSet):
                         }
 
                 for prod_id, info in detalles_limpios.items():
-                    max_detalle = DetallePedido.objects.aggregate(Max('pk'))['pk__max']
-                    nuevo_id_detalle = (max_detalle or 0) + 1
-
+                    # 🔥 AQUÍ ESTÁ EL CAMBIO: Quitamos la lógica de 'max_detalle' y el 'id'
                     DetallePedido.objects.create(
-                        id=nuevo_id_detalle, 
-                        id_pedido_id=nuevo_id,
+                        id_pedido=pedido, # Pasamos la instancia del pedido
                         id_producto_id=prod_id,
                         cantidad=info['cantidad'],
                         precio_unitario=info['precio_unitario'],
@@ -366,7 +357,6 @@ class PedidoViewSet(viewsets.ModelViewSet):
                         estatus='1'
                     )
             
-            print(f"✅ PEDIDO {nuevo_id} CREADO CON ÉXITO")
             return Response({"message": "Pedido creado", "id_pedido": nuevo_id}, status=status.HTTP_201_CREATED)
         
         except Exception as e:
