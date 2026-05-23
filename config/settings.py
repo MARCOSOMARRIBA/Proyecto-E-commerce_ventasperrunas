@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-e3sb9wi8&0dgn@b!d9#+xrv*swk04u_a&z6oc+4jlne&xd$i5)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['proyecto-e-commerce-ventasperrunas.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -54,6 +54,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
+"https://proyecto-e-commerce-ventasperrunas-five.vercel.app", 
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
@@ -165,4 +166,4 @@ cloudinary.config(
     api_secret = 'R6YsHsf0F3NzfgrBH9pi6MIqvnQ'
 )
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False  
