@@ -3,6 +3,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db import transaction, connection
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 import random
 import time
 from django.db.models import Max, Sum, Q
@@ -918,10 +920,11 @@ def actualizar_estatus_orden(request, id_orden):
         return Response({"error": str(e)}, status=500)
     
 @api_view(['POST'])
+@permission_classes([AllowAny]) # Aseguramos que no pida token
 def recuperar_password(request):
     correo = request.data.get('correo')
     if not correo:
-        return Response({"error": "Debes proporcionar un correo electrónico."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Correo requerido"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         usuario = Usuario.objects.get(correo=correo)
@@ -929,27 +932,31 @@ def recuperar_password(request):
         usuario.contrasena = make_password(password_temporal)
         usuario.save()
 
-        # Configuración del mensaje
-        asunto = 'Recuperación de contraseña - Ventas Perrunas'
-        mensaje_cuerpo = f"Hola, {usuario.nombre_usuario}.\n\nTu nueva contraseña temporal es: {password_temporal}"
+        asunto = 'Recuperación de contraseña'
+        mensaje = f"Tu nueva contraseña temporal es: {password_temporal}"
         
-        # Enviar correo
+        # Intentamos enviar
         send_mail(
             subject=asunto,
-            message=mensaje_cuerpo,
+            message=mensaje,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[usuario.correo],
-            fail_silently=False 
+            fail_silently=False
         )
 
-        return Response({"success": True, "mensaje": "Correo enviado."}, status=status.HTTP_200_OK)
+        return Response({"success": True, "mensaje": "Correo enviado"}, status=status.HTTP_200_OK)
 
     except Usuario.DoesNotExist:
-        return Response({"error": "Correo no registrado."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
         
     except Exception as e:
-        # 🔥 AQUÍ ESTÁ EL CAMBIO: Regresamos el error técnico real al navegador
-        return Response({"error": f"Error SMTP/Servidor: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # 🔥 AQUÍ ESTÁ LA CLAVE: 
+        # Incluso si el correo falla, respondemos con un JSON que el frontend entienda.
+        # Esto evitará el error de CORS porque la respuesta saldrá completa.
+        return Response({
+            "error": "Error al enviar correo",
+            "detalle": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt    
 def cambiar_password(request):

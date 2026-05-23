@@ -132,7 +132,7 @@ EMAIL_PORT = 465
 EMAIL_USE_TLS = False    # Cambia a False
 EMAIL_USE_SSL = True
 EMAIL_HOST_USER = 'sans15cadena@gmail.com' 
-EMAIL_HOST_PASSWORD = 'fkni zfmj cplt mfhg' 
+EMAIL_HOST_PASSWORD = 'fknizfmjcpltmfhg' 
 DEFAULT_FROM_EMAIL = 'Ventas Perrunas <sans15cadena@gmail.com>'
 
 # 🔥 CORRECCIÓN: Claves de Cloudinary directas para que suban las imágenes
