@@ -951,48 +951,37 @@ def recuperar_password(request):
         return Response({"error": "Correo requerido"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # 1. Buscamos al usuario
         usuario = Usuario.objects.get(correo=correo)
-        
-        # 2. Generamos contraseña
         password_temporal = get_random_string(length=8)
         usuario.contrasena = make_password(password_temporal)
         usuario.save()
 
-        # 3. Preparamos el mensaje
-        asunto = 'Recuperación de contraseña - Ventas Perrunas'
-        mensaje = (
-            f"Hola {usuario.nombre_usuario},\n\n"
-            f"Hemos recibido una solicitud para restablecer tu contraseña.\n"
-            f"Tu nueva contraseña temporal es: {password_temporal}\n\n"
-            f"Te recomendamos cambiarla al iniciar sesión por seguridad."
-        )
+        # ==========================================
+        # PRUEBA FORZADA SIN HILOS (BLOQUEANTE)
+        # ==========================================
+        print(f"DEBUG 1: Intentando enviar de {settings.DEFAULT_FROM_EMAIL} a {usuario.correo} SIN HILOS...")
         
-        # 4. Lanzamos el envío en un HILO separado (esto evita que tarde en responder)
-        hilo = threading.Thread(
-            target=enviar_correo_background, 
-            args=(asunto, mensaje, usuario.correo)
+        # Validamos que la contraseña exista antes de enviarla
+        api_key_actual = settings.EMAIL_HOST_PASSWORD
+        print(f"DEBUG 2: ¿Existe la API KEY? {'SÍ' if api_key_actual else 'NO'}")
+        
+        send_mail(
+            subject='Recuperación de contraseña - Ventas Perrunas',
+            message=f"Tu nueva contraseña es: {password_temporal}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[usuario.correo],
+            fail_silently=False  # Si explota, que explote con ruido
         )
-        hilo.start()
+        print("DEBUG 3: ¡ÉXITO TOTAL! SENDGRID RECIBIÓ EL CORREO.")
 
-        # 5. Respondemos INMEDIATAMENTE al frontend
-        return Response({
-            "success": True, 
-            "mensaje": "Si el correo está registrado, recibirás las instrucciones en breve."
-        }, status=status.HTTP_200_OK)
+        return Response({"success": True, "mensaje": "Correo enviado"}, status=status.HTTP_200_OK)
 
     except Usuario.DoesNotExist:
-        # Por seguridad, no decimos que el usuario no existe (evita enumeración de usuarios)
-        return Response({
-            "success": True, 
-            "mensaje": "Si el correo está registrado, recibirás las instrucciones en breve."
-        }, status=status.HTTP_200_OK)
+        return Response({"success": True, "mensaje": "Si existe, llegará."}, status=status.HTTP_200_OK)
         
     except Exception as e:
-        logger.error(f"Error general en recuperar_password: {str(e)}")
-        return Response({
-            "error": "Error interno al procesar la solicitud."
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        print(f"DEBUG 3: 🚨 ERROR EXPLOSIVO AL CONECTAR 🚨: {str(e)}")
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
 @csrf_exempt    
