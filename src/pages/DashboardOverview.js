@@ -6,9 +6,8 @@ import {
   LineChart, Line 
 } from 'recharts';
 
-// 🚀 IMPORTAMOS LAS HERRAMIENTAS PARA EL PDF
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable'; // 🚀 Importación explícita
+import autoTable from 'jspdf-autotable';
 
 const DashboardOverview = () => {
   const { user } = useContext(AuthContext);
@@ -22,44 +21,37 @@ const DashboardOverview = () => {
     if (user?.rfc) cargarDatosCompletos();
   }, [user]);
 
-const cargarDatosCompletos = async () => {
+  const cargarDatosCompletos = async () => {
     try {
-      // 1. Fetch de datos: Le pasamos los parámetros exactos a la URL para que Django no bloquee
+      setCargando(true);
       const parametrosFiltro = `?rol=${user.rol}&rfc=${user.rfc}`;
       
+      // 🔥 CORRECCIÓN: Eliminé el doble slash "//" en la URL de productos
       const [resPedidos, resProductos] = await Promise.all([
         fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/pedidos/${parametrosFiltro}`),
-        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api//productos/${parametrosFiltro}`)
+        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${parametrosFiltro}`)
       ]);
 
-      if (!resPedidos.ok || !resProductos.ok) throw new Error("Fallo al cargar datos");
+      if (!resPedidos.ok) console.error("Error en pedidos:", await resPedidos.text());
+      if (!resProductos.ok) console.error("Error en productos:", await resProductos.text());
 
       const pedidosBD = await resPedidos.json();
       const productosBD = await resProductos.json();
 
-      // 2. Diagnóstico: ¿Qué estamos comparando exactamente?
       const rfcUser = String(user.rfc).trim().toUpperCase();
-      console.log("RFC Buscado (Usuario):", rfcUser);
-
-      // 3. Filtrado Robusto
-      const misPedidos = pedidosBD.filter(p => {
-        const rfcPedido = String(p.rfc).trim().toUpperCase();
-        return rfcPedido === rfcUser;
-      });
-
-      console.log("Pedidos encontrados tras filtrar:", misPedidos);
+      
+      // 3. Filtrado (Si el backend ya filtra, esto ayuda a asegurar los datos)
+      const misPedidos = pedidosBD.filter(p => String(p.rfc).trim().toUpperCase() === rfcUser);
+      console.log("Pedidos finales para mostrar:", misPedidos);
 
       if (misPedidos.length === 0) {
-        console.warn("⚠️ Filtro devolvió 0 pedidos. Revisa si el RFC en BD coincide con:", rfcUser);
         setCargando(false);
         return;
       }
 
-      // 4. Mapeo de productos
       const mapaProductos = {};
       productosBD.forEach(p => { mapaProductos[p.id_producto] = p.nombre; });
 
-      // 5. Cálculos (usando misPedidos)
       let ingresos = 0, completados = 0, pendientes = 0;
       const ventasPorFecha = {}; 
 
@@ -68,7 +60,7 @@ const cargarDatosCompletos = async () => {
         ingresos += total;
         
         const estatus = String(ped.estatus);
-        // Estatus 4 es entregado, 1 o 2 son pendientes (ajusta si tus estatus son diferentes)
+        // Ajuste: 4 suele ser Entregado/Completado según tu código de MisPedidos
         if (estatus === '4') completados++;
         else if (estatus === '1' || estatus === '2') pendientes++;
 
@@ -83,11 +75,9 @@ const cargarDatosCompletos = async () => {
         pedidosCompletados: completados
       });
 
-      const dataLinea = Object.keys(ventasPorFecha).sort().map(f => ({ fecha: f, Ingresos: ventasPorFecha[f] }));
-      setDatosVentas(dataLinea);
+      setDatosVentas(Object.keys(ventasPorFecha).sort().map(f => ({ fecha: f, Ingresos: ventasPorFecha[f] })));
 
       // --- CÁLCULO DE TOP PRODUCTOS ---
-      // Obtenemos los detalles solo de "misPedidos" para que el top sea real
       const promesasDetalles = misPedidos.map(ped => 
         fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/pedidos/${ped.id_pedido}/detalles/`).then(r => r.json())
       );
@@ -97,8 +87,7 @@ const cargarDatosCompletos = async () => {
       const conteoProductos = {};
       todosLosDetalles.forEach(detalle => {
         const idProd = detalle.id_producto;
-        if (conteoProductos[idProd]) conteoProductos[idProd] += parseInt(detalle.cantidad || 0);
-        else conteoProductos[idProd] = parseInt(detalle.cantidad || 0);
+        conteoProductos[idProd] = (conteoProductos[idProd] || 0) + parseInt(detalle.cantidad || 0);
       });
 
       const dataBarras = Object.keys(conteoProductos).map(id => ({
