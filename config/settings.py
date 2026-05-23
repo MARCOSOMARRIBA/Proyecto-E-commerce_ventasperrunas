@@ -127,7 +127,10 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-# 🔥 CORRECCIÓN: Contraseñas directas sin os.environ.get
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 465
+EMAIL_USE_TLS = False    # Cambia a False
+EMAIL_USE_SSL = True
 EMAIL_HOST_USER = 'sans15cadena@gmail.com' 
 EMAIL_HOST_PASSWORD = 'fkni zfmj cplt mfhg' 
 DEFAULT_FROM_EMAIL = 'Ventas Perrunas <sans15cadena@gmail.com>'
