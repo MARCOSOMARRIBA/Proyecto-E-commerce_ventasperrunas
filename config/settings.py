@@ -129,7 +129,7 @@ EMAIL_USE_TLS = True
 
 # 🔥 CORRECCIÓN: Contraseñas directas sin os.environ.get
 EMAIL_HOST_USER = 'sans15cadena@gmail.com' 
-EMAIL_HOST_PASSWORD = 'fkni zfmj cplt mfhg' 
+EMAIL_HOST_PASSWORD = 'fknizfmjcpltmfhg' 
 DEFAULT_FROM_EMAIL = 'Ventas Perrunas <sans15cadena@gmail.com>'
 
 # 🔥 CORRECCIÓN: Claves de Cloudinary directas para que suban las imágenes
