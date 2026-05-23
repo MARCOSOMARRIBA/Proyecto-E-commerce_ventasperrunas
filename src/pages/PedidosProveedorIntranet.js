@@ -39,7 +39,7 @@ const PedidosProveedorIntranet = () => {
       const [resProv, resProd] = await Promise.all([
         fetch('https://proyecto-e-commerce-ventasperrunas.onrender.com/api/proveedores/'),
         // 🚀 INYECTAMOS ROL PARA QUE EL ADMIN VEA TODOS LOS PRODUCTOS
-        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/?rol=${user.rol}&rfc=${user.rfc || ''}`)
+        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api//productos/?rol=${user.rol}&rfc=${user.rfc || ''}`)
       ]);
       if (resProv.ok) setProveedores(await resProv.json());
       if (resProd.ok) setProductosDisponibles(await resProd.json());

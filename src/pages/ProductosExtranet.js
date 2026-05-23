@@ -40,7 +40,7 @@ const ProductosExtranet = () => {
     }
   };
 
-  // 🔥 CORRECCIÓN: URL LIMPIA SIN EL DOBLE /api/api/
+  // 🔥 CORRECCIÓN: URL LIMPIA SIN EL DOBLE /api//
   const API_PRODUCTOS = "https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/";
   const API_CATEGORIAS = "https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/";
 

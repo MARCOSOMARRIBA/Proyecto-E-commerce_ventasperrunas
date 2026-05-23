@@ -1,7 +1,7 @@
 const API_BASE_URL = "https://proyecto-e-commerce-ventasperrunas.onrender.com";
 
 export const apiFetch = async (path, options = {}) => {
-  // 1. Limpieza agresiva: Nos aseguramos de que no haya un /api/api/ jamás
+  // 1. Limpieza agresiva: Nos aseguramos de que no haya un /api// jamás
   let cleanPath = path;
   if (cleanPath.startsWith('/api/')) {
     cleanPath = cleanPath.replace('/api/', '/');

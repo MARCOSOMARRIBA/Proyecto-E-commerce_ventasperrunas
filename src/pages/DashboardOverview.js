@@ -29,7 +29,7 @@ const cargarDatosCompletos = async () => {
       
       const [resPedidos, resProductos] = await Promise.all([
         fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/pedidos/${parametrosFiltro}`),
-        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/${parametrosFiltro}`)
+        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api//productos/${parametrosFiltro}`)
       ]);
 
       if (!resPedidos.ok || !resProductos.ok) throw new Error("Fallo al cargar datos");
