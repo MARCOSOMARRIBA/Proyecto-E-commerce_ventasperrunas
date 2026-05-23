@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from 'react';
-// 🔥 Importamos el contexto
 import { AuthContext } from '../context/AuthContext'; 
 import { db } from '../firebaseConfig';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -26,7 +25,6 @@ const PedidosProveedorIntranet = () => {
   const [itemActual, setItemActual] = useState({ id_producto: '', cantidad: 1, precio: 0 });
 
   useEffect(() => {
-    // 🔥 Aseguramos que el usuario esté cargado antes de hacer fetch
     if (user) {
       cargarHistorialPedidos();
       cargarCatalogos();
@@ -38,8 +36,8 @@ const PedidosProveedorIntranet = () => {
     try {
       const [resProv, resProd] = await Promise.all([
         fetch('https://proyecto-e-commerce-ventasperrunas.onrender.com/api/proveedores/'),
-        // 🚀 INYECTAMOS ROL PARA QUE EL ADMIN VEA TODOS LOS PRODUCTOS
-        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api//productos/?rol=${user.rol}&rfc=${user.rfc || ''}`)
+        // 🔥 CORRECCIÓN: URL limpiada de dobles diagonales
+        fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/?rol=${user.rol}&rfc=${user.rfc || ''}`)
       ]);
       if (resProv.ok) setProveedores(await resProv.json());
       if (resProd.ok) setProductosDisponibles(await resProd.json());
@@ -48,7 +46,7 @@ const PedidosProveedorIntranet = () => {
 
   const cargarHistorialPedidos = async () => {
     try {
-      // 🚀 INYECTAMOS ROL PARA QUE EL ADMIN VEA TODOS LOS PEDIDOS
+      // 🔥 CORRECCIÓN: Por si acaso, nos aseguramos que esta URL también esté limpia
       const res = await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/pedidos/?rol=${user.rol}&rfc=${user.rfc || ''}`);
       if (res.ok) setPedidosBD(await res.json());
     } catch (error) { console.error("Error historial:", error); }
@@ -63,11 +61,9 @@ const PedidosProveedorIntranet = () => {
     const prodInfo = productosDisponibles.find(p => p.id_producto === parseInt(itemActual.id_producto));
     
     setNuevaOrden(ordenPrevia => {
-      // 1. Buscamos si el producto ya está en la tablita
       const indexExistente = ordenPrevia.productosSeleccionados.findIndex(p => p.id_producto === itemActual.id_producto);
 
       if (indexExistente >= 0) {
-        // 2. Si ya existe, NO lo duplicamos. Solo le sumamos la nueva cantidad.
         const listaActualizada = [...ordenPrevia.productosSeleccionados];
         listaActualizada[indexExistente].cantidad += itemActual.cantidad;
         
@@ -76,7 +72,6 @@ const PedidosProveedorIntranet = () => {
           productosSeleccionados: listaActualizada
         };
       } else {
-        // 3. Si es un producto nuevo, lo agregamos normalmente
         return {
           ...ordenPrevia,
           productosSeleccionados: [
@@ -92,7 +87,6 @@ const PedidosProveedorIntranet = () => {
       }
     });
 
-    // Limpiamos los inputs para el siguiente producto
     setItemActual({ id_producto: '', cantidad: 1, precio: 0 });
   };
 
@@ -129,14 +123,12 @@ const PedidosProveedorIntranet = () => {
       });
 
       if (res.ok) {
-        // Auditoría en Firebase
         await addDoc(collection(db, "auditoria_pedidos"), {
           ...payload,
           fecha_auditoria: serverTimestamp(),
           tipo_movimiento: "CREACION_ADMIN" 
         });
 
-        // Notificación B2B
         await addDoc(collection(db, "pedidos_b2b"), {
           id_proveedor: nuevaOrden.rfc_proveedor,
           estado: '1',
@@ -145,7 +137,6 @@ const PedidosProveedorIntranet = () => {
           fecha: serverTimestamp()
         });
         
-        // 🚀 MAGIA SILENCIOSA: Solo cerramos el modal, limpiamos y recargamos la tabla
         setMostrarFormulario(false);
         setNuevaOrden({ rfc_proveedor: '', descripcion: '', productosSeleccionados: [] });
         cargarHistorialPedidos();
@@ -181,7 +172,6 @@ const PedidosProveedorIntranet = () => {
     }
   };
 
-  // 🔥 LÓGICA NUEVA: Filtramos los productos según el proveedor seleccionado en el modal
   const productosDelProveedor = productosDisponibles.filter(
     (producto) => producto.rfc === nuevaOrden.rfc_proveedor || producto.rfc_id === nuevaOrden.rfc_proveedor
   );
@@ -200,7 +190,6 @@ const PedidosProveedorIntranet = () => {
         </button>
       </div>
 
-      {/* MODAL GENERAR ORDEN */}
       {mostrarFormulario && (
         <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
@@ -217,13 +206,11 @@ const PedidosProveedorIntranet = () => {
                       className="form-select bg-light" 
                       value={nuevaOrden.rfc_proveedor} 
                       onChange={(e) => {
-                        // Limpiamos los productos al cambiar de proveedor
                         setNuevaOrden({...nuevaOrden, rfc_proveedor: e.target.value});
                         setItemActual({ id_producto: '', cantidad: 1, precio: 0 });
                       }}
                     >
                       <option value="">Selecciona Proveedor...</option>
-                      {/* 🔥 CAMBIO APLICADO: Mostramos nombre_empresa */}
                       {proveedores.map(p => (
                         <option key={p.rfc} value={p.rfc}>
                           {p.nombre_empresa || p.nombre}
@@ -243,7 +230,7 @@ const PedidosProveedorIntranet = () => {
                     <select 
                       className="form-select" 
                       value={itemActual.id_producto} 
-                      disabled={!nuevaOrden.rfc_proveedor} // 🔥 Se bloquea si no hay proveedor
+                      disabled={!nuevaOrden.rfc_proveedor} 
                       onChange={(e) => {
                         const id = e.target.value;
                         const productoEncontrado = productosDelProveedor.find(p => String(p.id_producto) === String(id));
@@ -254,7 +241,6 @@ const PedidosProveedorIntranet = () => {
                         });
                       }}
                     >
-                      {/* 🔥 CAMBIO APLICADO: Aviso dinámico y lista filtrada */}
                       <option value="">
                         {!nuevaOrden.rfc_proveedor ? "Primero selecciona un proveedor" : "Elegir producto..."}
                       </option>
@@ -300,7 +286,6 @@ const PedidosProveedorIntranet = () => {
         </div>
       )}
 
-      {/* TABLA PRINCIPAL */}
       <div className="card border-0 shadow-sm rounded-4">
         <div className="card-body p-0 overflow-auto">
           <table className="table table-hover align-middle mb-0 bg-white">
@@ -332,7 +317,6 @@ const PedidosProveedorIntranet = () => {
         </div>
       </div>
 
-      {/* MODAL DETALLES */}
       {modalDetalle && pedidoSeleccionado && (
         <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)' }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
