@@ -927,19 +927,17 @@ logger = logging.getLogger(__name__)
 
 def enviar_correo_background(asunto, mensaje, destinatario):
     try:
-        # --- DEBUG: IMPRIME EN LOGS LA CONFIGURACIÓN ---
-        logger.info(f"DEBUG EMAIL: Host={settings.EMAIL_HOST}, User={settings.EMAIL_HOST_USER}, Backend={settings.EMAIL_BACKEND}")
-        
+        print("DEBUG: Intentando enviar correo a " + destinatario) # print se ve siempre en logs
         send_mail(
             subject=asunto,
             message=mensaje,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[destinatario],
-            fail_silently=False # CAMBIA A FALSE PARA QUE SE FUERCE EL ERROR
+            fail_silently=False # CAMBIADO A FALSE
         )
-        logger.info("El correo se envió exitosamente a sendgrid")
+        print("DEBUG: SendGrid aceptó el correo")
     except Exception as e:
-        logger.error(f"Error CRÍTICO en hilo de correo: {str(e)}")
+        print("DEBUG: ERROR EN SENDGRID: " + str(e)) # Esto es para forzar que salga en los logs
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
