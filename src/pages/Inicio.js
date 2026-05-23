@@ -21,19 +21,18 @@ function Inicio() {
   const [error, setError] = useState(null);
 
   const { addToCart } = useContext(CartContext);
-
   const { toggleFavorite, isFavorite } = useContext(FavoritesContext);
 
   useEffect(() => {
-    obtenerMasVendidos();
+    obtenerProductos();
   }, []);
 
-  const obtenerMasVendidos = async () => {
+  // Cambiamos la función para traer TODOS los productos a la ruta que SÍ funciona
+  const obtenerProductos = async () => {
     try {
       const response = await axios.get(
-        "https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/mas_vendidos/",
+        "https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/"
       );
-
       setProductos(response.data);
     } catch (err) {
       setError(err.message || "No se pudo conectar con el servidor");
@@ -56,29 +55,27 @@ function Inicio() {
       <CarruselPromociones />
 
       <Container className="mt-5 pb-5">
+        {/* Cambiamos el título */}
         <h2 className="text-center section-title mb-5">
-          LOS PRODUCTOS MAS VENDIDOS
+          NUESTROS PRODUCTOS
         </h2>
 
         {cargando ? (
           <div className="text-center py-5">
             <Spinner animation="border" variant="info" />
-
             <p className="mt-3 text-muted">
-              Consultando productos más vendidos...
+              Cargando catálogo de productos...
             </p>
           </div>
         ) : error ? (
           <div className="text-center py-5 text-danger">
             <FiAlertCircle size={40} />
-
             <p className="mt-2">Error: {error}</p>
           </div>
         ) : (
           <Row>
             {productos.map((prod, i) => {
               const disponible = isProductAvailable(prod);
-
               const esFavorito = isFavorite(prod.id_producto);
 
               return (
