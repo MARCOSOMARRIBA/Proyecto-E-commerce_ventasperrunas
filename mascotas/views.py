@@ -920,59 +920,36 @@ def actualizar_estatus_orden(request, id_orden):
 @api_view(['POST'])
 def recuperar_password(request):
     correo = request.data.get('correo')
-
     if not correo:
         return Response({"error": "Debes proporcionar un correo electrónico."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         usuario = Usuario.objects.get(correo=correo)
-
         password_temporal = get_random_string(length=8)
-
         usuario.contrasena = make_password(password_temporal)
         usuario.save()
 
+        # Configuración del mensaje
         asunto = 'Recuperación de contraseña - Ventas Perrunas'
+        mensaje_cuerpo = f"Hola, {usuario.nombre_usuario}.\n\nTu nueva contraseña temporal es: {password_temporal}"
         
-        mensaje_cuerpo = (
-            f"Hola, {usuario.nombre_usuario}.\n\n"
-            f"Hemos recibido una solicitud para restablecer la contraseña de tu cuenta.\n"
-            f"Tu nueva contraseña temporal de acceso es:\n\n"
-            f"👉   {password_temporal}   <---\n\n"
-            f"Por razones de seguridad, te recomendamos cambiarla desde tu perfil "
-            f"inmediatamente después de iniciar sesión.\n\n"
-            f"Si no solicitaste este cambio, por favor ponte en contacto con soporte.\n\n"
-            f"Saludos cordiales,\n"
-            f"El equipo de Ventas Perrunas."
-        )
-        
-        email_origen = settings.DEFAULT_FROM_EMAIL
-        email_destino = [usuario.correo]
-
+        # Enviar correo
         send_mail(
             subject=asunto,
             message=mensaje_cuerpo,
-            from_email=email_origen,
-            recipient_list=email_destino,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[usuario.correo],
             fail_silently=False 
         )
 
-        return Response({
-            "success": True,
-            "mensaje": "Se ha enviado un correo electrónico con tu nueva contraseña temporal con éxito."
-        }, status=status.HTTP_200_OK)
+        return Response({"success": True, "mensaje": "Correo enviado."}, status=status.HTTP_200_OK)
 
     except Usuario.DoesNotExist:
-        return Response({
-            "error": "Si el correo está registrado en nuestro sistema, recibirás las instrucciones en tu bandeja de entrada."
-        }, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Correo no registrado."}, status=status.HTTP_404_NOT_FOUND)
         
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return Response({
-            "error": f"El usuario se actualizó, pero falló el envío del correo electrónico. Error: {str(e)}"
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # 🔥 AQUÍ ESTÁ EL CAMBIO: Regresamos el error técnico real al navegador
+        return Response({"error": f"Error SMTP/Servidor: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt    
 def cambiar_password(request):
