@@ -16,6 +16,7 @@ from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 from django.conf import settings
 import ssl
+import logging
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.views.decorators.csrf import csrf_exempt
@@ -919,6 +920,8 @@ def actualizar_estatus_orden(request, id_orden):
         traceback.print_exc()
         return Response({"error": str(e)}, status=500)
     
+logger = logging.getLogger(__name__)
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def recuperar_password(request):
@@ -932,20 +935,39 @@ def recuperar_password(request):
         usuario.contrasena = make_password(password_temporal)
         usuario.save()
 
-        # 🔥 COMENTAMOS EL ENVÍO DE CORREO TEMPORALMENTE
-        # send_mail(...) 
+        # Configuración del correo
+        asunto = 'Recuperación de contraseña - Ventas Perrunas'
+        mensaje = f"Hola {usuario.nombre_usuario},\n\nTu nueva contraseña temporal es: {password_temporal}\n\nTe recomendamos cambiarla al iniciar sesión."
+        
+        # ENVÍO REAL (Ya no está comentado)
+        send_mail(
+            subject=asunto,
+            message=mensaje,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[usuario.correo],
+            fail_silently=False
+        )
 
+        # Respuesta profesional (sin mostrar la contraseña en la respuesta)
         return Response({
             "success": True, 
-            "mensaje": "Simulación: Correo enviado.", 
-            "debug_password": password_temporal # Solo para probar que el resto funciona
+            "mensaje": "Se ha enviado una contraseña temporal a tu correo."
         }, status=status.HTTP_200_OK)
 
     except Usuario.DoesNotExist:
-        return Response({"error": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+        # Por seguridad, damos el mismo mensaje aunque el correo no exista
+        return Response({
+            "success": True, 
+            "mensaje": "Si el correo está registrado, recibirás las instrucciones."
+        }, status=status.HTTP_200_OK)
         
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Registramos el error real en los logs de Render para que tú lo veas
+        logger.error(f"Error en recuperación de password: {str(e)}")
+        # Respuesta genérica para el usuario
+        return Response({
+            "error": "Hubo un problema al enviar el correo. Intenta de nuevo más tarde."
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt    
 def cambiar_password(request):
