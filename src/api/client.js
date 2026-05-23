@@ -1,13 +1,12 @@
-// 1. URL base LIMPIA (sin el /api al final para controlarlo nosotros)
 const API_BASE_URL = "https://proyecto-e-commerce-ventasperrunas.onrender.com";
 
 export const apiFetch = async (path, options = {}) => {
-  // 2. FORZAMOS el /api/ aquí mismo
-  // Si el path no empieza con /api/, se lo ponemos a la fuerza
+  // 1. FORZAMOS EL PREFIJO /api/ SIEMPRE
+  // Si el path ya tiene /api/, no hacemos nada. Si no, se lo pegamos al principio.
   const apiPath = path.startsWith("/api") ? path : `/api${path}`;
   const url = `${API_BASE_URL}${apiPath}`;
   
-  console.log("🔍 Intentando conectar a:", url);
+  console.log("🔍 Intentando conectar a:", url); // Esto nos confirmará la ruta final
 
   const response = await fetch(url, {
     headers: {
@@ -19,7 +18,7 @@ export const apiFetch = async (path, options = {}) => {
 
   if (!response.ok) {
     console.error("❌ Error en petición:", response.status, url);
-    throw new Error(`Error ${response.status}: No se pudo completar la solicitud.`);
+    throw new Error(`Error ${response.status}`);
   }
 
   return await response.json();
@@ -27,8 +26,8 @@ export const apiFetch = async (path, options = {}) => {
 
 export const api = {
   productos: {
-    list: () => apiFetch("/api/productos/"),
-    detail: (id) => apiFetch(`/api/productos/${id}/`),
+    list: () => apiFetch("/productos/"), // Ahora se convertirá en /api/productos/
+    detail: (id) => apiFetch(`/productos/${id}/`),
   },
   categorias: {
     list: () => apiFetch("/categorias/"),
