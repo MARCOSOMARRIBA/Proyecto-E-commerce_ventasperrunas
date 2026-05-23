@@ -920,7 +920,7 @@ def actualizar_estatus_orden(request, id_orden):
         return Response({"error": str(e)}, status=500)
     
 @api_view(['POST'])
-@permission_classes([AllowAny]) # Aseguramos que no pida token
+@permission_classes([AllowAny])
 def recuperar_password(request):
     correo = request.data.get('correo')
     if not correo:
@@ -932,31 +932,20 @@ def recuperar_password(request):
         usuario.contrasena = make_password(password_temporal)
         usuario.save()
 
-        asunto = 'Recuperación de contraseña'
-        mensaje = f"Tu nueva contraseña temporal es: {password_temporal}"
-        
-        # Intentamos enviar
-        send_mail(
-            subject=asunto,
-            message=mensaje,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[usuario.correo],
-            fail_silently=False
-        )
+        # 🔥 COMENTAMOS EL ENVÍO DE CORREO TEMPORALMENTE
+        # send_mail(...) 
 
-        return Response({"success": True, "mensaje": "Correo enviado"}, status=status.HTTP_200_OK)
+        return Response({
+            "success": True, 
+            "mensaje": "Simulación: Correo enviado.", 
+            "debug_password": password_temporal # Solo para probar que el resto funciona
+        }, status=status.HTTP_200_OK)
 
     except Usuario.DoesNotExist:
         return Response({"error": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
         
     except Exception as e:
-        # 🔥 AQUÍ ESTÁ LA CLAVE: 
-        # Incluso si el correo falla, respondemos con un JSON que el frontend entienda.
-        # Esto evitará el error de CORS porque la respuesta saldrá completa.
-        return Response({
-            "error": "Error al enviar correo",
-            "detalle": str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt    
 def cambiar_password(request):
