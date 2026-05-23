@@ -286,7 +286,8 @@ const SimuladorCobro = () => {
     try {
       const orden = generarOrden(direccionFinalLista);
 
-      const response = await fetch("http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/checkout/", {
+      // 🔥 CORRECCIÓN: URL LIMPIA Y SEGURA (HTTPS)
+      const response = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/checkout/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orden),
@@ -352,7 +353,6 @@ const SimuladorCobro = () => {
     return "Pago en OXXO / transferencia";
   };
 
-  // Manejador genérico para cuando escribe a mano: Actualiza estado y quita la selección previa
   const handleInputManual = (campo, valor) => {
     setDirManual({ ...dirManual, [campo]: valor });
     setDireccionSeleccionadaId("");
@@ -425,7 +425,6 @@ const SimuladorCobro = () => {
             </small>
           )}
 
-          {/* 🔥 FORMULARIO MANUAL AHORA CONECTADO A REACT */}
           <div className="checkout-address-form mt-3">
             <h6 className="text-muted mb-3">O ingresa una nueva dirección:</h6>
             <div className="row g-3">
