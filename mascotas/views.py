@@ -935,39 +935,27 @@ def recuperar_password(request):
         usuario.contrasena = make_password(password_temporal)
         usuario.save()
 
-        # Configuración del correo
-        asunto = 'Recuperación de contraseña - Ventas Perrunas'
-        mensaje = f"Hola {usuario.nombre_usuario},\n\nTu nueva contraseña temporal es: {password_temporal}\n\nTe recomendamos cambiarla al iniciar sesión."
-        
-        # ENVÍO REAL (Ya no está comentado)
-        send_mail(
-            subject=asunto,
-            message=mensaje,
+        # Enviar correo con fail_silently=True para que NO tire el servidor aunque falle SendGrid
+        exito = send_mail(
+            subject='Recuperación de contraseña',
+            message=f"Tu nueva contraseña es: {password_temporal}",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[usuario.correo],
-            fail_silently=False
+            fail_silently=True 
         )
 
-        # Respuesta profesional (sin mostrar la contraseña en la respuesta)
-        return Response({
-            "success": True, 
-            "mensaje": "Se ha enviado una contraseña temporal a tu correo."
-        }, status=status.HTTP_200_OK)
+        if exito:
+            return Response({"success": True, "mensaje": "Correo enviado"}, status=status.HTTP_200_OK)
+        else:
+            # Esto significa que el correo no salió, pero el servidor SIGUE VIVO
+            return Response({"error": "No se pudo enviar el correo, pero la contraseña se cambió."}, status=status.HTTP_200_OK)
 
     except Usuario.DoesNotExist:
-        # Por seguridad, damos el mismo mensaje aunque el correo no exista
-        return Response({
-            "success": True, 
-            "mensaje": "Si el correo está registrado, recibirás las instrucciones."
-        }, status=status.HTTP_200_OK)
+        return Response({"error": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
         
     except Exception as e:
-        # Registramos el error real en los logs de Render para que tú lo veas
-        logger.error(f"Error en recuperación de password: {str(e)}")
-        # Respuesta genérica para el usuario
-        return Response({
-            "error": "Hubo un problema al enviar el correo. Intenta de nuevo más tarde."
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Esto captura cualquier error sin que el servidor se caiga
+        return Response({"error": "Error interno del servidor"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt    
 def cambiar_password(request):
