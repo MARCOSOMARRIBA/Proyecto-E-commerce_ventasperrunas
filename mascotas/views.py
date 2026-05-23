@@ -926,19 +926,20 @@ logger = logging.getLogger(__name__)
 logger = logging.getLogger(__name__)
 
 def enviar_correo_background(asunto, mensaje, destinatario):
-    """
-    Esta función corre en segundo plano para no bloquear al usuario.
-    """
     try:
+        # --- DEBUG: IMPRIME EN LOGS LA CONFIGURACIÓN ---
+        logger.info(f"DEBUG EMAIL: Host={settings.EMAIL_HOST}, User={settings.EMAIL_HOST_USER}, Backend={settings.EMAIL_BACKEND}")
+        
         send_mail(
             subject=asunto,
             message=mensaje,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[destinatario],
-            fail_silently=False
+            fail_silently=False # CAMBIA A FALSE PARA QUE SE FUERCE EL ERROR
         )
+        logger.info("El correo se envió exitosamente a sendgrid")
     except Exception as e:
-        logger.error(f"Error crítico en hilo de correo: {str(e)}")
+        logger.error(f"Error CRÍTICO en hilo de correo: {str(e)}")
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
