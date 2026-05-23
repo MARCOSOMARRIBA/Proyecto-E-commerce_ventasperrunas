@@ -1,36 +1,29 @@
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "https://proyecto-e-commerce-ventasperrunas.onrender.com/api";
-
-const buildUrl = (path) => {
-  const normalizedBase = API_BASE_URL.replace(/\/+$/, "");
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-
-  return `${normalizedBase}${normalizedPath}`;
-};
+// 1. URL base LIMPIA (sin el /api al final para controlarlo nosotros)
+const API_BASE_URL = "https://proyecto-e-commerce-ventasperrunas.onrender.com";
 
 export const apiFetch = async (path, options = {}) => {
-  const url = buildUrl(path);
+  // 2. FORZAMOS el /api/ aquí mismo
+  // Si el path no empieza con /api/, se lo ponemos a la fuerza
+  const apiPath = path.startsWith("/api") ? path : `/api${path}`;
+  const url = `${API_BASE_URL}${apiPath}`;
   
-  // Esto nos dirá exactamente a qué dirección intenta ir antes de fallar
-  console.log("🔍 [DEBUG] Intentando Fetch a:", url);
+  console.log("🔍 Intentando conectar a:", url);
 
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-      ...options,
-    });
-    
-    console.log("✅ [DEBUG] Respuesta recibida");
-    // ... el resto de tu lógica
-  } catch (error) {
-    console.error("❌ [DEBUG] Error capturado en fetch:", error);
-    throw error;
+  const response = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    console.error("❌ Error en petición:", response.status, url);
+    throw new Error(`Error ${response.status}: No se pudo completar la solicitud.`);
   }
-};
 
+  return await response.json();
+};
 
 export const api = {
   productos: {
