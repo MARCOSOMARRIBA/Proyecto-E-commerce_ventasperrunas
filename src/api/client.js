@@ -9,29 +9,28 @@ const buildUrl = (path) => {
 };
 
 export const apiFetch = async (path, options = {}) => {
-  const response = await fetch(buildUrl(path), {
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    ...options,
-  });
+  const url = buildUrl(path);
+  
+  // Esto nos dirá exactamente a qué dirección intenta ir antes de fallar
+  console.log("🔍 [DEBUG] Intentando Fetch a:", url);
 
-  const contentType = response.headers.get("content-type") || "";
-  const data = contentType.includes("application/json")
-    ? await response.json()
-    : null;
-
-  if (!response.ok) {
-    const message =
-      data?.error ||
-      data?.detail ||
-      "No se pudo completar la solicitud al servidor.";
-    throw new Error(message);
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+      ...options,
+    });
+    
+    console.log("✅ [DEBUG] Respuesta recibida");
+    // ... el resto de tu lógica
+  } catch (error) {
+    console.error("❌ [DEBUG] Error capturado en fetch:", error);
+    throw error;
   }
-
-  return data;
 };
+
 
 export const api = {
   productos: {
