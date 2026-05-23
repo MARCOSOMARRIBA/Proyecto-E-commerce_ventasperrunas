@@ -488,15 +488,12 @@ def crear_pedido(request):
     data = request.data
     try:
         with transaction.atomic():
-            max_pedido = Pedido.objects.aggregate(Max('id_pedido'))['id_pedido__max']
-            nuevo_id = (max_pedido or 0) + 1
-
-            fecha = data.get('fecha_compra')
-            if not fecha:
-                fecha = timezone.now().date()
-
+            # 1. Crear el Pedido
+            # Quitamos el cálculo manual de ID. Si tu tabla es Serial/Auto, 
+            # al no enviar el ID, la base de datos lo asigna sola.
+            fecha = data.get('fecha_compra') or timezone.now().date()
+            
             pedido = Pedido.objects.create(
-                id_pedido=nuevo_id,
                 rfc_id=data.get('rfc'),
                 descripcion=data.get('descripcion', ''),
                 total_compra=data.get('total_compra', 0),
@@ -505,6 +502,7 @@ def crear_pedido(request):
                 fecha_compra=fecha
             )
 
+            # 2. Procesar detalles
             detalles = data.get('detalles', [])
             detalles_limpios = {}
             
@@ -520,13 +518,11 @@ def crear_pedido(request):
                         'precio_subtotal': float(d.get('precio_subtotal', 0))
                     }
 
+            # 3. Crear detalles usando el objeto 'pedido' que acabamos de crear
+            # ELIMINAMOS EL CÁLCULO DE MAX Y LA ASIGNACIÓN DE ID MANUAL
             for prod_id, info in detalles_limpios.items():
-                max_detalle = DetallePedido.objects.aggregate(Max('pk'))['pk__max']
-                nuevo_id_detalle = (max_detalle or 0) + 1
-
                 DetallePedido.objects.create(
-                    id=nuevo_id_detalle, 
-                    id_pedido_id=nuevo_id,
+                    id_pedido=pedido, # Pasamos el objeto pedido directamente
                     id_producto_id=prod_id,
                     cantidad=info['cantidad'],
                     precio_unitario=info['precio_unitario'],
@@ -534,7 +530,8 @@ def crear_pedido(request):
                     estatus='1'
                 )
 
-        return Response({"message": "Pedido creado con éxito", "id_pedido": nuevo_id}, status=201)
+        return Response({"message": "Pedido creado con éxito", "id_pedido": pedido.id_pedido}, status=201)
+        
     except Exception as e:
         import traceback
         traceback.print_exc()
