@@ -927,17 +927,20 @@ logger = logging.getLogger(__name__)
 
 def enviar_correo_background(asunto, mensaje, destinatario):
     try:
-        print("DEBUG: Intentando enviar correo a " + destinatario) # print se ve siempre en logs
+        # Esto nos dirá exactamente qué valores está leyendo tu Django
+        print(f"DEBUG_CONF: HOST={settings.EMAIL_HOST}, PORT={settings.EMAIL_PORT}, USER={settings.EMAIL_HOST_USER}")
+        print(f"DEBUG_CONF: FROM={settings.DEFAULT_FROM_EMAIL}")
+        
         send_mail(
             subject=asunto,
             message=mensaje,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[destinatario],
-            fail_silently=False # CAMBIADO A FALSE
+            fail_silently=False
         )
-        print("DEBUG: SendGrid aceptó el correo")
+        print("DEBUG_RESULT: SendGrid aceptó el correo (o al menos lo intentó)")
     except Exception as e:
-        print("DEBUG: ERROR EN SENDGRID: " + str(e)) # Esto es para forzar que salga en los logs
+        print(f"DEBUG_RESULT: ERROR CRÍTICO AL CONECTAR CON SENDGRID: {str(e)}")
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
