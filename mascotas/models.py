@@ -99,7 +99,7 @@ class Orden(models.Model):
 
 
 class Pedido(models.Model):
-    id_pedido = models.BigField(primary_key=True)
+    id_pedido = models.BigIntegerField(primary_key=True)
     descripcion = models.CharField(max_length=150, blank=True, null=True)
     fecha_compra = models.DateField()
     estatus = models.CharField(max_length=1)
