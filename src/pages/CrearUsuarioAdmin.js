@@ -40,7 +40,7 @@ const CrearUsuarioAdmin = () => {
   useEffect(() => {
     const cargarProveedores = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/proveedores/");
+        const res = await fetch("http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/proveedores/");
 
         if (res.ok) {
           const data = await res.json();
@@ -71,7 +71,7 @@ const CrearUsuarioAdmin = () => {
 
     try {
       const res = await fetch(
-        "http://localhost:8000/api/usuarios/crear-admin/",
+        "http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/usuarios/crear-admin/",
         {
           method: "POST",
           headers: {
@@ -130,7 +130,7 @@ const CrearUsuarioAdmin = () => {
       console.log("RFC:", nuevoProveedor.rfc);
       console.log("TIPO RFC:", typeof nuevoProveedor.rfc);
 
-      const res = await fetch("http://localhost:8000/api/proveedores/", {
+      const res = await fetch("http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/proveedores/", {
         method: "POST",
 
         headers: {
@@ -165,7 +165,7 @@ const CrearUsuarioAdmin = () => {
 
         // RECARGAMOS PROVEEDORES
         const proveedoresRes = await fetch(
-          "http://localhost:8000/api/proveedores/",
+          "http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/proveedores/",
         );
         const proveedoresData = await proveedoresRes.json();
 

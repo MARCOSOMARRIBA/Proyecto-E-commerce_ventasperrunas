@@ -1,0 +1,1 @@
+export const API_URL = "https://proyecto-e-commerce-ventasperrunas.onrender.com";

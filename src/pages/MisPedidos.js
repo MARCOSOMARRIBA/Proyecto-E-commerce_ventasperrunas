@@ -27,7 +27,7 @@ function MisPedidos() {
     if (!user) return;
     try {
       const res = await fetch(
-        `http://localhost:8000/api/mis-pedidos/${user.id}/`,
+        `http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/mis-pedidos/${user.id}/`,
       );
       const data = await res.json();
       console.log(data);
@@ -46,7 +46,7 @@ function MisPedidos() {
   const abrirDetalle = async (pedido) => {
     try {
       const res = await fetch(
-        `http://localhost:8000/api/detalle-orden/${pedido.id}/`,
+        `http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/detalle-orden/${pedido.id}/`,
       );
       const data = await res.json();
 
@@ -65,7 +65,7 @@ function MisPedidos() {
 
     try {
       const res = await fetch(
-        `http://localhost:8000/api/ordenes/cancelar/${ordenCancelar}/`,
+        `http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/ordenes/cancelar/${ordenCancelar}/`,
         {
           method: "POST",
           headers: {

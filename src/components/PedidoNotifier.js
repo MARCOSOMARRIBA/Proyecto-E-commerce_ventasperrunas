@@ -21,7 +21,7 @@ function PedidoNotifier() {
     const verificarPedidos = async () => {
       try {
         const res = await fetch(
-          `http://localhost:8000/api/mis-pedidos/${user.id}/`,
+          `http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/mis-pedidos/${user.id}/`,
         );
         if (!res.ok) return;
 

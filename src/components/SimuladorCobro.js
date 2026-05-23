@@ -286,7 +286,7 @@ const SimuladorCobro = () => {
     try {
       const orden = generarOrden(direccionFinalLista);
 
-      const response = await fetch("http://localhost:8000/api/checkout/", {
+      const response = await fetch("http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/checkout/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orden),
