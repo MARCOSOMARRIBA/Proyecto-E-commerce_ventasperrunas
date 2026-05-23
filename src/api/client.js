@@ -34,8 +34,8 @@ export const apiFetch = async (path, options = {}) => {
 
 export const api = {
   productos: {
-    list: () => apiFetch("/productos/"),
-    detail: (id) => apiFetch(`/productos/${id}/`),
+    list: () => apiFetch("/api/productos/"),
+    detail: (id) => apiFetch(`/api/productos/${id}/`),
   },
   categorias: {
     list: () => apiFetch("/categorias/"),

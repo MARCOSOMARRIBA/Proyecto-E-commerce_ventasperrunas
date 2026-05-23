@@ -19,7 +19,7 @@ const GestionProductos = () => {
   const cargarDatos = async () => {
     try {
       const [resProd, resCat] = await Promise.all([
-        fetch('https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/'),
+        fetch('https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/'),
         fetch('https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/') // Asegúrate de tener esta ruta o quita las categorías si no las usas
       ]);
       if (resProd.ok) setProductos(await resProd.json());
@@ -39,7 +39,7 @@ const GestionProductos = () => {
     setProductos(productos.map(p => p.id_producto === producto.id_producto ? { ...p, activo: nuevoEstado } : p));
 
     try {
-      await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${producto.id_producto}/`, {
+      await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/${producto.id_producto}/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activo: nuevoEstado })
@@ -53,7 +53,7 @@ const GestionProductos = () => {
   const guardarProducto = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/', {
+      const res = await fetch('https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nuevoProducto)

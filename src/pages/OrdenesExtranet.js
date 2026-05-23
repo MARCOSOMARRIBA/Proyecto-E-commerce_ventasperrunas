@@ -83,7 +83,7 @@ const OrdenesExtranet = () => {
               const promesasDeActivacion = detalles.map(detalle => {
                 const idProd = detalle.id_producto || detalle.producto_id || detalle.producto; 
                 // Aseguramos que la actualización de stock también lleve permisos
-                return fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${idProd}/?rol=${user.rol}&rfc=${rfcSeguro}`, {
+                return fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/${idProd}/?rol=${user.rol}&rfc=${rfcSeguro}`, {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ stock: true, activo: true })

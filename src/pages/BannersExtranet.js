@@ -340,7 +340,7 @@ const subirImagenACloudinary = async (file) => {
                   <input
                     type="text"
                     className="form-control border-2"
-                    placeholder="/productos/ofertas"
+                    placeholder="/api/productos/ofertas"
                     value={nuevoBanner.url_destino}
                     onChange={(e) =>
                       setNuevoBanner({
