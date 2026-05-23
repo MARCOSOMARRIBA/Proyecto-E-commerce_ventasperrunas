@@ -1,23 +1,23 @@
 const API_BASE_URL = "https://proyecto-e-commerce-ventasperrunas.onrender.com";
 
-// client.js
-
 export const apiFetch = async (path, options = {}) => {
-  // RUTA HARCODEADA: Si esto no carga, nada cargará.
-  const baseUrl = "https://proyecto-e-commerce-ventasperrunas.onrender.com";
+  // Limpiamos el path: si empieza con /api/, se lo quitamos antes de sumar
+  const cleanPath = path.startsWith('/api') ? path.replace('/api', '') : path;
   
-  // Si el path no tiene /api/, se lo ponemos a la fuerza
-  const finalPath = path.startsWith('/api') ? path : `/api${path}`;
-  const url = `${baseUrl}${finalPath}`;
-
-  console.log("URL FINAL:", url); // <--- MIRA LA CONSOLA: ¿Dice /api/productos/?
+  // Ahora construimos la URL: BASE + /api + PATH LIMPIO
+  const url = `${API_BASE_URL}/api${cleanPath}`;
+  
+  console.log("🔍 URL REAL:", url);
 
   const response = await fetch(url, {
-    method: options.method || 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    body: options.body
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+    ...options,
   });
 
+  if (!response.ok) throw new Error(`Error ${response.status}`);
   return await response.json();
 };
 
