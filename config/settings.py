@@ -122,18 +122,18 @@ STATIC_URL = 'static/'
 # ==============================================================================
 # CONFIGURACIÓN PARA ENVÍO DE CORREOS REALES
 # ==============================================================================
+
+# settings.py
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'                
+EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 465
-EMAIL_USE_TLS = False    # Cambia a False
-EMAIL_USE_SSL = True
-EMAIL_HOST_USER = 'sans15cadena@gmail.com' 
-EMAIL_HOST_PASSWORD = 'fknizfmjcpltmfhg' 
-DEFAULT_FROM_EMAIL = 'Ventas Perrunas <sans15cadena@gmail.com>'
+# OJO AQUÍ: El usuario es literalmente la palabra 'apikey'
+EMAIL_HOST_USER = 'apikey' 
+# Aquí pega la clave larga que empieza con SG.
+EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL = 'sans15cadena@gmail.com' # El mismo que verificaste en el paso 2
 
 # 🔥 CORRECCIÓN: Claves de Cloudinary directas para que suban las imágenes
 cloudinary.config(
