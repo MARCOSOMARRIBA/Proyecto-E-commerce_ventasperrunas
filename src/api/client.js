@@ -1,25 +1,22 @@
 const API_BASE_URL = "https://proyecto-e-commerce-ventasperrunas.onrender.com";
 
+// client.js
+
 export const apiFetch = async (path, options = {}) => {
-  // 1. FORZAMOS EL PREFIJO /api/ SIEMPRE
-  // Si el path ya tiene /api/, no hacemos nada. Si no, se lo pegamos al principio.
-  const apiPath = path.startsWith("/api") ? path : `/api${path}`;
-  const url = `${API_BASE_URL}${apiPath}`;
+  // RUTA HARCODEADA: Si esto no carga, nada cargará.
+  const baseUrl = "https://proyecto-e-commerce-ventasperrunas.onrender.com";
   
-  console.log("🔍 Intentando conectar a:", url); // Esto nos confirmará la ruta final
+  // Si el path no tiene /api/, se lo ponemos a la fuerza
+  const finalPath = path.startsWith('/api') ? path : `/api${path}`;
+  const url = `${baseUrl}${finalPath}`;
+
+  console.log("URL FINAL:", url); // <--- MIRA LA CONSOLA: ¿Dice /api/productos/?
 
   const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    ...options,
+    method: options.method || 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    body: options.body
   });
-
-  if (!response.ok) {
-    console.error("❌ Error en petición:", response.status, url);
-    throw new Error(`Error ${response.status}`);
-  }
 
   return await response.json();
 };
