@@ -26,8 +26,9 @@ function MisPedidos() {
   const fetchPedidos = async () => {
     if (!user) return;
     try {
+      // 🔥 CORRECCIÓN 1: URL LIMPIA
       const res = await fetch(
-        `http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/mis-pedidos/${user.id}/`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/mis-pedidos/${user.id}/`
       );
       const data = await res.json();
       console.log(data);
@@ -45,8 +46,9 @@ function MisPedidos() {
 
   const abrirDetalle = async (pedido) => {
     try {
+      // 🔥 CORRECCIÓN 2: URL LIMPIA
       const res = await fetch(
-        `http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/detalle-orden/${pedido.id}/`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/detalle-orden/${pedido.id}/`
       );
       const data = await res.json();
 
@@ -64,14 +66,15 @@ function MisPedidos() {
     if (!ordenCancelar) return;
 
     try {
+      // 🔥 CORRECCIÓN 3: URL LIMPIA
       const res = await fetch(
-        `http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/ordenes/cancelar/${ordenCancelar}/`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/ordenes/cancelar/${ordenCancelar}/`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-        },
+        }
       );
 
       const data = await res.json();
