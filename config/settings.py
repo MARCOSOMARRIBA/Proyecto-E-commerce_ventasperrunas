@@ -44,9 +44,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -55,7 +55,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-"https://proyecto-e-commerce-ventasperrunas-five.vercel.app", 
+    "https://proyecto-e-commerce-ventasperrunas-892j-lwaq7l77w.vercel.app", 
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
@@ -154,18 +154,18 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
 
-EMAIL_HOST_USER = 'sans15cadena@gmail.com' 
+EMAIL_HOST_USER = os.environ.get('sans15cadena@gmail.com') 
 
-EMAIL_HOST_PASSWORD = 'fkni zfmj cplt mfhg' 
+EMAIL_HOST_PASSWORD = os.environ.get('fkni zfmj cplt mfhg') 
 
 
 DEFAULT_FROM_EMAIL = 'Ventas Perrunas <sans15cadena@gmail.com>'
 DEFAULT_FROM_EMAIL = 'Ventas Perrunas <sans15cadena@gmail.com>'
 
 cloudinary.config(
-    cloud_name = 'dusyqmcav',
-    api_key = '114311678134825',
-    api_secret = 'R6YsHsf0F3NzfgrBH9pi6MIqvnQ'
+    cloud_name = os.environ.get('dusyqmcav'),
+    api_key = os.environ.get('114311678134825'),
+    api_secret = os.environ.get('R6YsHsf0F3NzfgrBH9pi6MIqvnQ')
 )
 
 CORS_ALLOW_ALL_ORIGINS = False  
