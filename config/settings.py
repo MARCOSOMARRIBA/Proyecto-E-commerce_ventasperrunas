@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
+import os
 import cloudinary
 from pathlib import Path
 
@@ -20,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-e3sb9wi8&0dgn@b!d9#+xrv*swk04u_a&z6oc+4jlne&xd$i5)'
+SECRET_KEY = os.environ.get('django-insecure-e3sb9wi8&0dgn@b!d9#+xrv*swk04u_a&z6oc+4jlne&xd$i5', 'django-insecure-default-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -60,6 +61,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
+  "https://proyecto-e-commerce-ventasperrunas-five.vercel.app",
     "http://localhost:3000",
 ]
 
