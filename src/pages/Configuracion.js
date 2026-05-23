@@ -94,7 +94,7 @@ const Configuracion = () => {
       console.log("USER COMPLETO:", user);
 
       const response = await fetch(
-        "http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/usuarios/cambiar-password/",
+        "https://proyecto-e-commerce-ventasperrunas.onrender.com/api/usuarios/cambiar-password/",
         {
           method: "PUT",
           headers: {

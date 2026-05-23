@@ -40,7 +40,8 @@ const ProductosExtranet = () => {
     }
   };
 
-  const API_PRODUCTOS = "https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/";
+  // 🔥 CORRECCIÓN: URL LIMPIA SIN EL DOBLE /api/api/
+  const API_PRODUCTOS = "https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/";
   const API_CATEGORIAS = "https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/";
 
   useEffect(() => {

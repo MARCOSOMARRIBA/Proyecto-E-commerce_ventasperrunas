@@ -14,7 +14,7 @@ function OlvidePassword() {
 
     try {
       // Petición a tu backend de Django (Necesitarás crear esta URL en views.py)
-      const res = await fetch("http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/usuarios/recuperar-password/", {
+      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/usuarios/recuperar-password/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo: email }),

@@ -54,9 +54,9 @@ const InventarioIntranet = () => {
 
   const cargarDatos = async () => {
     try {
-      // Cargamos productos y categorías al mismo tiempo
+      // 🔥 CORRECCIÓN: Quitamos el /api/api/
       const [resProd, resCat] = await Promise.all([
-        fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/"),
+        fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/"),
         fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/"),
       ]);
 
@@ -78,13 +78,14 @@ const InventarioIntranet = () => {
     );
 
     try {
+      // 🔥 CORRECCIÓN: Quitamos el /api/api/
       const res = await fetch(
-        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/${id_producto}/`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${id_producto}/`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ stock: nuevoStock }),
-        },
+        }
       );
       if (!res.ok) throw new Error("Fallo en BD");
     } catch (error) {
@@ -106,13 +107,14 @@ const InventarioIntranet = () => {
     );
 
     try {
+      // 🔥 CORRECCIÓN: Quitamos el /api/api/
       const res = await fetch(
-        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/${id_producto}/`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${id_producto}/`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ activo: nuevoActivo }),
-        },
+        }
       );
       if (!res.ok) throw new Error("Fallo en BD");
     } catch (error) {
@@ -128,7 +130,8 @@ const InventarioIntranet = () => {
   const guardarProducto = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/api/productos/", {
+      // 🔥 CORRECCIÓN: Quitamos el /api/api/
+      const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nuevoProducto),
@@ -146,11 +149,9 @@ const InventarioIntranet = () => {
           activo: true,
         });
         cargarDatos();
-        // ¡Magia silenciosa! Ya no hay alert() molestando si todo sale bien.
       } else {
         const errorData = await res.json();
         console.error("Error detallado de Django:", errorData);
-        // Esta alerta SÍ nos interesa, porque nos dirá el culpable exacto
         alert(
           "El servidor rebotó el producto por esto: " +
             JSON.stringify(errorData),

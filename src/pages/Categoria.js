@@ -7,7 +7,7 @@ function Categorias() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/")
+    fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/")
       .then((res) => res.json())
       .then((data) => {
         setCategorias(data);
@@ -41,7 +41,7 @@ function Categorias() {
               style={{ cursor: "pointer" }}
             >
               <img
-                src={`http://https://proyecto-e-commerce-ventasperrunas.onrender.com/media/${cat.imagen}`}
+                src={`https://proyecto-e-commerce-ventasperrunas.onrender.com/media/${cat.imagen}`}
                 className="card-img-top"
                 alt={cat.nombre}
               />

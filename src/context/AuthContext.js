@@ -193,7 +193,7 @@ export const AuthProvider = ({ children }) => {
     });
 
     try {
-      await fetch(`http://https://proyecto-e-commerce-ventasperrunas.onrender.com/api/usuarios/actualizar/${user.id}/`, {
+      await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/usuarios/actualizar/${user.id}/`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
