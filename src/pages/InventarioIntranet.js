@@ -18,10 +18,13 @@ const InventarioIntranet = () => {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarModalCategoria, setMostrarModalCategoria] = useState(false);
 
+  // 🔥 1. Agregamos el campo 'imagen' al estado inicial
   const [nuevaCategoria, setNuevaCategoria] = useState({
     nombre: "",
     descripcion: "",
+    imagen: "", 
   });
+  
   const [nuevoProducto, setNuevoProducto] = useState({
     nombre: "",
     descripcion: "",
@@ -54,7 +57,6 @@ const InventarioIntranet = () => {
 
   const cargarDatos = async () => {
     try {
-      // 🔥 CORRECCIÓN: Quitamos el /api//
       const [resProd, resCat] = await Promise.all([
         fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/"),
         fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/"),
@@ -78,7 +80,6 @@ const InventarioIntranet = () => {
     );
 
     try {
-      // 🔥 CORRECCIÓN: Quitamos el /api//
       const res = await fetch(
         `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${id_producto}/`,
         {
@@ -107,7 +108,6 @@ const InventarioIntranet = () => {
     );
 
     try {
-      // 🔥 CORRECCIÓN: Quitamos el /api//
       const res = await fetch(
         `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${id_producto}/`,
         {
@@ -130,7 +130,6 @@ const InventarioIntranet = () => {
   const guardarProducto = async (e) => {
     e.preventDefault();
     try {
-      // 🔥 CORRECCIÓN: Quitamos el /api//
       const res = await fetch("https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -179,20 +178,20 @@ const InventarioIntranet = () => {
 
         setCategorias([...categorias, categoriaCreada]);
 
+        // 🔥 2. Limpiamos también la imagen al terminar
         setNuevaCategoria({
           nombre: "",
           descripcion: "",
+          imagen: "",
         });
 
         setMostrarModalCategoria(false);
       } else {
         const errorData = await res.json();
-
         alert("Error al crear categoría: " + JSON.stringify(errorData));
       }
     } catch (error) {
       console.error(error);
-
       alert("Error de conexión");
     }
   };
@@ -400,6 +399,7 @@ const InventarioIntranet = () => {
         </div>
       )}
 
+      {/* MODAL PARA AGREGAR CATEGORÍA */}
       {mostrarModalCategoria && (
         <div
           className="modal show d-block"
@@ -461,6 +461,52 @@ const InventarioIntranet = () => {
                         })
                       }
                     />
+                  </div>
+
+                  {/* 🔥 3. Agregamos el sistema de subida de imagen para Categoría */}
+                  <div className="mt-3">
+                    <label className="small fw-bold text-dark">
+                      Imagen de la Categoría
+                    </label>
+
+                    <input
+                      type="text"
+                      className="form-control bg-light mb-2"
+                      readOnly
+                      placeholder="Sube una imagen para obtener la URL..."
+                      value={nuevaCategoria.imagen}
+                    />
+
+                    <input
+                      type="file"
+                      className="form-control"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const url = await subirImagenACloudinary(file);
+                          if (url) {
+                            setNuevaCategoria({ ...nuevaCategoria, imagen: url });
+                          } else {
+                            alert(
+                              "Error al subir la imagen. Intenta de nuevo.",
+                            );
+                          }
+                        }
+                      }}
+                    />
+
+                    {nuevaCategoria.imagen && (
+                      <img
+                        src={nuevaCategoria.imagen}
+                        alt="preview categoria"
+                        className="mt-2 rounded"
+                        style={{
+                          width: "60px",
+                          height: "60px",
+                          objectFit: "cover",
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
 
