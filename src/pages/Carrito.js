@@ -8,7 +8,8 @@ function Carrito() {
     useContext(CartContext);
 
   const [mostrarCobro, setMostrarCobro] = useState(false);
-
+  console.log("Datos del carrito:", carrito); 
+// (cambia 'carrito' por el nombre de tu variable de estado)
   // 🔥 Evita render antes de cargar
   if (!cartReady) {
     return <div className="text-center mt-5">Cargando carrito...</div>;
