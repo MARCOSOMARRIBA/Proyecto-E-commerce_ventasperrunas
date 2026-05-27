@@ -8,6 +8,7 @@ import {
   FiEye,
   FiEyeOff,
   FiEdit,
+  FiTrash2, // 🔥 Agregamos el ícono de basurero
 } from "react-icons/fi";
 
 const InventarioIntranet = () => {
@@ -19,7 +20,7 @@ const InventarioIntranet = () => {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarModalCategoria, setMostrarModalCategoria] = useState(false);
   
-  // 🔥 Nuevo estado para el modal de Editar Categoría
+  // Nuevo estado para el modal de Editar Categoría
   const [mostrarModalEditarCategoria, setMostrarModalEditarCategoria] = useState(false);
 
   const [nuevaCategoria, setNuevaCategoria] = useState({
@@ -28,7 +29,7 @@ const InventarioIntranet = () => {
     imagen: "", 
   });
 
-  // 🔥 Estado para manejar la categoría que se va a editar
+  // Estado para manejar la categoría que se va a editar
   const [categoriaEditada, setCategoriaEditada] = useState({
     id_categoria: "",
     nombre: "",
@@ -221,7 +222,6 @@ const InventarioIntranet = () => {
     }
   };
 
-  // 🔥 NUEVA FUNCIÓN: Actualizar Categoría Existente
   const actualizarCategoria = async (e) => {
     e.preventDefault();
     
@@ -265,6 +265,37 @@ const InventarioIntranet = () => {
     }
   };
 
+  // 🔥 NUEVA FUNCIÓN: Eliminar Categoría
+  const eliminarCategoria = async () => {
+    if (!categoriaEditada.id_categoria) return;
+
+    const confirmacion = window.confirm(
+      "¿Estás seguro de que deseas eliminar esta categoría de forma permanente?\n\nNOTA: Si hay productos que actualmente pertenecen a esta categoría, el sistema no te permitirá borrarla."
+    );
+
+    if (!confirmacion) return;
+
+    try {
+      const res = await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/${categoriaEditada.id_categoria}/`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        // Quitamos la categoría de la tabla de React
+        setCategorias(categorias.filter(cat => cat.id_categoria !== categoriaEditada.id_categoria));
+        setMostrarModalEditarCategoria(false);
+        setCategoriaEditada({ id_categoria: "", nombre: "", descripcion: "", imagen: "" });
+        alert("Categoría eliminada exitosamente.");
+      } else {
+        // Si PostgreSQL prohíbe el borrado por la restricción de llave foránea
+        alert("No se pudo eliminar la categoría. Es muy probable que aún existan productos vinculados a ella. Cambia los productos de categoría primero.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error de red al intentar eliminar.");
+    }
+  };
+
   // Función para cargar los datos de la categoría cuando el usuario la selecciona en el select
   const handleSelectCategoriaEditada = (e) => {
     const idSelec = e.target.value;
@@ -274,7 +305,6 @@ const InventarioIntranet = () => {
     }
     
     // Buscamos la categoría seleccionada
-    // Usamos == en lugar de === por si el id_categoria viene como string del value pero es int en el state
     const catEncontrada = categorias.find(c => c.id_categoria == idSelec);
     if (catEncontrada) {
       setCategoriaEditada({ ...catEncontrada });
@@ -294,7 +324,7 @@ const InventarioIntranet = () => {
           </p>
         </div>
         <div className="d-flex gap-2">
-          {/* 🔥 NUEVO BOTÓN: Editar Categoría */}
+          {/* BOTÓN: Editar Categoría */}
           <button
             onClick={() => setMostrarModalEditarCategoria(true)}
             className="btn btn-outline-secondary fw-bold shadow-sm px-3"
@@ -619,7 +649,7 @@ const InventarioIntranet = () => {
         </div>
       )}
 
-      {/* 🔥 NUEVO MODAL: EDITAR CATEGORÍA */}
+      {/* MODAL: EDITAR / ELIMINAR CATEGORÍA */}
       {mostrarModalEditarCategoria && (
         <div
           className="modal show d-block"
@@ -729,22 +759,35 @@ const InventarioIntranet = () => {
 
                 </div>
 
-                <div className="modal-footer border-0 bg-white">
-                  <button
-                    type="button"
-                    className="btn btn-light fw-bold"
-                    onClick={() => setMostrarModalEditarCategoria(false)}
+                {/* 🔥 BOTONES DE ACCIÓN (ELIMINAR / CANCELAR / ACTUALIZAR) */}
+                <div className="modal-footer border-0 bg-white d-flex justify-content-between">
+                  {/* Botón de Eliminar */}
+                  <button 
+                    type="button" 
+                    className="btn btn-outline-danger fw-bold d-flex align-items-center gap-2"
+                    disabled={!categoriaEditada.id_categoria}
+                    onClick={eliminarCategoria}
                   >
-                    Cancelar
+                    <FiTrash2 /> Eliminar
                   </button>
 
-                  <button 
-                    type="submit" 
-                    className="btn btn-secondary fw-bold px-4"
-                    disabled={!categoriaEditada.id_categoria}
-                  >
-                    Actualizar
-                  </button>
+                  {/* Grupo de botones derecho */}
+                  <div>
+                    <button
+                      type="button"
+                      className="btn btn-light fw-bold me-2"
+                      onClick={() => setMostrarModalEditarCategoria(false)}
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="btn btn-secondary fw-bold px-4"
+                      disabled={!categoriaEditada.id_categoria}
+                    >
+                      Actualizar
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
