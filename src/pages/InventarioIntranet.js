@@ -7,6 +7,7 @@ import {
   FiPlus,
   FiEye,
   FiEyeOff,
+  FiEdit,
 } from "react-icons/fi";
 
 const InventarioIntranet = () => {
@@ -14,15 +15,25 @@ const InventarioIntranet = () => {
   const [categorias, setCategorias] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  // Estados para el Modal de Agregar Producto
+  // Estados para los Modales
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarModalCategoria, setMostrarModalCategoria] = useState(false);
+  
+  // 🔥 Nuevo estado para el modal de Editar Categoría
+  const [mostrarModalEditarCategoria, setMostrarModalEditarCategoria] = useState(false);
 
-  // 🔥 1. Agregamos el campo 'imagen' al estado inicial
   const [nuevaCategoria, setNuevaCategoria] = useState({
     nombre: "",
     descripcion: "",
     imagen: "", 
+  });
+
+  // 🔥 Estado para manejar la categoría que se va a editar
+  const [categoriaEditada, setCategoriaEditada] = useState({
+    id_categoria: "",
+    nombre: "",
+    descripcion: "",
+    imagen: "",
   });
   
   const [nuevoProducto, setNuevoProducto] = useState({
@@ -44,7 +55,7 @@ const InventarioIntranet = () => {
         body: formData,
       });
       const data = await res.json();
-      return data.url; // Retorna la URL para guardarla en el estado
+      return data.url; 
     } catch (error) {
       console.error("Error al subir:", error);
       return null;
@@ -71,58 +82,74 @@ const InventarioIntranet = () => {
     }
   };
 
-  const cambiarStock = async (id_producto, stockActual) => {
+  const cambiarStock = async (idReal, stockActual) => {
     const nuevoStock = !stockActual;
-    setProductos(
-      productos.map((p) =>
-        p.id_producto === id_producto ? { ...p, stock: nuevoStock } : p,
-      ),
+    
+    setProductos((prevProductos) =>
+      prevProductos.map((p) =>
+        (p.id || p.id_producto) === idReal ? { ...p, stock: nuevoStock } : p
+      )
     );
 
     try {
       const res = await fetch(
-        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${id_producto}/`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${idReal}/`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ stock: nuevoStock }),
         }
       );
-      if (!res.ok) throw new Error("Fallo en BD");
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("🚨 Django rechazó el cambio de Stock:", errorData);
+        throw new Error("El servidor rechazó el cambio.");
+      }
     } catch (error) {
-      alert("Error al actualizar el stock en la base de datos.");
-      setProductos(
-        productos.map((p) =>
-          p.id_producto === id_producto ? { ...p, stock: stockActual } : p,
-        ),
+      console.error("Error de red o servidor:", error);
+      alert("No se pudo actualizar el stock. Revisa la consola (F12) para ver el error de Django.");
+      
+      setProductos((prevProductos) =>
+        prevProductos.map((p) =>
+          (p.id || p.id_producto) === idReal ? { ...p, stock: stockActual } : p
+        )
       );
     }
   };
 
-  const cambiarVisibilidad = async (id_producto, activoActual) => {
+  const cambiarVisibilidad = async (idReal, activoActual) => {
     const nuevoActivo = !activoActual;
-    setProductos(
-      productos.map((p) =>
-        p.id_producto === id_producto ? { ...p, activo: nuevoActivo } : p,
-      ),
+    
+    setProductos((prevProductos) =>
+      prevProductos.map((p) =>
+        (p.id || p.id_producto) === idReal ? { ...p, activo: nuevoActivo } : p
+      )
     );
 
     try {
       const res = await fetch(
-        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${id_producto}/`,
+        `https://proyecto-e-commerce-ventasperrunas.onrender.com/api/productos/${idReal}/`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ activo: nuevoActivo }),
         }
       );
-      if (!res.ok) throw new Error("Fallo en BD");
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("🚨 Django rechazó el cambio de Visibilidad:", errorData);
+        throw new Error("El servidor rechazó el cambio.");
+      }
     } catch (error) {
-      alert("Error al actualizar la visibilidad en la base de datos.");
-      setProductos(
-        productos.map((p) =>
-          p.id_producto === id_producto ? { ...p, activo: activoActual } : p,
-        ),
+      console.error("Error de red o servidor:", error);
+      alert("No se pudo actualizar la visibilidad. Revisa la consola (F12) para ver el error de Django.");
+      
+      setProductos((prevProductos) =>
+        prevProductos.map((p) =>
+          (p.id || p.id_producto) === idReal ? { ...p, activo: activoActual } : p
+        )
       );
     }
   };
@@ -175,10 +202,8 @@ const InventarioIntranet = () => {
 
       if (res.ok) {
         const categoriaCreada = await res.json();
-
         setCategorias([...categorias, categoriaCreada]);
 
-        // 🔥 2. Limpiamos también la imagen al terminar
         setNuevaCategoria({
           nombre: "",
           descripcion: "",
@@ -196,6 +221,66 @@ const InventarioIntranet = () => {
     }
   };
 
+  // 🔥 NUEVA FUNCIÓN: Actualizar Categoría Existente
+  const actualizarCategoria = async (e) => {
+    e.preventDefault();
+    
+    if (!categoriaEditada.id_categoria) {
+      alert("Por favor, selecciona una categoría para editar.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`https://proyecto-e-commerce-ventasperrunas.onrender.com/api/categorias/${categoriaEditada.id_categoria}/`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nombre: categoriaEditada.nombre,
+          descripcion: categoriaEditada.descripcion,
+          imagen: categoriaEditada.imagen
+        }),
+      });
+
+      if (res.ok) {
+        const categoriaActualizada = await res.json();
+        
+        // Actualizamos la categoría en la lista de React
+        setCategorias(categorias.map(cat => 
+          cat.id_categoria === categoriaActualizada.id_categoria ? categoriaActualizada : cat
+        ));
+
+        setMostrarModalEditarCategoria(false);
+        setCategoriaEditada({ id_categoria: "", nombre: "", descripcion: "", imagen: "" });
+        alert("Categoría actualizada con éxito.");
+      } else {
+        const errorData = await res.json();
+        console.error("Error de Django:", errorData);
+        alert("Error al actualizar la categoría.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error de conexión al intentar actualizar.");
+    }
+  };
+
+  // Función para cargar los datos de la categoría cuando el usuario la selecciona en el select
+  const handleSelectCategoriaEditada = (e) => {
+    const idSelec = e.target.value;
+    if (idSelec === "") {
+      setCategoriaEditada({ id_categoria: "", nombre: "", descripcion: "", imagen: "" });
+      return;
+    }
+    
+    // Buscamos la categoría seleccionada
+    // Usamos == en lugar de === por si el id_categoria viene como string del value pero es int en el state
+    const catEncontrada = categorias.find(c => c.id_categoria == idSelec);
+    if (catEncontrada) {
+      setCategoriaEditada({ ...catEncontrada });
+    }
+  };
+
   return (
     <div className="p-4 animate__animated animate__fadeIn">
       {/* HEADER DE LA PANTALLA */}
@@ -209,9 +294,18 @@ const InventarioIntranet = () => {
           </p>
         </div>
         <div className="d-flex gap-2">
+          {/* 🔥 NUEVO BOTÓN: Editar Categoría */}
+          <button
+            onClick={() => setMostrarModalEditarCategoria(true)}
+            className="btn btn-outline-secondary fw-bold shadow-sm px-3"
+          >
+            <FiEdit className="me-2" />
+            Editar Categoría
+          </button>
+
           <button
             onClick={() => setMostrarModalCategoria(true)}
-            className="btn btn-outline-dark fw-bold shadow-sm px-4"
+            className="btn btn-outline-dark fw-bold shadow-sm px-3"
           >
             <FiPlus className="me-2" />
             Nueva Categoría
@@ -219,7 +313,7 @@ const InventarioIntranet = () => {
 
           <button
             onClick={() => setMostrarModal(true)}
-            className="btn btn-primary fw-bold shadow-sm px-4"
+            className="btn btn-primary fw-bold shadow-sm px-3"
           >
             <FiPlus className="me-2" />
             Añadir Producto
@@ -335,7 +429,6 @@ const InventarioIntranet = () => {
                       Imagen del Producto
                     </label>
 
-                    {/* Input donde se guardará la URL automáticamente */}
                     <input
                       type="text"
                       className="form-control bg-light mb-2"
@@ -344,7 +437,6 @@ const InventarioIntranet = () => {
                       value={nuevoProducto.imagen}
                     />
 
-                    {/* Input de archivo para el usuario */}
                     <input
                       type="file"
                       className="form-control"
@@ -363,7 +455,6 @@ const InventarioIntranet = () => {
                       }}
                     />
 
-                    {/* Vista previa pequeña para confirmar */}
                     {nuevoProducto.imagen && (
                       <img
                         src={nuevoProducto.imagen}
@@ -463,7 +554,6 @@ const InventarioIntranet = () => {
                     />
                   </div>
 
-                  {/* 🔥 3. Agregamos el sistema de subida de imagen para Categoría */}
                   <div className="mt-3">
                     <label className="small fw-bold text-dark">
                       Imagen de la Categoría
@@ -529,6 +619,139 @@ const InventarioIntranet = () => {
         </div>
       )}
 
+      {/* 🔥 NUEVO MODAL: EDITAR CATEGORÍA */}
+      {mostrarModalEditarCategoria && (
+        <div
+          className="modal show d-block"
+          style={{
+            backgroundColor: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(3px)",
+            zIndex: 1050,
+          }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+              <div className="modal-header bg-secondary text-white border-0">
+                <h5 className="modal-title fw-bold">
+                  <FiEdit className="me-2" />
+                  Editar Categoría Existente
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setMostrarModalEditarCategoria(false)}
+                />
+              </div>
+
+              <form onSubmit={actualizarCategoria}>
+                <div className="modal-body p-4 bg-light">
+                  
+                  <div className="mb-4">
+                    <label className="small fw-bold text-dark">
+                      1. Selecciona la categoría a editar:
+                    </label>
+                    <select
+                      className="form-select border-primary"
+                      value={categoriaEditada.id_categoria}
+                      onChange={handleSelectCategoriaEditada}
+                      required
+                    >
+                      <option value="">Selecciona una categoría...</option>
+                      {categorias.map((cat) => (
+                        <option key={cat.id_categoria} value={cat.id_categoria}>
+                          {cat.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Solo mostramos los inputs si ya seleccionó una categoría */}
+                  {categoriaEditada.id_categoria && (
+                    <div className="p-3 bg-white border rounded">
+                      <div className="mb-3">
+                        <label className="small fw-bold text-dark">Nombre</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={categoriaEditada.nombre}
+                          onChange={(e) => setCategoriaEditada({ ...categoriaEditada, nombre: e.target.value })}
+                        />
+                      </div>
+                      
+                      <div className="mb-3">
+                        <label className="small fw-bold text-dark">Descripción</label>
+                        <textarea
+                          className="form-control"
+                          rows="2"
+                          value={categoriaEditada.descripcion}
+                          onChange={(e) => setCategoriaEditada({ ...categoriaEditada, descripcion: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="mt-3">
+                        <label className="small fw-bold text-dark">Imagen de la Categoría</label>
+                        <input
+                          type="text"
+                          className="form-control bg-light mb-2"
+                          readOnly
+                          placeholder="Sin imagen actualmente..."
+                          value={categoriaEditada.imagen}
+                        />
+                        <input
+                          type="file"
+                          className="form-control"
+                          onChange={async (e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const url = await subirImagenACloudinary(file);
+                              if (url) {
+                                setCategoriaEditada({ ...categoriaEditada, imagen: url });
+                              } else {
+                                alert("Error al subir la imagen a Cloudinary.");
+                              }
+                            }
+                          }}
+                        />
+                        {categoriaEditada.imagen && (
+                          <div className="mt-2 text-center">
+                            <p className="small text-muted mb-1">Vista previa:</p>
+                            <img
+                              src={categoriaEditada.imagen}
+                              alt="preview edit"
+                              className="rounded shadow-sm"
+                              style={{ width: "80px", height: "80px", objectFit: "cover" }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+
+                <div className="modal-footer border-0 bg-white">
+                  <button
+                    type="button"
+                    className="btn btn-light fw-bold"
+                    onClick={() => setMostrarModalEditarCategoria(false)}
+                  >
+                    Cancelar
+                  </button>
+
+                  <button 
+                    type="submit" 
+                    className="btn btn-secondary fw-bold px-4"
+                    disabled={!categoriaEditada.id_categoria}
+                  >
+                    Actualizar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TABLA PRINCIPAL */}
       <div className="card border-0 shadow-sm rounded-4">
         <div className="card-body p-0 overflow-auto">
@@ -556,107 +779,104 @@ const InventarioIntranet = () => {
                   </td>
                 </tr>
               ) : (
-                productos.map((prod) => (
-                  <tr key={prod.id_producto}>
-                    {/* INFO PRODUCTO */}
-                    <td className="ps-4">
-                      <div className="d-flex align-items-center gap-3">
-                        {prod.imagen ? (
-                          <img
-                            src={prod.imagen}
-                            alt="prod"
-                            style={{
-                              width: "45px",
-                              height: "45px",
-                              objectFit: "cover",
-                              borderRadius: "10px",
-                            }}
-                          />
-                        ) : (
-                          <div
-                            className="bg-light d-flex align-items-center justify-content-center text-muted"
-                            style={{
-                              width: "45px",
-                              height: "45px",
-                              borderRadius: "10px",
-                            }}
-                          >
-                            <FiBox />
+                productos.map((prod) => {
+                  const idReal = prod.id || prod.id_producto;
+
+                  return (
+                    <tr key={idReal}>
+                      {/* INFO PRODUCTO */}
+                      <td className="ps-4">
+                        <div className="d-flex align-items-center gap-3">
+                          {prod.imagen ? (
+                            <img
+                              src={prod.imagen}
+                              alt="prod"
+                              style={{
+                                width: "45px",
+                                height: "45px",
+                                objectFit: "cover",
+                                borderRadius: "10px",
+                              }}
+                            />
+                          ) : (
+                            <div
+                              className="bg-light d-flex align-items-center justify-content-center text-muted"
+                              style={{
+                                width: "45px",
+                                height: "45px",
+                                borderRadius: "10px",
+                              }}
+                            >
+                              <FiBox />
+                            </div>
+                          )}
+                          <div>
+                            <strong className="d-block text-dark">
+                              {prod.nombre}
+                            </strong>
                           </div>
-                        )}
-                        <div>
-                          <strong className="d-block text-dark">
-                            {prod.nombre}
-                          </strong>
-                          <small className="text-muted">
-                            ID: #{prod.id_producto}
-                          </small>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* CATEGORÍA Y PRECIO */}
-                    <td>
-                      <span className="badge bg-light text-secondary border">
-                        Cat: {prod.id_categoria}
-                      </span>
-                    </td>
-                    <td className="fw-bold text-success">
-                      ${parseFloat(prod.precio).toLocaleString()}
-                    </td>
+                      {/* CATEGORÍA Y PRECIO */}
+                      <td>
+                        <span className="badge bg-light text-secondary border">
+                          {categorias.find(c => c.id_categoria === prod.id_categoria)?.nombre || "Sin Categoría"}
+                        </span>
+                      </td>
+                      <td className="fw-bold text-success">
+                        ${parseFloat(prod.precio).toLocaleString()}
+                      </td>
 
-                    {/* SWITCH DE STOCK */}
-                    <td className="text-center">
-                      <button
-                        onClick={() =>
-                          cambiarStock(prod.id_producto, prod.stock)
-                        }
-                        className={`btn btn-sm px-4 py-2 rounded-pill fw-bold border-0 d-inline-flex align-items-center gap-2 ${prod.stock ? "btn-success bg-opacity-25 text-success" : "btn-danger bg-opacity-25 text-danger"}`}
-                        style={{
-                          width: "130px",
-                          justifyContent: "center",
-                          transition: "all 0.2s ease",
-                        }}
-                      >
-                        {prod.stock ? (
-                          <>
-                            <FiCheck size={18} /> En Stock
-                          </>
-                        ) : (
-                          <>
-                            <FiX size={18} /> Agotado
-                          </>
-                        )}
-                      </button>
-                    </td>
+                      {/* SWITCH DE STOCK */}
+                      <td className="text-center">
+                        <button
+                          onClick={() => cambiarStock(idReal, prod.stock)}
+                          className={`btn btn-sm px-4 py-2 rounded-pill fw-bold border-0 d-inline-flex align-items-center gap-2 ${prod.stock ? "btn-success bg-opacity-25 text-success" : "btn-danger bg-opacity-25 text-danger"}`}
+                          style={{
+                            width: "130px",
+                            justifyContent: "center",
+                            transition: "all 0.2s ease",
+                          }}
+                        >
+                          {prod.stock ? (
+                            <>
+                              <FiCheck size={18} /> En Stock
+                            </>
+                          ) : (
+                            <>
+                              <FiX size={18} /> Agotado
+                            </>
+                          )}
+                        </button>
+                      </td>
 
-                    {/* SWITCH DE VISIBILIDAD */}
-                    <td className="text-center pe-4">
-                      <button
-                        onClick={() =>
-                          cambiarVisibilidad(prod.id_producto, prod.activo)
-                        }
-                        className={`btn btn-sm px-3 py-2 rounded-pill fw-bold border-0 d-inline-flex align-items-center gap-2 ${prod.activo ? "btn-primary text-white shadow-sm" : "btn-light text-secondary border"}`}
-                        style={{
-                          width: "120px",
-                          justifyContent: "center",
-                          transition: "all 0.2s ease",
-                        }}
-                        title="Decide si el cliente puede verlo en la tienda"
-                      >
-                        {prod.activo ? (
-                          <>
-                            <FiEye size={18} /> Visible
-                          </>
-                        ) : (
-                          <>
-                            <FiEyeOff size={18} /> Oculto
-                          </>
-                        )}
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      {/* SWITCH DE VISIBILIDAD */}
+                      <td className="text-center pe-4">
+                        <button
+                          onClick={() => cambiarVisibilidad(idReal, prod.activo)}
+                          className={`btn btn-sm px-3 py-2 rounded-pill fw-bold border-0 d-inline-flex align-items-center gap-2 ${prod.activo ? "btn-primary text-white shadow-sm" : "btn-light text-secondary border"}`}
+                          style={{
+                            width: "120px",
+                            justifyContent: "center",
+                            transition: "all 0.2s ease",
+                          }}
+                          title="Decide si el cliente puede verlo en la tienda"
+                        >
+                          {prod.activo ? (
+                            <>
+                              <FiEye size={18} /> Visible
+                            </>
+                          ) : (
+                            <>
+                              <FiEyeOff size={18} /> Oculto
+                            </>
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
