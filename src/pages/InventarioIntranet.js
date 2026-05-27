@@ -8,7 +8,7 @@ import {
   FiEye,
   FiEyeOff,
   FiEdit,
-  FiTrash2, // 🔥 Agregamos el ícono de basurero
+  FiTrash2,
 } from "react-icons/fi";
 
 const InventarioIntranet = () => {
@@ -19,8 +19,6 @@ const InventarioIntranet = () => {
   // Estados para los Modales
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarModalCategoria, setMostrarModalCategoria] = useState(false);
-  
-  // Nuevo estado para el modal de Editar Categoría
   const [mostrarModalEditarCategoria, setMostrarModalEditarCategoria] = useState(false);
 
   const [nuevaCategoria, setNuevaCategoria] = useState({
@@ -29,7 +27,6 @@ const InventarioIntranet = () => {
     imagen: "", 
   });
 
-  // Estado para manejar la categoría que se va a editar
   const [categoriaEditada, setCategoriaEditada] = useState({
     id_categoria: "",
     nombre: "",
@@ -179,10 +176,7 @@ const InventarioIntranet = () => {
       } else {
         const errorData = await res.json();
         console.error("Error detallado de Django:", errorData);
-        alert(
-          "El servidor rebotó el producto por esto: " +
-            JSON.stringify(errorData),
-        );
+        alert("El servidor rebotó el producto por esto: " + JSON.stringify(errorData));
       }
     } catch (error) {
       console.error("Error al guardar:", error);
@@ -246,7 +240,6 @@ const InventarioIntranet = () => {
       if (res.ok) {
         const categoriaActualizada = await res.json();
         
-        // Actualizamos la categoría en la lista de React
         setCategorias(categorias.map(cat => 
           cat.id_categoria === categoriaActualizada.id_categoria ? categoriaActualizada : cat
         ));
@@ -265,7 +258,6 @@ const InventarioIntranet = () => {
     }
   };
 
-  // 🔥 NUEVA FUNCIÓN: Eliminar Categoría
   const eliminarCategoria = async () => {
     if (!categoriaEditada.id_categoria) return;
 
@@ -281,13 +273,11 @@ const InventarioIntranet = () => {
       });
 
       if (res.ok) {
-        // Quitamos la categoría de la tabla de React
         setCategorias(categorias.filter(cat => cat.id_categoria !== categoriaEditada.id_categoria));
         setMostrarModalEditarCategoria(false);
         setCategoriaEditada({ id_categoria: "", nombre: "", descripcion: "", imagen: "" });
         alert("Categoría eliminada exitosamente.");
       } else {
-        // Si PostgreSQL prohíbe el borrado por la restricción de llave foránea
         alert("No se pudo eliminar la categoría. Es muy probable que aún existan productos vinculados a ella. Cambia los productos de categoría primero.");
       }
     } catch (error) {
@@ -296,7 +286,7 @@ const InventarioIntranet = () => {
     }
   };
 
-  // Función para cargar los datos de la categoría cuando el usuario la selecciona en el select
+  // 🔥 SOLUCIÓN AQUÍ: Filtramos nulos para que React no se congele
   const handleSelectCategoriaEditada = (e) => {
     const idSelec = e.target.value;
     if (idSelec === "") {
@@ -304,16 +294,19 @@ const InventarioIntranet = () => {
       return;
     }
     
-    // Buscamos la categoría seleccionada
     const catEncontrada = categorias.find(c => c.id_categoria == idSelec);
     if (catEncontrada) {
-      setCategoriaEditada({ ...catEncontrada });
+      setCategoriaEditada({ 
+        id_categoria: catEncontrada.id_categoria,
+        nombre: catEncontrada.nombre || "",
+        descripcion: catEncontrada.descripcion || "",
+        imagen: catEncontrada.imagen || "" // Esto previene el error si la BD manda null
+      });
     }
   };
 
   return (
     <div className="p-4 animate__animated animate__fadeIn">
-      {/* HEADER DE LA PANTALLA */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="fw-bold m-0 d-flex align-items-center gap-2 text-dark">
@@ -324,7 +317,6 @@ const InventarioIntranet = () => {
           </p>
         </div>
         <div className="d-flex gap-2">
-          {/* BOTÓN: Editar Categoría */}
           <button
             onClick={() => setMostrarModalEditarCategoria(true)}
             className="btn btn-outline-secondary fw-bold shadow-sm px-3"
@@ -353,166 +345,62 @@ const InventarioIntranet = () => {
 
       {/* MODAL PARA AGREGAR PRODUCTO */}
       {mostrarModal && (
-        <div
-          className="modal show d-block"
-          style={{
-            backgroundColor: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(3px)",
-            zIndex: 1050,
-          }}
-        >
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(3px)", zIndex: 1050 }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
               <div className="modal-header bg-primary text-white border-0">
                 <h5 className="modal-title fw-bold">
                   <FiBox className="me-2" /> Añadir Nuevo Producto
                 </h5>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => setMostrarModal(false)}
-                ></button>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setMostrarModal(false)}></button>
               </div>
               <form onSubmit={guardarProducto}>
                 <div className="modal-body p-4 bg-light">
                   <div className="mb-3">
-                    <label className="small fw-bold text-dark">
-                      Nombre del Producto
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control bg-white"
-                      required
-                      value={nuevoProducto.nombre}
-                      onChange={(e) =>
-                        setNuevoProducto({
-                          ...nuevoProducto,
-                          nombre: e.target.value,
-                        })
-                      }
-                    />
+                    <label className="small fw-bold text-dark">Nombre del Producto</label>
+                    <input type="text" className="form-control bg-white" required value={nuevoProducto.nombre || ""} onChange={(e) => setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })} />
                   </div>
                   <div className="row">
                     <div className="col-md-6 mb-3">
-                      <label className="small fw-bold text-dark">
-                        Precio ($)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-control bg-white"
-                        required
-                        value={nuevoProducto.precio}
-                        onChange={(e) =>
-                          setNuevoProducto({
-                            ...nuevoProducto,
-                            precio: e.target.value,
-                          })
-                        }
-                      />
+                      <label className="small fw-bold text-dark">Precio ($)</label>
+                      <input type="number" step="0.01" className="form-control bg-white" required value={nuevoProducto.precio || ""} onChange={(e) => setNuevoProducto({ ...nuevoProducto, precio: e.target.value })} />
                     </div>
                     <div className="col-md-6 mb-3">
-                      <label className="small fw-bold text-dark">
-                        Categoría
-                      </label>
-                      <select
-                        className="form-select bg-white"
-                        required
-                        value={nuevoProducto.id_categoria}
-                        onChange={(e) =>
-                          setNuevoProducto({
-                            ...nuevoProducto,
-                            id_categoria: e.target.value,
-                          })
-                        }
-                      >
+                      <label className="small fw-bold text-dark">Categoría</label>
+                      <select className="form-select bg-white" required value={nuevoProducto.id_categoria || ""} onChange={(e) => setNuevoProducto({ ...nuevoProducto, id_categoria: e.target.value })}>
                         <option value="">Seleccionar...</option>
                         {categorias.map((cat) => (
-                          <option
-                            key={cat.id_categoria}
-                            value={cat.id_categoria}
-                          >
-                            {cat.nombre}
-                          </option>
+                          <option key={cat.id_categoria} value={cat.id_categoria}>{cat.nombre}</option>
                         ))}
                       </select>
                     </div>
                   </div>
                   <div className="mb-3">
-                    <label className="small fw-bold text-dark">
-                      Descripción (Opcional)
-                    </label>
-                    <textarea
-                      className="form-control bg-white"
-                      rows="2"
-                      value={nuevoProducto.descripcion}
-                      onChange={(e) =>
-                        setNuevoProducto({
-                          ...nuevoProducto,
-                          descripcion: e.target.value,
-                        })
-                      }
-                    ></textarea>
+                    <label className="small fw-bold text-dark">Descripción (Opcional)</label>
+                    <textarea className="form-control bg-white" rows="2" value={nuevoProducto.descripcion || ""} onChange={(e) => setNuevoProducto({ ...nuevoProducto, descripcion: e.target.value })}></textarea>
                   </div>
                   <div className="mb-3">
-                    <label className="small fw-bold text-dark">
-                      Imagen del Producto
-                    </label>
-
-                    <input
-                      type="text"
-                      className="form-control bg-light mb-2"
-                      readOnly
-                      placeholder="Sube una imagen para obtener la URL..."
-                      value={nuevoProducto.imagen}
-                    />
-
-                    <input
-                      type="file"
-                      className="form-control"
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          const url = await subirImagenACloudinary(file);
-                          if (url) {
-                            setNuevoProducto({ ...nuevoProducto, imagen: url });
-                          } else {
-                            alert(
-                              "Error al subir la imagen. Intenta de nuevo.",
-                            );
-                          }
+                    <label className="small fw-bold text-dark">Imagen del Producto</label>
+                    <input type="text" className="form-control bg-light mb-2" readOnly placeholder="Sube una imagen para obtener la URL..." value={nuevoProducto.imagen || ""} />
+                    <input type="file" className="form-control" onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const url = await subirImagenACloudinary(file);
+                        if (url) {
+                          setNuevoProducto({ ...nuevoProducto, imagen: url });
+                        } else {
+                          alert("Error al subir la imagen. Intenta de nuevo.");
                         }
-                      }}
-                    />
-
+                      }
+                    }} />
                     {nuevoProducto.imagen && (
-                      <img
-                        src={nuevoProducto.imagen}
-                        alt="preview"
-                        className="mt-2 rounded"
-                        style={{
-                          width: "60px",
-                          height: "60px",
-                          objectFit: "cover",
-                        }}
-                      />
+                      <img src={nuevoProducto.imagen} alt="preview" className="mt-2 rounded" style={{ width: "60px", height: "60px", objectFit: "cover" }} />
                     )}
                   </div>
                 </div>
                 <div className="modal-footer border-0 bg-white">
-                  <button
-                    type="button"
-                    className="btn btn-light fw-bold"
-                    onClick={() => setMostrarModal(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary fw-bold px-4"
-                  >
-                    Guardar Producto
-                  </button>
+                  <button type="button" className="btn btn-light fw-bold" onClick={() => setMostrarModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary fw-bold px-4">Guardar Producto</button>
                 </div>
               </form>
             </div>
@@ -522,126 +410,47 @@ const InventarioIntranet = () => {
 
       {/* MODAL PARA AGREGAR CATEGORÍA */}
       {mostrarModalCategoria && (
-        <div
-          className="modal show d-block"
-          style={{
-            backgroundColor: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(3px)",
-            zIndex: 1050,
-          }}
-        >
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(3px)", zIndex: 1050 }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
               <div className="modal-header bg-dark text-white border-0">
                 <h5 className="modal-title fw-bold">
-                  <FiLayers className="me-2" />
-                  Nueva Categoría
+                  <FiLayers className="me-2" /> Nueva Categoría
                 </h5>
-
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => setMostrarModalCategoria(false)}
-                />
+                <button type="button" className="btn-close btn-close-white" onClick={() => setMostrarModalCategoria(false)} />
               </div>
-
               <form onSubmit={guardarCategoria}>
                 <div className="modal-body p-4 bg-light">
                   <div className="mb-3">
-                    <label className="small fw-bold text-dark">
-                      Nombre de la categoría
-                    </label>
-
-                    <input
-                      type="text"
-                      className="form-control bg-white"
-                      required
-                      value={nuevaCategoria.nombre}
-                      onChange={(e) =>
-                        setNuevaCategoria({
-                          ...nuevaCategoria,
-                          nombre: e.target.value,
-                        })
-                      }
-                    />
+                    <label className="small fw-bold text-dark">Nombre de la categoría</label>
+                    <input type="text" className="form-control bg-white" required value={nuevaCategoria.nombre || ""} onChange={(e) => setNuevaCategoria({ ...nuevaCategoria, nombre: e.target.value })} />
                   </div>
-
                   <div>
-                    <label className="small fw-bold text-dark">
-                      Descripción
-                    </label>
-
-                    <textarea
-                      className="form-control bg-white"
-                      rows="3"
-                      value={nuevaCategoria.descripcion}
-                      onChange={(e) =>
-                        setNuevaCategoria({
-                          ...nuevaCategoria,
-                          descripcion: e.target.value,
-                        })
-                      }
-                    />
+                    <label className="small fw-bold text-dark">Descripción</label>
+                    <textarea className="form-control bg-white" rows="3" value={nuevaCategoria.descripcion || ""} onChange={(e) => setNuevaCategoria({ ...nuevaCategoria, descripcion: e.target.value })} />
                   </div>
-
                   <div className="mt-3">
-                    <label className="small fw-bold text-dark">
-                      Imagen de la Categoría
-                    </label>
-
-                    <input
-                      type="text"
-                      className="form-control bg-light mb-2"
-                      readOnly
-                      placeholder="Sube una imagen para obtener la URL..."
-                      value={nuevaCategoria.imagen}
-                    />
-
-                    <input
-                      type="file"
-                      className="form-control"
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          const url = await subirImagenACloudinary(file);
-                          if (url) {
-                            setNuevaCategoria({ ...nuevaCategoria, imagen: url });
-                          } else {
-                            alert(
-                              "Error al subir la imagen. Intenta de nuevo.",
-                            );
-                          }
+                    <label className="small fw-bold text-dark">Imagen de la Categoría</label>
+                    <input type="text" className="form-control bg-light mb-2" readOnly placeholder="Sube una imagen para obtener la URL..." value={nuevaCategoria.imagen || ""} />
+                    <input type="file" className="form-control" onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const url = await subirImagenACloudinary(file);
+                        if (url) {
+                          setNuevaCategoria({ ...nuevaCategoria, imagen: url });
+                        } else {
+                          alert("Error al subir la imagen. Intenta de nuevo.");
                         }
-                      }}
-                    />
-
+                      }
+                    }} />
                     {nuevaCategoria.imagen && (
-                      <img
-                        src={nuevaCategoria.imagen}
-                        alt="preview categoria"
-                        className="mt-2 rounded"
-                        style={{
-                          width: "60px",
-                          height: "60px",
-                          objectFit: "cover",
-                        }}
-                      />
+                      <img src={nuevaCategoria.imagen} alt="preview categoria" className="mt-2 rounded" style={{ width: "60px", height: "60px", objectFit: "cover" }} />
                     )}
                   </div>
                 </div>
-
                 <div className="modal-footer border-0 bg-white">
-                  <button
-                    type="button"
-                    className="btn btn-light fw-bold"
-                    onClick={() => setMostrarModalCategoria(false)}
-                  >
-                    Cancelar
-                  </button>
-
-                  <button type="submit" className="btn btn-dark fw-bold px-4">
-                    Guardar Categoría
-                  </button>
+                  <button type="button" className="btn btn-light fw-bold" onClick={() => setMostrarModalCategoria(false)}>Cancelar</button>
+                  <button type="submit" className="btn btn-dark fw-bold px-4">Guardar Categoría</button>
                 </div>
               </form>
             </div>
@@ -651,140 +460,73 @@ const InventarioIntranet = () => {
 
       {/* MODAL: EDITAR / ELIMINAR CATEGORÍA */}
       {mostrarModalEditarCategoria && (
-        <div
-          className="modal show d-block"
-          style={{
-            backgroundColor: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(3px)",
-            zIndex: 1050,
-          }}
-        >
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(3px)", zIndex: 1050 }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
               <div className="modal-header bg-secondary text-white border-0">
                 <h5 className="modal-title fw-bold">
-                  <FiEdit className="me-2" />
-                  Editar Categoría Existente
+                  <FiEdit className="me-2" /> Editar Categoría Existente
                 </h5>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => setMostrarModalEditarCategoria(false)}
-                />
+                <button type="button" className="btn-close btn-close-white" onClick={() => setMostrarModalEditarCategoria(false)} />
               </div>
 
               <form onSubmit={actualizarCategoria}>
                 <div className="modal-body p-4 bg-light">
-                  
                   <div className="mb-4">
-                    <label className="small fw-bold text-dark">
-                      1. Selecciona la categoría a editar:
-                    </label>
-                    <select
-                      className="form-select border-primary"
-                      value={categoriaEditada.id_categoria}
-                      onChange={handleSelectCategoriaEditada}
-                      required
-                    >
+                    <label className="small fw-bold text-dark">1. Selecciona la categoría a editar:</label>
+                    <select className="form-select border-primary" value={categoriaEditada.id_categoria || ""} onChange={handleSelectCategoriaEditada} required>
                       <option value="">Selecciona una categoría...</option>
                       {categorias.map((cat) => (
-                        <option key={cat.id_categoria} value={cat.id_categoria}>
-                          {cat.nombre}
-                        </option>
+                        <option key={cat.id_categoria} value={cat.id_categoria}>{cat.nombre}</option>
                       ))}
                     </select>
                   </div>
 
-                  {/* Solo mostramos los inputs si ya seleccionó una categoría */}
                   {categoriaEditada.id_categoria && (
                     <div className="p-3 bg-white border rounded">
                       <div className="mb-3">
                         <label className="small fw-bold text-dark">Nombre</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={categoriaEditada.nombre}
-                          onChange={(e) => setCategoriaEditada({ ...categoriaEditada, nombre: e.target.value })}
-                        />
+                        <input type="text" className="form-control" value={categoriaEditada.nombre || ""} onChange={(e) => setCategoriaEditada({ ...categoriaEditada, nombre: e.target.value })} />
                       </div>
-                      
                       <div className="mb-3">
                         <label className="small fw-bold text-dark">Descripción</label>
-                        <textarea
-                          className="form-control"
-                          rows="2"
-                          value={categoriaEditada.descripcion}
-                          onChange={(e) => setCategoriaEditada({ ...categoriaEditada, descripcion: e.target.value })}
-                        />
+                        <textarea className="form-control" rows="2" value={categoriaEditada.descripcion || ""} onChange={(e) => setCategoriaEditada({ ...categoriaEditada, descripcion: e.target.value })} />
                       </div>
-
                       <div className="mt-3">
                         <label className="small fw-bold text-dark">Imagen de la Categoría</label>
-                        <input
-                          type="text"
-                          className="form-control bg-light mb-2"
-                          readOnly
-                          placeholder="Sin imagen actualmente..."
-                          value={categoriaEditada.imagen}
-                        />
-                        <input
-                          type="file"
-                          className="form-control"
-                          onChange={async (e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const url = await subirImagenACloudinary(file);
-                              if (url) {
-                                setCategoriaEditada({ ...categoriaEditada, imagen: url });
-                              } else {
-                                alert("Error al subir la imagen a Cloudinary.");
-                              }
+                        <input type="text" className="form-control bg-light mb-2" readOnly placeholder="Sin imagen actualmente..." value={categoriaEditada.imagen || ""} />
+                        <input type="file" className="form-control" onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const url = await subirImagenACloudinary(file);
+                            if (url) {
+                              setCategoriaEditada({ ...categoriaEditada, imagen: url });
+                            } else {
+                              alert("Error al subir la imagen a Cloudinary.");
                             }
-                          }}
-                        />
+                          }
+                        }} />
                         {categoriaEditada.imagen && (
                           <div className="mt-2 text-center">
                             <p className="small text-muted mb-1">Vista previa:</p>
-                            <img
-                              src={categoriaEditada.imagen}
-                              alt="preview edit"
-                              className="rounded shadow-sm"
-                              style={{ width: "80px", height: "80px", objectFit: "cover" }}
-                            />
+                            <img src={categoriaEditada.imagen} alt="preview edit" className="rounded shadow-sm" style={{ width: "80px", height: "80px", objectFit: "cover" }} />
                           </div>
                         )}
                       </div>
                     </div>
                   )}
-
                 </div>
 
-                {/* 🔥 BOTONES DE ACCIÓN (ELIMINAR / CANCELAR / ACTUALIZAR) */}
                 <div className="modal-footer border-0 bg-white d-flex justify-content-between">
-                  {/* Botón de Eliminar */}
-                  <button 
-                    type="button" 
-                    className="btn btn-outline-danger fw-bold d-flex align-items-center gap-2"
-                    disabled={!categoriaEditada.id_categoria}
-                    onClick={eliminarCategoria}
-                  >
+                  <button type="button" className="btn btn-outline-danger fw-bold d-flex align-items-center gap-2" disabled={!categoriaEditada.id_categoria} onClick={eliminarCategoria}>
                     <FiTrash2 /> Eliminar
                   </button>
 
-                  {/* Grupo de botones derecho */}
                   <div>
-                    <button
-                      type="button"
-                      className="btn btn-light fw-bold me-2"
-                      onClick={() => setMostrarModalEditarCategoria(false)}
-                    >
+                    <button type="button" className="btn btn-light fw-bold me-2" onClick={() => setMostrarModalEditarCategoria(false)}>
                       Cancelar
                     </button>
-                    <button 
-                      type="submit" 
-                      className="btn btn-secondary fw-bold px-4"
-                      disabled={!categoriaEditada.id_categoria}
-                    >
+                    <button type="submit" className="btn btn-secondary fw-bold px-4" disabled={!categoriaEditada.id_categoria}>
                       Actualizar
                     </button>
                   </div>
@@ -811,110 +553,45 @@ const InventarioIntranet = () => {
             <tbody>
               {cargando ? (
                 <tr>
-                  <td colSpan="5" className="text-center py-5 text-muted">
-                    Cargando inventario...
-                  </td>
+                  <td colSpan="5" className="text-center py-5 text-muted">Cargando inventario...</td>
                 </tr>
               ) : productos.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="text-center py-5 text-muted">
-                    Aún no hay productos registrados.
-                  </td>
+                  <td colSpan="5" className="text-center py-5 text-muted">Aún no hay productos registrados.</td>
                 </tr>
               ) : (
                 productos.map((prod) => {
                   const idReal = prod.id || prod.id_producto;
-
                   return (
                     <tr key={idReal}>
-                      {/* INFO PRODUCTO */}
                       <td className="ps-4">
                         <div className="d-flex align-items-center gap-3">
                           {prod.imagen ? (
-                            <img
-                              src={prod.imagen}
-                              alt="prod"
-                              style={{
-                                width: "45px",
-                                height: "45px",
-                                objectFit: "cover",
-                                borderRadius: "10px",
-                              }}
-                            />
+                            <img src={prod.imagen} alt="prod" style={{ width: "45px", height: "45px", objectFit: "cover", borderRadius: "10px" }} />
                           ) : (
-                            <div
-                              className="bg-light d-flex align-items-center justify-content-center text-muted"
-                              style={{
-                                width: "45px",
-                                height: "45px",
-                                borderRadius: "10px",
-                              }}
-                            >
+                            <div className="bg-light d-flex align-items-center justify-content-center text-muted" style={{ width: "45px", height: "45px", borderRadius: "10px" }}>
                               <FiBox />
                             </div>
                           )}
                           <div>
-                            <strong className="d-block text-dark">
-                              {prod.nombre}
-                            </strong>
+                            <strong className="d-block text-dark">{prod.nombre}</strong>
                           </div>
                         </div>
                       </td>
-
-                      {/* CATEGORÍA Y PRECIO */}
                       <td>
                         <span className="badge bg-light text-secondary border">
                           {categorias.find(c => c.id_categoria === prod.id_categoria)?.nombre || "Sin Categoría"}
                         </span>
                       </td>
-                      <td className="fw-bold text-success">
-                        ${parseFloat(prod.precio).toLocaleString()}
-                      </td>
-
-                      {/* SWITCH DE STOCK */}
+                      <td className="fw-bold text-success">${parseFloat(prod.precio).toLocaleString()}</td>
                       <td className="text-center">
-                        <button
-                          onClick={() => cambiarStock(idReal, prod.stock)}
-                          className={`btn btn-sm px-4 py-2 rounded-pill fw-bold border-0 d-inline-flex align-items-center gap-2 ${prod.stock ? "btn-success bg-opacity-25 text-success" : "btn-danger bg-opacity-25 text-danger"}`}
-                          style={{
-                            width: "130px",
-                            justifyContent: "center",
-                            transition: "all 0.2s ease",
-                          }}
-                        >
-                          {prod.stock ? (
-                            <>
-                              <FiCheck size={18} /> En Stock
-                            </>
-                          ) : (
-                            <>
-                              <FiX size={18} /> Agotado
-                            </>
-                          )}
+                        <button onClick={() => cambiarStock(idReal, prod.stock)} className={`btn btn-sm px-4 py-2 rounded-pill fw-bold border-0 d-inline-flex align-items-center gap-2 ${prod.stock ? "btn-success bg-opacity-25 text-success" : "btn-danger bg-opacity-25 text-danger"}`} style={{ width: "130px", justifyContent: "center", transition: "all 0.2s ease" }}>
+                          {prod.stock ? <><FiCheck size={18} /> En Stock</> : <><FiX size={18} /> Agotado</>}
                         </button>
                       </td>
-
-                      {/* SWITCH DE VISIBILIDAD */}
                       <td className="text-center pe-4">
-                        <button
-                          onClick={() => cambiarVisibilidad(idReal, prod.activo)}
-                          className={`btn btn-sm px-3 py-2 rounded-pill fw-bold border-0 d-inline-flex align-items-center gap-2 ${prod.activo ? "btn-primary text-white shadow-sm" : "btn-light text-secondary border"}`}
-                          style={{
-                            width: "120px",
-                            justifyContent: "center",
-                            transition: "all 0.2s ease",
-                          }}
-                          title="Decide si el cliente puede verlo en la tienda"
-                        >
-                          {prod.activo ? (
-                            <>
-                              <FiEye size={18} /> Visible
-                            </>
-                          ) : (
-                            <>
-                              <FiEyeOff size={18} /> Oculto
-                            </>
-                          )}
+                        <button onClick={() => cambiarVisibilidad(idReal, prod.activo)} className={`btn btn-sm px-3 py-2 rounded-pill fw-bold border-0 d-inline-flex align-items-center gap-2 ${prod.activo ? "btn-primary text-white shadow-sm" : "btn-light text-secondary border"}`} style={{ width: "120px", justifyContent: "center", transition: "all 0.2s ease" }} title="Decide si el cliente puede verlo en la tienda">
+                          {prod.activo ? <><FiEye size={18} /> Visible</> : <><FiEyeOff size={18} /> Oculto</>}
                         </button>
                       </td>
                     </tr>
